@@ -7,6 +7,6 @@ The Disqus gives comments support for this blog.
 
 If you fork this Git repository, please be remember to do following things first,
 
-1.Remove all of my personal blogs
-2.Modify my disqus_shortname from _includes / comments.md
-3.Replace my personal information from all files
+1. Remove all of my personal blogs
+2. Modify my disqus_shortname from _includes / comments.md
+3. Replace my personal information from all files
