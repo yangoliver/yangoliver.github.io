@@ -1,8 +1,8 @@
 ---
-title: links
+title: Links
 layout: page
 comments: yes
 ---
 
-N/A
 
+我在[CSDN的博客](http://blog.csdn.net/yayong): 已经停用

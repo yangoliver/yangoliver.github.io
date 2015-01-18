@@ -1,6 +1,6 @@
 ---
 layout: page
-title: feedbacks
+title: Guestbook
 comments: yes
 ---
 
