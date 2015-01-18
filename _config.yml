@@ -1,0 +1,6 @@
+markdown: rdiscount
+permalink: /:year/:month/:title/
+url: http://yangoliver.github.io
+author: Oliver Yang
+highlighter: true
+paginate: 24
