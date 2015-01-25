@@ -4,7 +4,7 @@ layout: page
 comments: yes
 ---
 
-Oliver Yang  
+##Oliver Yang  
 
-Email: yangoliver@gmail.com      
-github : [http://yangoliver.github.io](http://yangoliver.github.io) 
+- Email: yangoliver at gmail dot com      
+- Github page: [http://yangoliver.github.io](http://yangoliver.github.io) 
