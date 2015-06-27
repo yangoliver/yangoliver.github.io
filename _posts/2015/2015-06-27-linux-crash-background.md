@@ -4,7 +4,7 @@ title: Linux Crash Utility - background
 categories:
 - English
 tags:
-- [debug, kernel, linux, solaris]
+- [crash, kernel, linux, solaris]
 ---
 
 ##Background

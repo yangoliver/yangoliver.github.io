@@ -4,7 +4,7 @@ title: Python and irqstat
 categories:
 - English
 tags:
-- [irqbalance, perf-tools, python]
+- [irqbalance, perf, python]
 ---
 
 While I was debugging irqbalance issue on a 4 socket Nodes machine, I realized that it is difficult to understand the perf data gathered by mpstat and /proc/interrupts. On this machine, there are 60 logical CPUs, it is very difficult to understand the output without tools helps. That is why I wrote some [interrupt tools](https://github.com/yangoliver/mytools/tree/master/interrupt) to help analysis on these outputs.
