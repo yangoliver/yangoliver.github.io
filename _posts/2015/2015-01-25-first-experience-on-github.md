@@ -4,7 +4,7 @@ title: First experiences on Github
 categories:
 - English
 tags:
-- [irqbalance, perf-tools, mytools]
+- [irqbalance, perf-tools]
 ---
 
 Finally I got my first development experiences on Github.
