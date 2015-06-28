@@ -4,14 +4,7 @@ layout: page
 comments: yes
 ---
 
-##My Personal Write-up:
-
-- [New Github page](http://yangoliver.github.io)
-
-- [Old CSDN chinese blog](http://blog.csdn.net/yayong)
-
-
-##The Open Source Projects that I got involved:
+##The Open Source Projects
 
 - [The crash commits](http://yangoliver.github.io/2015/06/linux-crash-my-patches)
 
@@ -20,3 +13,10 @@ comments: yes
 - [The perf-tools commits](https://github.com/brendangregg/perf-tools/commits?author=yangoliver)
 
 - [The irqstat commits](https://github.com/lanceshelton/irqstat/commits?author=yangoliver)
+
+##My blog
+
+- [New Github page](http://yangoliver.github.io)
+
+- [Old CSDN chinese blog](http://blog.csdn.net/yayong)
+
