@@ -62,10 +62,12 @@ For example, below command can show you top 10 page cache consumers,
 
 - Step 2: Check how many dirty pages for one specific file by below command,
 
-    files -p <inode_addr> | grep -i dirty | wc -l
+
+    crash> files -p <inode_addr\> | grep -i dirty | wc -l
+
 
 Please note that on a live kernel, you may not be able to dump pages in page cache, because the memory content could be
-changed at same time due to file IO operations.
+changed by kernel at same time, due to file IO operations.
 
 Another interesting example is using files command to dump file content in memory.
 
