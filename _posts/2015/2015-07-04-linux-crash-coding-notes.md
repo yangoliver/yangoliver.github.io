@@ -8,9 +8,11 @@ tags:
 ---
 
 
-1. Where could I found coding exmaples?
+1. Where could I found coding examples?
 
     See [crash whitepaper](http://people.redhat.com/anderson/crash_whitepaper), **Command Extensions** section.
+	This document also has crash command usages and a case study for kernel debugging.
+	Please study it carefully before working on crash.
 
 2. Public APIs defined in defs.h
 
@@ -25,7 +27,7 @@ tags:
 
     * Run "make warn" to fix all warnings.
     
-    * It would be better, if variables, APIs, and CLI output naming could relect kernel data structure naming.
+    * It would be better, if variables, APIs, and CLI output naming could reflect kernel data structure naming.
     
     * CLI changes should also add man page changes in help.c
     
@@ -39,7 +41,7 @@ tags:
 
 4. Build and test environment setup
 
-    Make sure you had installed following packages. I used Fedora CLIs as exmaples.
+    Make sure you had installed following packages. I used Fedora CLIs as examples.
 
     * Basic development tools
 
