@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux Crash Utility - file page cache debug
+title: Linux Crash Utility - page cache debug
 categories:
 - English
 tags:
