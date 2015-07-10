@@ -12,11 +12,11 @@ tags:
 1. What is the crash tool?
 
     The quotes from crash [README](https://github.com/crash-utility/crash/blob/master/README),
-
-        The core analysis suite is a self-contained tool that can be used to investigate
-		either live systems, kernel core dumps created from dump creation facilities such
-		as kdump, kvmdump, xendump, the netdump and diskdump.
     
+    <pre> The core analysis suite is a self-contained tool that can be used to investigate
+    either live systems, kernel core dumps created from dump creation facilities such
+    as kdump, kvmdump, xendump, the netdump and diskdump. </pre>
+
     The similar debug tool on Solaris is [mdb](https://en.wikipedia.org/wiki/Modular_Debugger). Many years ago, when I was a
     Solaris developer, hacking kernel by mdb was an exciting experiment in my work. I used to write
     [a blog series](http://blog.csdn.net/yayong/article/details/1520604) to show how to debug Solaris kernel by mdb.
