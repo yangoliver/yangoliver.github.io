@@ -130,14 +130,12 @@ pre {
     color: #aaffaa;
     padding: 12px;
     margin: 0 0 24px;
-	background-color: #242424;
+	background-color: #2b2b2b;
 }
 p code {
     font-family: monospace;
     font-size: 14px;
-    color: #aaffaa;
     border: 1px solid #edebea;
-    background-color: #242424;
 }
 hr {
     border: 0;
