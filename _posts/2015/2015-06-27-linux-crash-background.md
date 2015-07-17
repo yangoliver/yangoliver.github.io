@@ -2,7 +2,7 @@
 layout: post
 title: Linux Crash Utility - background
 categories:
-- English
+- [English, OS]
 tags:
 - [crash, kernel, linux, solaris]
 ---

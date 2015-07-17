@@ -2,7 +2,7 @@
 layout: post
 title: Linux Crash Utility - coding notes
 categories:
-- English
+- [English, OS]
 tags:
 - [crash]
 ---

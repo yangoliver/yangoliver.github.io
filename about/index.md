@@ -11,11 +11,9 @@ This site is used for personal notes and knowledge sharing.
 
 My personal interests are in following areas,
 
-   * x86, PCIe, Hardware RAS features
-   * Linux/Unix kernel, various Virtualization technologies
-   * Server, storage solutions
-   * Cloud computing and scale out architecture
-   * Performance analysis
+   * Hardware: x86, PCIe, device drivers, hardware RAS features
+   * OS: Linux/Unix kernel, virtualization, perfromance, scale out architecture
+   * Solutions: server, storage, cloud computing
 
 Contact info,
 
