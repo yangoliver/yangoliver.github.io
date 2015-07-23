@@ -47,7 +47,8 @@ tags:
 	  * sleep profiler when SCHEDSTATS is enabled
 
 	    This needs readprofile command installed in user space.
-		The usage of readprofile could be found from Documentation/basic_profiling.txt.
+		The usage of readprofile could be found from [Documentation/basic_profiling.txt](https://github.com/torvalds/linux/blob/master/Documentation/basic_profiling.txt).
+		To enable kernel profiler, please refer to [Documentation/kernel-parameters.txt](https://github.com/torvalds/linux/blob/master/Documentation/kernel-parameters.txt).
 		This way is a **legacy** way and could be replaced by following trace point in latest kernel,
 		
 		<pre> # perf list | grep sched_stat_blocked
@@ -55,11 +56,13 @@ tags:
 		# perf record -e sched:sched_stat_blocked -a -g sleep 5
         # perf script</pre>
 
-3. SCHEDSTATS proc files definitions
+3. SCHEDSTATS proc files use cases
 
-	System wide counters, including per-cpu(run queue) or per-scheduling-domain statistics,
+	* System wide statistic
+
+	  This includes per-cpu(run queue) or per-sched-domain statistics.
     
-      * /proc/schedstat
+        **/proc/schedstat**
 
 	    Implements in scheduler core, which is the common layer for all scheduling classes.
 
@@ -131,9 +134,9 @@ tags:
 				[...snipped...]
 			};
 
-	Per task counters,
+	* Per task statistic
 
-      * /proc/<pid\>/schedstat
+      **/proc/<pid\>/schedstat**
 
 	    Common for all scheduling classes.
 
@@ -162,7 +165,7 @@ tags:
 				[...snipped...]
 			};
 
-	  * /proc/<pid\>/sched
+	  **/proc/<pid\>/sched**
 
 	    Only available for CFS tasks. Need enable SCHED_DEBUG as well.
 
@@ -228,7 +231,9 @@ tags:
 
 4. SCHEDSTATS source files
 
-	Linux kernel scheduler defined two layers,
+	To use SCHEDSTATS, need to enable kernel config ```SCHEDSTATS```. All related code is protected by CONFIG_SCHEDSTATS.
+
+	As far as we know, Linux kernel scheduler defined two layers,
 
 	- The upper layer is scheduler core which is common layer for all scheduling class.
 
