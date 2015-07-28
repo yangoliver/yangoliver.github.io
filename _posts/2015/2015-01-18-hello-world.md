@@ -4,7 +4,7 @@ title: Hello World
 categories:
 - Chinese
 tags:
-- [life]
+- [misc]
 ---
 
 2004年9月，开始在CSDN写博客。六年后的某天写了CSDN的最后一篇博客。
