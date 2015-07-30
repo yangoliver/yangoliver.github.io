@@ -12,7 +12,7 @@ He suspected that this indicates some network latency problems.
 
 Is he right?
 
-The answer is no.
+The answer is no. At least, I am not sure. Depending on your workload.
 
 I told him to capture the packets by the tools like tcpdump to confirm his suspects.
 For network write system call, 2ms latency might not be quite bad.
@@ -23,7 +23,9 @@ For network write system call, 2ms latency might not be quite bad.
    microsecond level.
 
    In Linux network stack, under the write system call context, it could send the packets first, then got interrupted
-   by NIC driver RX interrupts, and run into packets receive loop.
+   by NIC driver RX interrupts, and run into packets receive loop. Especially, when write code put the packets to NIC,
+   it disabled interrupts in that period. That means, after interrupt got enabled, it would cause the interrupts got fired
+   immediately if any IRQs were bound to this CPU.
 
    If the system is under heavy network traffic, the ```net_rx_action``` code actually allows polling loop for more than
    2 jiffies, which is actually 2ms.
@@ -75,6 +77,13 @@ For network write system call, 2ms latency might not be quite bad.
 
 	For this reason it is quite possible that the packet is sent by write system call first at us speed.
 	But after that, write system call continue to receive the packets, and run into longer loop for packets RX handling.
+
+	Just few times of 2ms latency is not a problem. What if he saw average write system call latency is 2ms?
+
+	It is hard to say. His testing is a system wide testing, which will not only stress network stack, bust also stress
+	file system and storage IO stack. That means, if write system call got pinned by the interrupts not related to
+	network workload, he can also see this issue. In this case, it is not network problem.
+
 
 * How does the code path look like?
 
