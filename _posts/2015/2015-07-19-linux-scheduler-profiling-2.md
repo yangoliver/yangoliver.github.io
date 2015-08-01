@@ -7,7 +7,7 @@ tags:
 - [scheduler, perf, kernel, linux]
 ---
 
-##SCHEDSTATS profiling - part 1
+##SCHEDSTATS Perf Counters - Overview
 
 1. What is the SCHEDSTATS?
 
