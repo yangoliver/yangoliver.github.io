@@ -9,8 +9,7 @@ tags:
 
 Recently, my [file page cache dump patch](https://github.com/crash-utility/crash/commit/3106fee2bebfdb0f1c850911f452824237598d92)
 got merged to crash upstream.
-
-Below description was copied from crash 7.1.2 [release notes](http://people.redhat.com/anderson/crash.changelog.html),
+Following description was copied from crash 7.1.2 [release notes](http://people.redhat.com/anderson/crash.changelog.html),
 
  <pre> - Implementation of two new "files" command options.  The "files -c"
    option is context-sensitive, similar to the the regular "files"
@@ -25,7 +24,6 @@ Below description was copied from crash 7.1.2 [release notes](http://people.redh
    (yangoliver AT gmail dot com) </pre>
 
 This patch supports dumping file page cache by extending two new options for files command: -c and -p.
-
 Below are the examples copied from "help files" output,
 
     For each open file, display the number of pages that are in the page cache:
