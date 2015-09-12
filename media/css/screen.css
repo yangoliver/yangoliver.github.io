@@ -80,25 +80,30 @@ body>div {
 }
 h1 {
     font-size: 28px;
-    line-height: 28px;
+    line-height: 30px;
     margin: 0 0 28px 0;
-	background-color: #000;
+	background-color: #46aa6e;
 	color: #fff;
 	display: inline-block;
 	padding: 12px;
 }
 h2 {
-    font-size: 26px;
-    line-height: 48px;
+    font-size: 24px;
+    line-height: 42px;
     margin: 0 0 24px 0;
+	background-color: #64a050;
+	color: #fff;
 }
 h2 i {
 	font-size: 18px;
-	color: #ccc;
+	background-color: #64a050;
+	color: #fff;
 }
 h3 {
-    font-size: 18px;
-    line-height: 24px;
+    font-size: 20px;
+    line-height: 30px;
+	background-color: #46783c;
+	color: #fff;
 }
 section>h3 {
     margin: 0 0 24px 0;
