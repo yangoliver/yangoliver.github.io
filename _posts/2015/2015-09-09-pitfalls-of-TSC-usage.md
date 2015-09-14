@@ -309,7 +309,7 @@ to access TSC register while the task is running on a vCPU.
 
 Per hypervisors differences, the rdtsc instruction could be executed with following ways,
 
-1. Native - fast but potentially incorrect
+1. Native or pass-through - fast but potentially incorrect
 
 	No emulation by hypervisor. The instruction is directly executed on physical CPUs.
 	This mode has faster performance but may cause the TSC sync problems to TSC sensitive applications in guest OS.
@@ -317,12 +317,13 @@ Per hypervisors differences, the rdtsc instruction could be executed with follow
 	Especially, VM could be live migrated to different machine. It is not possible and reasonable to ensure TSC value
 	got synced among different machines.
 
-2. Emulated - correct but slow
+2. Emulated or Trap - correct but slow
 
 	- Full virtualization
 
 	Hypervisor will emulate TSC, then rdtsc is not directly executed on physical CPUs.
 	This mode causes performance degrade for rdtsc instruction, but give the reliability for TSC sensitive application.
+	Intel and AMD CPUs support VMX and SVM which allows the hardware accelerations of rdtsc emulation.
 
 	- Para virtualization
 
@@ -389,7 +390,25 @@ TSC emulation issues. Please refer to this document for detailed information.
 
 * KVM
 
-	TBD
+	On the latest Linux guest OS, KVM uses kvmclock driver by default.
+
+	* Try for perfect synchronization where possible
+	* Use TSC stabilization techniques
+	* No frequency compensation
+	* No TSC trapping, userspace rdstc is imperfect
+	* Map pvclock and run kvmclock from VDSO/vsyscalls for gettimeofday()
+
+	The drawbacks of kvmclock is that user space TSC read will still have the problem. Because user space rdtsc could not
+	be fixed by kvmclock and the only way to fix it is TSC emulation/trap.
+
+	For the legacy OS with kvmclock driver, KVM guest seemed to run rdtsc natively without emulation.
+
+	However, I did not see KVM code has supported TSC trap here. The 
+	I just found [an old kernel patch to support TSC trap](https://lkml.org/lkml/2011/1/6/90).
+	But I have not found that it got merged into Linux mainline.
+
+	For above reasons, I think a rdtsc sensitive application running over Linux guest would be problematic.
+	Still need more investigations here. :-(
 
 * Xen
 
