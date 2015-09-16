@@ -100,11 +100,21 @@ strange TSC behaviors due to some known pitfalls.
 	
 ##Known TSC pitfalls
 
-###TSC unsafe hardware
+###TSC unstable hardware
 
 1. TSC increments differently on different Intel processors
 
 	Intel CPUs have 3 sort of TSC behaviors,
+
+    * Variant TSC
+
+    The first generation of TSC, the TSC increments could be impacted by CPU frequency changes.
+	This is started from a very old processors (P4).
+
+	* Constant TSC
+
+    The TSC increments at a constant rate, even CPU frequency get changed. But the TSC could be stopped when CPU run into
+	deep C-state. Constant TSC is supported before Nehalem, and not as good as invariant TSC.
 
 	* Invariant TSC
 
@@ -113,19 +123,21 @@ strange TSC behaviors due to some known pitfalls.
 
 	See Intel 64 Architecture SDM Vol. 3A "17.12.1 Invariant TSC".
 
-	* Constant TSC
+	Linux defines serveral CPU feature bits per CPU differences,
 
-    The TSC increments at a constant rate, even CPU frequency get changed. But the TSC could be stopped when CPU run into
-	deep C-state. Constant TSC is supported before Nehalem, and not as good as invariant TSC.
+	* X86_FEATURE_TSC
 
-    * Variant TSC
+	The TSC is available in CPU.
 
-    The first generation of TSC, the TSC increments could be impacted by CPU frequency changes.
-	This is started from a very old processors (P4).
+	* X86_FEATURE_CONSTANT_TSC
 
+	When CPU has a constant TSC.	
 
-	Linux kernel defined a cpu feature flag CONSTANT_TSC for Constant TSC, and CONSTANT_TSC plus NONSTOP_TSC combinations
-	for Invariant TSC.
+	* X86_FEATURE_NONSTOP_TSC
+
+	When CPU does not stop for C-state.
+
+	The CONSTANT_TSC and NONSTOP_TSC flag combinations are enabled for invariant TSC.
 	Please refer to [this kernel patch](https://github.com/torvalds/linux/commit/40fb17152c50a69dc304dd632131c2f41281ce44)
 	for implementation.
 
@@ -148,7 +160,12 @@ strange TSC behaviors due to some known pitfalls.
 		$ cat  /proc/cpuinfo | grep -E "constant_tsc|nonstop_tsc"
 
 
-	Because no CPU feature flags could be used to ensure TSC reliability. The TSC sync test is the only way to test TSC
+	* X86_FEATURE_TSC_RELIABLE
+
+	A synthetic flag, TSC sync checks are skipped.
+
+	CPU feature bits can only indicate the TSC stability in a UP system. For a SMP system, there are no expliect ways could be
+	used to ensure TSC reliability. The TSC sync test is the only way to test SMP TSC reliability.
 	reliability. However, some virtualization solution does provide good TSC sync mechanism. In order to handle some false
 	positive test results, VMware create a new synthetic
 	[TSC_RELIABLE feature bit](https://github.com/torvalds/linux/commit/b2bcc7b299f37037b4a78dc1538e5d6508ae8110)
@@ -159,7 +176,6 @@ strange TSC behaviors due to some known pitfalls.
 
 	If we could get the feature bit set on CPU, we should be able to trust the TSC source on this platform. But keep in
 	mind, software bugs in TSC handling still could cause the problems.
-
 
 2. TSC sync behavior differences on Intel SMP system
 
@@ -213,7 +229,6 @@ strange TSC behaviors due to some known pitfalls.
 	As TSC value is writeable, firmware code could change TSC value that caused TSC sync issue in OS.
 	There is [a LKML discussion](https://lwn.net/Articles/388286/) mentioned some BIOS SMI handler try to hide its execution
 	by changing TSC value.
-
 
 5. Hardware erratas
 
@@ -328,7 +343,8 @@ Per hypervisors differences, the rdtsc instruction could be executed with follow
 	- Para virtualization
 
 	In order to optimize the rdtsc performance, some hypervisor provided PVRDTSCP which allows software in VM could be
-	paravirtualized (modified) for better performance.
+	paravirtualized (modified) for better performance. If user applications in VM directly issue the rdtsc instruction,
+	the para virtulziation solution can not work.
 
 3. Hybrid - correct but potentially slow
 
@@ -408,7 +424,6 @@ TSC emulation issues. Please refer to this document for detailed information.
 	But I have not found that it got merged into Linux mainline.
 
 	For above reasons, I think a rdtsc sensitive application running over Linux guest would be problematic.
-	Still need more investigations here. :-(
 
 * Xen
 
