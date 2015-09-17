@@ -346,10 +346,10 @@ to access TSC register while the task is running on a vCPU.
 Comparing with physical problems, the virtualization introduced more challenges regarding to TSC sync.
 For example, VM live migration may cause TSC sync problems if source and target hosts are different from hardware and software levels,
 
-	- Platform type differences (Intel vs AMD)
-	- CPU frequency (TSC increase rate)
-	- CPU boot time (TSC initial values)
-	- Hypervisor version differences
+- Platform type differences (Intel vs AMD)
+- CPU frequency (TSC increase rate)
+- CPU boot time (TSC initial values)
+- Hypervisor version differences
 
 So the behaviors of TSC sync on different hypervisors could cause the TSC sync problems.
 
