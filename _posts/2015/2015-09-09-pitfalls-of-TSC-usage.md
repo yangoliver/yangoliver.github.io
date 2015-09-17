@@ -123,7 +123,7 @@ strange TSC behaviors due to some known pitfalls.
 
 	See Intel 64 Architecture SDM Vol. 3A "17.12.1 Invariant TSC".
 
-	Linux defines serveral CPU feature bits per CPU differences,
+	Linux defines several CPU feature bits per CPU differences,
 
 	* X86_FEATURE_TSC
 
@@ -164,12 +164,12 @@ strange TSC behaviors due to some known pitfalls.
 
 	A synthetic flag, TSC sync checks are skipped.
 
-	CPU feature bits can only indicate the TSC stability in a UP system. For a SMP system, there are no expliect ways could be
+	CPU feature bits can only indicate the TSC stability in a UP system. For a SMP system, there are no explicit ways could be
 	used to ensure TSC reliability. The TSC sync test is the only way to test SMP TSC reliability.
-	reliability. However, some virtualization solution does provide good TSC sync mechanism. In order to handle some false
+	However, some virtualization solution does provide good TSC sync mechanism. In order to handle some false
 	positive test results, VMware create a new synthetic
 	[TSC_RELIABLE feature bit](https://github.com/torvalds/linux/commit/b2bcc7b299f37037b4a78dc1538e5d6508ae8110)
-	in Linux kernel to bypass TSC sync testing. This flag is also used by other kernel components to by pass TSC sync
+	in Linux kernel to bypass TSC sync testing. This flag is also used by other kernel components to bypass TSC sync
 	testing. Below command could be used to check this new synthetic CPU feature,
 
 		$ cat  /proc/cpuinfo | grep "tsc_reliable"
@@ -346,7 +346,7 @@ to access TSC register while the task is running on a vCPU.
 Comparing with physical problems, the virtualization introduced more challenges regarding to TSC sync.
 For example, VM live migration may cause TSC sync problems if source and target hosts are different from hardware and software levels,
 
-- Platform type differences (Intel vs AMD)
+- Platform type differences (Intel vs AMD, reliable vs unreliable)
 - CPU frequency (TSC increase rate)
 - CPU boot time (TSC initial values)
 - Hypervisor version differences
@@ -425,7 +425,6 @@ VMware also provides
 [Timekeeping in VMware Virtual Machines](http://www.vmware.com/files/pdf/Timekeeping-In-VirtualMachines.pdf) to discuss
 TSC emulation issues. Please refer to this document for detailed information.
 
-
 * Hyper-V
 
 	Hyper-V does not provide TSC emulation. For this reason, TSC on hyper-V is not reliable. But the problem is, hyper-V
@@ -474,13 +473,13 @@ TSC emulation issues. Please refer to this document for detailed information.
    TSC usage will cause software porting bugs cross various x86 platforms or different hypervisors.
    Leverage syscall or vsyscall will make software portable, especially for Virtualization environment.
 
-2. If you have to use it, you must understand the risks from hardware, OS kernel, hypervisors.
+2. If you have to use it, please make your application "TSC-resilient".
 
    Use it for debugging, but never use rdtsc in functional area.
    
    As we mentioned above, Linux kernel also had hard time to handle it until today. If possible, learn from Linux code first.
    Perf measurement and debug facility might be only usable cases, but be prepare for handling various conner cases
    and software porting problems.
- 
-   Please make sure you can write a "TSC-resilient" application, which make sure your application still can behave
-   correctly when TSC value is wrong.
+
+   Understand the risks from hardware, OS kernel, hypervisors. Write a "TSC-resilient" application, which make sure your
+   application still can behave correctly when TSC value is wrong.
