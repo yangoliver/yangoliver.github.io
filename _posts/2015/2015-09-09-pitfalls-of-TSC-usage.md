@@ -224,13 +224,34 @@ strange TSC behaviors due to some known pitfalls.
 	See unsynchronized_tsc code in [tsc.c](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/tsc.c).
 	LKML also has the [AMD documents](https://lkml.org/lkml/2005/11/4/173).
 
-4. Firmware problems
+4. CPU hotplug
+
+	CPU hotplug will introduce a new CPU which may not have synchronized TSC values than existing CPUs. 
+	In theory, either system software, BIOS, or SMM code could do TSC sync for CPU hotplug.
+
+	In Linux kernel CPU hotplug code path, it will check tsc sync and may disable tsc clocksource by calling mark_tsc_unstable.
+	Linux kernel used to have TSC sync algorithm by using write_tsc call. But recent Linux code already removed the implementation
+	due to the sync code because there is no reliable software mechanism to make sure TSC values are exactly same by issuing multiple
+	instructions to multiple CPUs at exactly same time.
+
+	For this reason, per my understandings, Linux TSC sync on CPU hotplug scenario depends on hardware/firmware behaviors.
+
+
+5. Misc firmware problems
 
 	As TSC value is writeable, firmware code could change TSC value that caused TSC sync issue in OS.
+
 	There is [a LKML discussion](https://lwn.net/Articles/388286/) mentioned some BIOS SMI handler try to hide its execution
 	by changing TSC value.
 
-5. Hardware erratas
+	Another example is related firmware behaviors in power management handling.As we mentioned earlier, CPU which has "Invariant TSC"
+	feature could avoid TSC rate changes during CPU deep C-state changes. However, some x86 firmware implementation change the
+	TSC value in its TSC sync implementation. In this case, TSC sync work from firmware, but could break from software perspective.
+	Linux kernel has to create
+	[a patch to handle ACPI suspend/resume](https://github.com/yangoliver/linux/commit/cd7240c0b900eb6d690ccee088a6c9b46dae815a)
+	to make sure TSC sync still works in OS.
+
+6. Misc hardware erratas
 
 	TSC sync functionality was highly depends on board manufacturer design. For example, clock source reliability issues.
 	I used to encountered a hardware errata caused by unreliable clock source. Due to the errata, Linux kernel TSC sync
