@@ -339,11 +339,21 @@ strange TSC behaviors due to some known pitfalls.
 
 ###TSC emulation on different hypervisors
 
-Virtualization technology caused the lot of challenges for guest OS time keeping. This section just cover the cases
-that host could detect the TSC clock source, and guest software may TSC sensitive and try to issue rdtsc instruction
+Virtualization technology caused the lots of challenges for guest OS time keeping. This section just cover the cases
+that host could detect the TSC clock source, and guest software might be TSC sensitive and try to issue rdtsc instruction
 to access TSC register while the task is running on a vCPU.
 
-Per hypervisors differences, the rdtsc instruction could be executed with following ways,
+Comparing with physical problems, the virtualization introduced more challenges regarding to TSC sync.
+For example, VM live migration may cause TSC sync problems if source and target hosts are different from hardware and software levels,
+
+	- Platform type differences (Intel vs AMD)
+	- CPU frequency (TSC increase rate)
+	- CPU boot time (TSC initial values)
+	- Hypervisor version differences
+
+So the behaviors of TSC sync on different hypervisors could cause the TSC sync problems.
+
+Per hypervisors differences, the rdtsc instruction and TSC sync could be addressed with following ways,
 
 1. Native or pass-through - fast but potentially incorrect
 
@@ -444,7 +454,9 @@ TSC emulation issues. Please refer to this document for detailed information.
 	I just found [an old kernel patch to support TSC trap](https://lkml.org/lkml/2011/1/6/90).
 	But I have not found that it got merged into Linux mainline.
 
-	For above reasons, I think a rdtsc sensitive application running over Linux guest would be problematic.
+	For above reasons, I think a rdtsc sensitive application running over KVM Linux guest would be problematic.
+	KVM actually has [a kernel documentation](https://github.com/yangoliver/linux/blob/master/Documentation/virtual/kvm/timekeeping.txt)
+	about the timekeeping, but the document does not have enough information about KVM implemenation.
 
 * Xen
 
