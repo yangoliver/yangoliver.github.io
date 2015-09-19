@@ -79,20 +79,21 @@ body>div {
     border-top: 6px solid #EE0000;
 }
 h1 {
-    font-size: 28px;
-    line-height: 30px;
+    font-size: 30px;
+    line-height: 44px;
     margin: 0 0 28px 0;
 	background-color: #46aa6e;
 	color: #fff;
 	display: inline-block;
-	padding: 12px;
+	padding: 8px;
 }
 h2 {
-    font-size: 24px;
+    font-size: 26px;
     line-height: 42px;
     margin: 0 0 24px 0;
 	background-color: #64a050;
 	color: #fff;
+	padding: 0 0 0 5px;
 }
 h2 i {
 	font-size: 18px;
@@ -100,10 +101,20 @@ h2 i {
 	color: #fff;
 }
 h3 {
-    font-size: 20px;
-    line-height: 30px;
+    font-size: 22px;
+    line-height: 40px;
+    margin: 0 0 20px 0;
 	background-color: #46783c;
 	color: #fff;
+	padding: 0 0 0 5px;
+}
+h4 {
+    font-size: 18px;
+    line-height: 38px;
+    margin: 0 0 16px 0;
+	background-color: #284628;
+	color: #fff;
+	padding: 0 0 0 5px;
 }
 section>h3 {
     margin: 0 0 24px 0;
