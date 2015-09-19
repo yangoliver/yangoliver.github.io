@@ -398,7 +398,10 @@ VMware uses the hybrid algorithm to make sure TSC got synced even if underlaying
 For hardware with good TSC sync support, the rdtsc emulation could get good performance. But when hardware could not
 give TSC sync support, TSC emulation would be slower.
 
-In Linux guest, VMware creates a new synthetic TSC_RELIABLE feature bit to make sure it could by pass Linux TSC sync testing.
+However, VMware TSC emulation could not ensure there is no marginal TSC skew happen between CPUs. For this reason, Linux
+boot TSC sync check may fail.
+
+For this reason, in Linux guest, VMware creates a new synthetic TSC_RELIABLE feature bit to bypass Linux TSC sync testing.
 Linux [VMware cpu detect code] gives the good comments about TSC sync testing issues,
 
 	/*
@@ -418,6 +421,7 @@ Linux [VMware cpu detect code] gives the good comments about TSC sync testing is
 		set_cpu_cap(c, X86_FEATURE_CONSTANT_TSC);
 		set_cpu_cap(c, X86_FEATURE_TSC_RELIABLE);
 	}
+
 
 The [patch](https://github.com/torvalds/linux/commit/eca0cd028bdf0f6aaceb0d023e9c7501079a7dda) got merged in Linux 2.6.29.
 
@@ -455,7 +459,7 @@ TSC emulation issues. Please refer to this document for detailed information.
 
 	For above reasons, I think a rdtsc sensitive application running over KVM Linux guest would be problematic.
 	KVM actually has [a kernel documentation](https://github.com/yangoliver/linux/blob/master/Documentation/virtual/kvm/timekeeping.txt)
-	about the timekeeping, but the document does not have enough information about KVM implemenation.
+	about the timekeeping, but the document does not have enough information about KVM implementation.
 
 * Xen
 
@@ -464,7 +468,17 @@ TSC emulation issues. Please refer to this document for detailed information.
 	By default Xen 4.0 use the hybrid mode. [This Xen document](http://xenbits.xen.org/docs/4.2-testing/misc/tscmode.txt)
 	gives very detailed discussion about TSC emulation.
 
+Overall, VMware and Xen seems provide best solution for TSC sync. The KVM PV emulation never addresses user space rdtsc
+use case problems. And hyper-V has no TSC sync solution. All these TSC sync solutions just provide the way that let Linux
+kernel TSC clocksource continuously work. The tiny TSC skew may still be observed in VM although TSC sync is supported by
+some hypervisors. Thus application may still have a wrong TSC duration for time measurement.
+
 ##Conclusion
+
+Linux kernel could detect TSC sync problem and try to be "TSC-resilient". The major problem is in user application.
+There is no reliable TSC sync mechanism for user application especially under a Virtualization environment.
+
+Here are the suggestions,
 
 1. If possible, avoid to use rdtsc in user applications.
 
