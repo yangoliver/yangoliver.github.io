@@ -477,7 +477,6 @@ some hypervisors. Thus application may still have a wrong TSC duration for time 
 
 Linux kernel could detect TSC sync problem and try to be "TSC-resilient". The major problem is in user application.
 There is no reliable TSC sync mechanism for user application especially under a Virtualization environment.
-
 Here are the suggestions,
 
 1. If possible, avoid to use rdtsc in user applications.
