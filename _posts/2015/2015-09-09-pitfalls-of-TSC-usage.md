@@ -204,7 +204,7 @@ For example, on SGI UV systems, the TSC is not synchronized across blades.
 [A patch provided by SGI](https://github.com/torvalds/linux/commit/14be1f7454ea96ee614467a49cf018a1a383b189) tries to
 disable TSC clock source for this kind of platform.
 
-Overall, even a CPU has "Invariant TSC" feature, but the SMP system still can not provide reliable TSC.
+Even if a CPU has "Invariant TSC" feature, but the SMP system still can not provide reliable TSC.
 For this reason, Linux kernel has to rely on some
 [boot time or runtime testing](https://github.com/torvalds/linux/commit/95492e4646e5de8b43d9a7908d6177fb737b61f0)
 instead of just detect CPU capabilities. The test sync test code used to have TSC value fix up code by calling write_tsc
@@ -217,9 +217,6 @@ If TSC sync test passed during Linux kernel boot, following sysfs file would exp
 	$ cat /sys/devices/system/clocksource/clocksource0/current_clocksource
 	tsc
 
-User application who relies on TSC usage may check this file to confirm whether TSC is reliable or not. However,
-per the root causes of TSC problems, kernel may not able to test out all of unreliable cases. It is still possible
-that TSC clock had the problem, and application developers need to handle all of them without kernel helps.
 
 #### 3.1.3 Non-intel platform
 
@@ -265,20 +262,24 @@ reported error messages and disabled TSC as clock source.
 [Another LKML discussion](https://lwn.net/Articles/388188/) also mentioned that SMP TSC drift in the clock signals
 due to temperature problem. This finally could cause Linux detected the TSC wrap problems.
 
-Overall, TSC sync capability are not easy to be supported by x86 platform vendors. Under Linux, We can use following two steps to
+#### 3.1.7 Summary
+
+TSC sync capability are not easy to be supported by x86 platform vendors. Under Linux, We can use following two steps to
 check the platform capabilities,
 
 * Check CPU capability flags
 
-  The flags are exported via /proc/cpuinfo, please refer to section 3.1.1.
-  Please note that VMware guest VM have a special flag.
+  For exmaple, check /proc/cpuinfo under Linux or using cpuid instruction.
+  Please refer to section 3.1.1. Note that VMware guest VM have a special flag.
 
-* Check current clock source
+* Check current kernel clock source
 
-  The clock source is exported in /sys/devices/system/clocksource/clocksource0/current_clocksource. Please refer to section 3.1.2.
+  Please refer to section 3.1.2.
 
-Please note that Linux may switch clock source from tsc to others on the fly if kernel detects the TSC sync issues. Above two steps just
-can ensure your platform is likely a TSC safe problem, but hardware or firmware bugs could be hit at run time.
+User application who relies on TSC sync may do above two steps check to confirm whether TSC is reliable or not. However,
+per the root causes of TSC problems, kernel may not able to test out all of unreliable cases. For example, it is still
+possible that TSC clock had the problem during runtime. In this case, Linux may switch clock source from tsc to others
+on the fly.
 
 ### 3.2 Software TSC usage bugs
 
@@ -489,7 +490,9 @@ Below is detailed information about the TSC support on various hypervisors,
 	By default Xen 4.0 use the hybrid mode. [This Xen document](http://xenbits.xen.org/docs/4.2-testing/misc/tscmode.txt)
 	gives very detailed discussion about TSC emulation.
 
-Overall, VMware and Xen seems provide best solution for TSC sync. The KVM PV emulation never addresses user space rdtsc
+#### 3.3.3 Summary
+
+VMware and Xen seems provide best solution for TSC sync. The KVM PV emulation never addresses user space rdtsc
 use case problems. And hyper-V has no TSC sync solution. All these TSC sync solutions just provide the way that let Linux
 kernel TSC clocksource continuously work. The tiny TSC skew may still be observed in VM although TSC sync is supported by
 some hypervisors. Thus application may still have a wrong TSC duration for time measurement.
