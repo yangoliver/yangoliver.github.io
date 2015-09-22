@@ -265,6 +265,21 @@ reported error messages and disabled TSC as clock source.
 [Another LKML discussion](https://lwn.net/Articles/388188/) also mentioned that SMP TSC drift in the clock signals
 due to temperature problem. This finally could cause Linux detected the TSC wrap problems.
 
+Overall, TSC sync capability are not easy to be supported by x86 platform vendors. Under Linux, We can use following two steps to
+check the platform capabilities,
+
+* Check CPU capability flags
+
+  The flags are exported via /proc/cpuinfo, please refer to section 3.1.1.
+  Please note that VMware guest VM have a special flag.
+
+* Check current clock source
+
+  The clock source is exported in /sys/devices/system/clocksource/clocksource0/current_clocksource. Please refer to section 3.1.2.
+
+Please note that Linux may switch clock source from tsc to others on the fly if kernel detects the TSC sync issues. Above two steps just
+can ensure your platform is likely a TSC safe problem, but hardware or firmware bugs could be hit at run time.
+
 ### 3.2 Software TSC usage bugs
 
 #### 3.2.1 Overflow issues in TSC calculation
