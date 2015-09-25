@@ -269,7 +269,7 @@ check the platform capabilities,
 
 * Check CPU capability flags
 
-  For exmaple, check /proc/cpuinfo under Linux or using cpuid instruction.
+  For example, check /proc/cpuinfo under Linux or using cpuid instruction.
   Please refer to section 3.1.1. Note that VMware guest VM have a special flag.
 
 * Check current kernel clock source
