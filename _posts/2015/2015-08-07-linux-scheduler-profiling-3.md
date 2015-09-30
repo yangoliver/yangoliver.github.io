@@ -9,30 +9,50 @@ tags:
 
 ##Fine granularity latency analysis
 
-###Background
+### 1. Challenges of OS latency analysis
 
-1. Challenges of OS latency analysis
+For most of user application developers, to dig out the root cause of code latency is kind of challenge, because following issues need to be addressed,
 
-	For most of user application developers, to dig out the root cause of code latency is kind of challenge in real world because,
+* How to define the latency issue clearly
 
-	* How to avoid trial-and-error overheads
+  People may not have common sense about bad latency value. Furthermore, different latency causes require to collect different debug information.
+  It is not easy to define a perf latency problem by collecting all proper debug information one time.
 
-	  Latency root causes could be various, and not easy to guess.
+* How to avoid trial-and-error overheads
 
-	* When latency issues are related to system call latency.
+  Latency root causes could be various, and repeat trial-and-error process is painful.
 
-	  Especially the system call latency is worked as async mode, more than one process context got involved.
-	  Or the sync mode system call just has very complicate code path, difficult to understand by non-expert.
+* How to debug latency issue at fine granularity
 
-	* When latency issues could be only debugged at fine granularity.
+  Most of people are familiar with system level tools, which could not help on function level latency issue.
 
-	  This might be very common, the issues just happen in a small piece of function, but it is difficult to do the perf profiling
-	  at function level. For example, the function is scheduled with user space threads pool, but your Linux version does not support
-	  the feature like ```uprobe```, which allows trace user space function dynamically. Or, the OS is very old, cannot support dynamic
-	  tracing functionalities.
+### 2. Latency breakdown
 
-	* Perf bug reproduce cost is high
+For any of Linux threads/processes, it should be always under one of 3 status below,
 
-	  When a perf bug could not be reproduced by a micro-benchmark, which means bug reproduce and debug cost are quite high.
+1. Running on CPU
+2. Waiting on per-CPU run queue, ready for scheduling
+3. Under sleep status, may be woken up later
 
-2. TBD.
+Then the latency breakdown could be,
+
+<pre>Latency = CPU run time + Run queue wait time + Sleep time</pre>
+
+When we do latency bug triage, if we can always get latency breakdown with this way, that would give people a clear problem definition and debug
+direction.
+
+#### 2.1 CPU run time
+
+TBD
+
+#### 2.2 Run queue wait time
+
+TBD
+
+#### 2.3 Sleep time
+
+TBD
+
+### 3. Implementation
+
+TBD
