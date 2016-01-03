@@ -15,7 +15,7 @@ Docker无疑是近两年来最火热的技术话题之一。而且落地速度�
 
 于是就有了研究Docker的想法, 虽然和目前工作无关。
 
-随后一周内写出了[Docker Use Case Summary](https://github.com/yangoliver/mydoc/blob/master/share/docker_use_case_summary.pdf)
+随后一周内写出了[Docker Use Case Summary](https://github.com/yangoliver/mydoc/raw/master/share/docker_use_case_summary.pdf)
 这个文档。里面总结了8个常见的docker use case。因为是新手，可能理解并不充分和全面。后续会随着认识加深不断
 更新这个文档。
 
