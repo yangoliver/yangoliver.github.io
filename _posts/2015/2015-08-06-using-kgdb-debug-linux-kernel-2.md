@@ -2,7 +2,7 @@
 layout: post
 title: Using kdb/kgdb debug Linux kernel - 2
 categories:
-- [English, OS]
+- [English, Software]
 tags:
 - [kgdb, kernel, linux]
 ---

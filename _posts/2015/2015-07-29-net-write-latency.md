@@ -2,7 +2,7 @@
 layout: post
 title: Network write system call latency
 categories:
-- [English, OS]
+- [English, Software]
 tags:
 - [network, perf, linux]
 ---

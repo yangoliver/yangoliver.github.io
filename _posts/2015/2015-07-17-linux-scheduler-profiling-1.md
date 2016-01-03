@@ -2,7 +2,7 @@
 layout: post
 title: Linux scheduler profiling - 1
 categories:
-- [English, OS]
+- [English, Software]
 tags:
 - [scheduler, perf, kernel, linux]
 ---

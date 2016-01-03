@@ -2,7 +2,7 @@
 layout: post
 title: Pitfalls of TSC usage
 categories:
-- [English, OS, Hardware]
+- [English, Software, Hardware]
 tags:
 - [perf, kernel, linux, virtualization, hardware]
 ---

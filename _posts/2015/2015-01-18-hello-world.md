@@ -2,7 +2,7 @@
 layout: post
 title: Hello World
 categories:
-- Chinese
+- [Chinese, Life]
 tags:
 - [misc]
 ---

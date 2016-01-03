@@ -2,7 +2,7 @@
 layout: post
 title: Linux Crash Utility - my patches
 categories:
-- [English, OS]
+- [English, Software]
 tags:
 - [crash]
 ---

@@ -2,7 +2,7 @@
 layout: post
 title: First experiences on Github
 categories:
-- [English, OS]
+- [English, Software]
 tags:
 - [irqbalance, perf]
 ---

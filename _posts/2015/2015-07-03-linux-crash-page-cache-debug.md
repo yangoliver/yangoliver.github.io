@@ -2,7 +2,7 @@
 layout: post
 title: Linux Crash Utility - page cache debug
 categories:
-- [English, OS]
+- [English, Software]
 tags:
 - [crash, kernel, linux]
 ---

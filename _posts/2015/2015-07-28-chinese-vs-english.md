@@ -2,7 +2,7 @@
 layout: post
 title: Chinese VS. English
 categories:
-- [Chinese]
+- [Chinese, Life]
 tags:
 - [misc]
 ---

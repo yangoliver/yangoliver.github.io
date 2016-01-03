@@ -2,7 +2,7 @@
 layout: post
 title: Python and irqstat
 categories:
-- [English, OS]
+- [English, Software]
 tags:
 - [irqbalance, perf, python]
 ---
