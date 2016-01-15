@@ -18,6 +18,6 @@ My personal interests are in following areas,
 Contact info,
 
 - Email: yangoliver ~~at~~ gmail ~~dot~~ com
+- Blog: <http://oliveryang.net>
 - Github: <http://github.com/yangoliver>
-- Homepage: <http://oliveryang.net>
 - Linkedin: <https://www.linkedin.com/in/yayong>
