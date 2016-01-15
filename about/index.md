@@ -19,5 +19,5 @@ Contact info,
 
 - Email: yangoliver ~~at~~ gmail ~~dot~~ com
 - Github: <http://github.com/yangoliver>
-- Blog: <http://yangoliver.github.io>
+- Homepage: <http://oliveryang.net>
 - Linkedin: <https://www.linkedin.com/in/yayong>
