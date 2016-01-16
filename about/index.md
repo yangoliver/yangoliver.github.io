@@ -15,9 +15,14 @@ My personal interests are in following areas,
    * OS: Linux/Unix kernel, virtualization, perfromance, scale out architecture
    * Solutions: server, storage, cloud computing
 
-Contact info,
+##Contact
 
 - Email: yangoliver ~~at~~ gmail ~~dot~~ com
 - Blog: <http://oliveryang.net>
 - Github: <http://github.com/yangoliver>
 - Linkedin: <https://www.linkedin.com/in/yayong>
+
+	
+##Wechat Public Account
+
+![Please scan it by your phone](/media/images/wechat_account.jpg)
