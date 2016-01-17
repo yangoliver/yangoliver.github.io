@@ -36,9 +36,230 @@ Samplefs的源代码可以到[samba.org](http://svn.samba.org/samba/ftp/cifs-cvs
 
 整个实现中，file_system_type结构是关键数据结构，模块的代码去要初始化该结构里必要的成员。
 
-##2. 编译samplefs
+##2. 编译和加载samplefs
 
-编译模块前，先编译内核源代码。由于开发环境是Fedroa22，所以内核源代码的编译可以通过下载对应版本的源码rpm来完成。源码的下载
-和编译过程参考了[在Fedora 20环境下安装系统内核源代码](http://www.cnblogs.com/kuliuheng/p/3976780.html)这篇文章。
+本节讲述编译samplefs day1的详细步骤。
 
-TBD.
+###2.1 准备内核源码
+
+编译模块前，需要先编译内核源代码。由于开发环境是Fedroa22，所以内核源代码的编译可以通过下载对应版本的源码rpm来完成。Fedora源码
+的下载和编译过程参考了[在Fedora 20环境下安装系统内核源代码](http://www.cnblogs.com/kuliuheng/p/3976780.html)这篇文章。
+
+###2.2 编译内核
+
+Samplefs需要修改fs/Kconfig文件。可以直接通过打
+[Kconfig.diff patch](https://github.com/yangoliver/lktm/blob/master/fs/samplefs/Kconfig.diff)来修改。由于samplefs的代码不支
+持我的3.19.8内核，所以做了一些[修改](https://github.com/yangoliver/lktm/commit/3f532c7b8fab0f275014eb097350dfc6d7663cef#diff-baf703407d18a8fc164164f39e33b3c9)。
+
+然后在内核源代码顶层目录下运行，
+
+	$make menuconfig
+
+选择**File systems**，然后找到**Sample Filesystem (Experimental)**，选择**[M]**，表示编译成内核模块。最后返回保存设置。
+
+运行`make all`后，内核编译开始，需要一直等待编译结束。
+
+###2.3 编译samplefs模块
+
+内核编译完成后，可以在同一目录下继续编译samplefs模块，
+
+	$ make M=/ws/lktm/fs/samplefs/day1
+
+由于samplefs是为早期内核版本开发的，因此直接编译会有错误。最主要的原因是数据结构file_system_type在新老内核版本中的定义被修改
+了。原来结构体中的.get_sb被修改为.mount，接口和代码的实现都有所不同。为了支持3.19.8，需要重新实现.mount的函数，因此做了一些
+[新的改动](https://github.com/yangoliver/lktm/commit/e5f50a26df7faf2e7fb96da7d241539fa5e35597#diff-57116b78c8dc087dcd2b746b39b1290b)。
+有了这个改动，内核模块的编译就可以成功了。
+
+###2.4 加载sampelfs
+
+加载samplefs时，遇到了下面的错误，
+
+	$ sudo insmod samplefs.ko
+	insmod: ERROR: could not insert module samplefs.ko: Invalid module format
+
+查看dmesg输出，得到下面的错误日志，
+
+	[9781550.242445] samplefs: version magic '3.19.8 SMP mod_unload ' should be '3.19.8-100.fc20.x86_64 SMP mod_unload '
+
+貌似正在运行的内核和当前内核源码不是完全匹配的，所以导致模块和内核版本不匹配问题。`modprobe -force`貌似可以解决这个问题，不
+过不打算把模块copy到默认加载路径，所以用以下方式做了workaround，
+
+* 打开当前内核源码的头文件，把UTS_RELEASE修改成为当前运行内核的版本字符串，
+
+	$ vi include/generated/utsrelease.h
+
+	#define UTS_RELEASE "3.19.8-100.fc20.x86_64"
+
+重新编译模块，再次加载，终于成功。加载成功后内核日志有新的错误，
+
+	[9782053.072278] samplefs: module license 'unspecified' taints kernel.
+	[9782053.072282] Disabling lock debugging due to kernel taint
+	[9782053.072364] samplefs: module verification failed: signature and/or  required key missing - tainting kernel
+
+显然，这是原有samplefs没有声明模块的License导致的，新内核对GPL License的检查越来越严厉了，连lock debug干脆都给关掉了。于是，
+给代码增加[GPL Module License](https://github.com/yangoliver/lktm/commit/8a2779aaf0bbebd1f96930d16fdf7186d21baf5c)，错误消息
+被解决。
+
+至此，samplefs已经正确的加载到内核,
+
+	$ lsmod | grep samplefs
+	samplefs               12511  0
+
+
+
+##3. 关键数据结构
+
+###3.1 file_system_type - 文件系统类型结构
+
+即然Linux支持70多种文件系统，那么必然要有一个数据结构来描述正在内核中运行的文件系统类型，这就是file_system_type结构，
+
+	struct file_system_type {
+		const char *name;		/* 文件系统名字*/
+		int fs_flags;			/* 文件mount时用到的标志位*/
+	#define FS_REQUIRES_DEV		1
+	#define FS_BINARY_MOUNTDATA	2
+	#define FS_HAS_SUBTYPE		4
+	#define FS_USERNS_MOUNT		8	/* Can be mounted by userns root */
+	#define FS_USERNS_DEV_MOUNT	16 /* A userns mount does not imply MNT_NODEV */
+	#define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move() during rename() internally. */
+		struct dentry *(*mount) (struct file_system_type *, int,	/* mount文件系统时调用的人口函数*/
+			       const char *, void *);
+		void (*kill_sb) (struct super_block *);						/* umount文件系统时调用的入口函数*/
+		struct module *owner;										/* 指向这个文件系统模块数据结构的指针*/
+		struct file_system_type * next;								/* 全局文件系统类型链表的下一个文件系统类型节点*/
+		struct hlist_head fs_supers;								/* 本文件系统的所有超级款的链表表头*/
+
+		struct lock_class_key s_lock_key;							/* LOCKDEP 所需的数据结构，lock debug特性打开才有用*/
+		struct lock_class_key s_umount_key;							/* 同上*/
+		struct lock_class_key s_vfs_rename_key;						/* 同上*/
+		struct lock_class_key s_writers_key[SB_FREEZE_LEVELS];		/* 同上*/
+
+		struct lock_class_key i_lock_key;							/* 同上*/
+		struct lock_class_key i_mutex_key;							/* 同上*/
+		struct lock_class_key i_mutex_dir_key;						/* 同上*/
+	};
+
+以上代码来自3.19.8-100.fc20的源代码，关键的结构成员都用中文做了注释。
+
+那么samplefs day1的代码是如何写的呢？
+
+	static struct file_system_type samplefs_fs_type = {
+		.owner = THIS_MODULE,							/* 和所有Linux模块一样*/
+		.name = "samplefs",								/* samplefs的名字*/
+	#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,39)		/* 2.6.39内核后，mount文件系统后，入口函数是.mount, 以前是.get_sb */
+		.mount = samplefs_mount,						/* 初始化mount的入口函数为samplefs_mount */
+	#else
+		.get_sb = samplefs_get_sb,						/* 老内核的入口函数初始化，可忽略*/
+	#endif
+		.kill_sb = kill_anon_super,						/* umount时入口函数，用内核默认函数释放超级块*/
+		/*  .fs_flags */
+	};
+
+###3.2 实验和调试
+
+如果利用crash，我们可以遍历文件系统的全局链表，并且找到samplefs的对应节点。若需要了解Linux Crash，可查看
+[Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background)这篇文章。
+
+* 首先，crash默认并不加载模块调式信息，因此在实验之前，需要手动加载samplefs模块，
+
+	crash> mod -s samplefs /ws/lktm/fs/samplefs/day1/samplefs.ko
+	     MODULE       NAME                        SIZE  OBJECT FILE
+	ffffffffa04ec040  samplefs                   12511  /ws/lktm/fs/samplefs/day1/samplefs.ko
+
+	crash> lsmod |grep samplefs
+	ffffffffa04ec040  samplefs                   12511  /ws/lktm/fs/samplefs/day1/samplefs.ko
+
+* 然后，用crash去遍历文件系统类型的全局链表
+
+  首先查看源代码，确定全局链表的符号，然后打印起始地址，
+
+	crash> p file_systems
+	file_systems = $9 = (struct file_system_type *) 0xffffffff81c87660 <sysfs_fs_type>
+
+  没想到我的Fedora 20的VM上竟然有28个文件系统类型，是不是出乎意料呢？
+
+	crash> list file_system_type.next -s file_system_type.name 0xffffffff81c87660 | grep name | wc -l
+	28
+
+  遍历开始，有链表其实地址，.next是链表连接件，要查看的是.name，是可读的字符串，
+
+	crash> list file_system_type.next -s file_system_type.name 0xffffffff81c87660
+	ffffffff81c87660
+	  name = 0xffffffff81a83554 "sysfs"
+	ffffffff81c1b440
+	  name = 0xffffffff81a5c060 "rootfs"
+	ffffffff81c8d960
+	  name = 0xffffffff81a2d869 "ramfs"
+	ffffffff81c82840
+	  name = 0xffffffff81a5c4b2 "bdev"
+	ffffffff81c870c0
+	  name = 0xffffffff81a521a3 "proc"
+	ffffffff81c641c0
+	  name = 0xffffffff81a7c140 "cgroup"
+	ffffffff81c65500
+	  name = 0xffffffff81a5a859 "cpuset"
+	ffffffff81c6cac0
+	  name = 0xffffffff81a8febc "tmpfs"
+	ffffffff81cc5860
+	  name = 0xffffffff81a8feb9 "devtmpfs"
+	ffffffff81c8e0c0
+	  name = 0xffffffff81a60a54 "debugfs"
+	ffffffff81c91e60
+	  name = 0xffffffff81a6a67e "securityfs"
+	ffffffff81cddde0
+	  name = 0xffffffff81ad7b6b "sockfs"
+	ffffffff81c7a100
+	  name = 0xffffffff81a5b8c1 "pipefs"
+	ffffffff81c87a20
+	  name = 0xffffffff81a5e6fb "configfs"
+	ffffffff81c87b40
+	  name = 0xffffffff81a5e83b "devpts"
+	ffffffff81c88900
+	  name = 0xffffffff81a5fbde "ext3"
+	ffffffff81c88940
+	  name = 0xffffffff81a5fbe3 "ext2"
+	ffffffff81c88000
+	  name = 0xffffffff81a5eeec "ext4"
+	ffffffff81c8dc40
+	  name = 0xffffffff81a60790 "hugetlbfs"
+	ffffffff81c8e000
+	  name = 0xffffffff81a607df "autofs"
+	ffffffff81c8e100
+	  name = 0xffffffff81a60a9a "pstore"
+	ffffffff81c8fd60
+	  name = 0xffffffff81a69ce6 "mqueue"
+	ffffffff81c95d00
+	  name = 0xffffffff81a6b00c "selinuxfs"
+	ffffffffa0139460
+	  name = 0xffffffffa012fc17 "rpc_pipefs"
+	ffffffffa01b2360
+	  name = 0xffffffffa01acbdb "nfsd"
+	ffffffffa04c8200
+	  name = 0xffffffffa04c2ac7 "nfs"
+	ffffffffa04c8180
+	  name = 0xffffffffa04c2ac2 "nfs4"
+	ffffffffa04ec000
+	  name = 0xffffffffa04eb024 "samplefs"
+
+  可以看到，samplefs的节点就在最后两行，由此可以打印它的file_system_type的结构内容，
+
+	crash> struct file_system_type ffffffffa04ec000
+	struct file_system_type {
+	  name = 0xffffffffa04eb024 "samplefs",
+	  fs_flags = 0,
+	  mount = 0xffffffffa04ea000 <samplefs_mount>,
+	  kill_sb = 0xffffffff812142d0 <kill_anon_super>,
+	  owner = 0xffffffffa04ec040 <__this_module>,
+	  next = 0x0,
+	  fs_supers = {
+	    first = 0x0
+	  },
+	  s_lock_key = {<No data fields>},
+	  s_umount_key = {<No data fields>},
+	  s_vfs_rename_key = {<No data fields>},
+	  s_writers_key = 0xffffffffa04ec038,
+	  i_lock_key = {<No data fields>},
+	  i_mutex_key = {<No data fields>},
+	  i_mutex_dir_key = {<No data fields>}
+	}
+
