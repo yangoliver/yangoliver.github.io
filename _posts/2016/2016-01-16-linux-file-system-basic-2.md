@@ -10,13 +10,8 @@ tags:
 
 ##1. 简单文件系统- samplefs
 
-简单文件系统(samplefs)是Steve French写的用于教学目的的文件系统。它的设计初衷如下，
-
-- 理解如何实现一个文件系统
-
-- 在Linux OS上做文件系统的相关实验
-
-- 学习文件系统的debug和tuning
+简单文件系统(samplefs)是Steve French写的用于教学目的的文件系统。它的设计初衷是帮助初学者理解如何实现一个文件系统，并且在Linux环境下对文件系统
+如何debug和tunning。
 
 Samplefs的源代码可以到[samba.org](http://svn.samba.org/samba/ftp/cifs-cvs/samplefs.tar.gz)
 的SVN服务器上去下载。
