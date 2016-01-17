@@ -94,7 +94,7 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 
 	[9782053.072278] samplefs: module license 'unspecified' taints kernel.
 	[9782053.072282] Disabling lock debugging due to kernel taint
-	[9782053.072364] samplefs: module verification failed: signature and/or  required key missing - tainting kernel
+	[9782053.072364] samplefs: module verification failed: signature and/or required key missing - tainting kernel
 
 显然，这是原有samplefs没有声明模块的License导致的，新内核对GPL License的检查越来越严厉了，连lock debug干脆都给关掉了。于是，
 给代码增加[GPL Module License](https://github.com/yangoliver/lktm/commit/8a2779aaf0bbebd1f96930d16fdf7186d21baf5c)，错误消息
@@ -104,8 +104,6 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 
 	$ lsmod | grep samplefs
 	samplefs               12511  0
-
-
 
 ##3. 关键数据结构
 
@@ -124,19 +122,19 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 	#define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move() during rename() internally. */
 		struct dentry *(*mount) (struct file_system_type *, int,	/* mount文件系统时调用的人口函数*/
 			       const char *, void *);
-		void (*kill_sb) (struct super_block *);						/* umount文件系统时调用的入口函数*/
-		struct module *owner;										/* 指向这个文件系统模块数据结构的指针*/
-		struct file_system_type * next;								/* 全局文件系统类型链表的下一个文件系统类型节点*/
-		struct hlist_head fs_supers;								/* 本文件系统的所有超级款的链表表头*/
+		void (*kill_sb) (struct super_block *);	/* umount文件系统时调用的入口函数*/
+		struct module *owner;	/* 指向这个文件系统模块数据结构的指针*/
+		struct file_system_type * next;	/* 全局文件系统类型链表的下一个文件系统类型节点*/
+		struct hlist_head fs_supers;	/* 本文件系统的所有超级款的链表表头*/
 
-		struct lock_class_key s_lock_key;							/* LOCKDEP 所需的数据结构，lock debug特性打开才有用*/
-		struct lock_class_key s_umount_key;							/* 同上*/
-		struct lock_class_key s_vfs_rename_key;						/* 同上*/
-		struct lock_class_key s_writers_key[SB_FREEZE_LEVELS];		/* 同上*/
+		struct lock_class_key s_lock_key;		/* LOCKDEP 所需的数据结构，lock debug特性打开才有用*/
+		struct lock_class_key s_umount_key;		/* 同上*/
+		struct lock_class_key s_vfs_rename_key;	/* 同上*/
+		struct lock_class_key s_writers_key[SB_FREEZE_LEVELS];	/* 同上*/
 
-		struct lock_class_key i_lock_key;							/* 同上*/
-		struct lock_class_key i_mutex_key;							/* 同上*/
-		struct lock_class_key i_mutex_dir_key;						/* 同上*/
+		struct lock_class_key i_lock_key;	/* 同上*/
+		struct lock_class_key i_mutex_key;	/* 同上*/
+		struct lock_class_key i_mutex_dir_key;	/* 同上*/
 	};
 
 以上代码来自3.19.8-100.fc20的源代码，关键的结构成员都用中文做了注释。
@@ -144,14 +142,14 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 那么samplefs day1的代码是如何写的呢？
 
 	static struct file_system_type samplefs_fs_type = {
-		.owner = THIS_MODULE,							/* 和所有Linux模块一样*/
-		.name = "samplefs",								/* samplefs的名字*/
-	#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,39)		/* 2.6.39内核后，mount文件系统后，入口函数是.mount, 以前是.get_sb */
-		.mount = samplefs_mount,						/* 初始化mount的入口函数为samplefs_mount */
+		.owner = THIS_MODULE,	/* 和所有Linux模块一样*/
+		.name = "samplefs",		/* samplefs的名字*/
+	#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,39)	/* 2.6.39后，mount文件系统入口函数是.mount, 以前是.get_sb */
+		.mount = samplefs_mount,	/* 初始化mount的入口函数为samplefs_mount */
 	#else
-		.get_sb = samplefs_get_sb,						/* 老内核的入口函数初始化，可忽略*/
+		.get_sb = samplefs_get_sb,	/* 老内核的入口函数初始化，可忽略*/
 	#endif
-		.kill_sb = kill_anon_super,						/* umount时入口函数，用内核默认函数释放超级块*/
+		.kill_sb = kill_anon_super,	/* umount时入口函数，用内核默认函数释放超级块*/
 		/*  .fs_flags */
 	};
 
@@ -173,93 +171,97 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 
   首先查看源代码，确定全局链表的符号，然后打印起始地址，
 
-	crash> p file_systems
-	file_systems = $9 = (struct file_system_type *) 0xffffffff81c87660 <sysfs_fs_type>
+		crash> p file_systems
+		file_systems = $9 = (struct file_system_type *) 0xffffffff81c87660 <sysfs_fs_type>
 
   没想到我的Fedora 20的VM上竟然有28个文件系统类型，是不是出乎意料呢？
 
-	crash> list file_system_type.next -s file_system_type.name 0xffffffff81c87660 | grep name | wc -l
-	28
+		crash> list file_system_type.next -s file_system_type.name 0xffffffff81c87660 | grep name | wc -l
+		28
 
   遍历开始，有链表其实地址，.next是链表连接件，要查看的是.name，是可读的字符串，
 
-	crash> list file_system_type.next -s file_system_type.name 0xffffffff81c87660
-	ffffffff81c87660
-	  name = 0xffffffff81a83554 "sysfs"
-	ffffffff81c1b440
-	  name = 0xffffffff81a5c060 "rootfs"
-	ffffffff81c8d960
-	  name = 0xffffffff81a2d869 "ramfs"
-	ffffffff81c82840
-	  name = 0xffffffff81a5c4b2 "bdev"
-	ffffffff81c870c0
-	  name = 0xffffffff81a521a3 "proc"
-	ffffffff81c641c0
-	  name = 0xffffffff81a7c140 "cgroup"
-	ffffffff81c65500
-	  name = 0xffffffff81a5a859 "cpuset"
-	ffffffff81c6cac0
-	  name = 0xffffffff81a8febc "tmpfs"
-	ffffffff81cc5860
-	  name = 0xffffffff81a8feb9 "devtmpfs"
-	ffffffff81c8e0c0
-	  name = 0xffffffff81a60a54 "debugfs"
-	ffffffff81c91e60
-	  name = 0xffffffff81a6a67e "securityfs"
-	ffffffff81cddde0
-	  name = 0xffffffff81ad7b6b "sockfs"
-	ffffffff81c7a100
-	  name = 0xffffffff81a5b8c1 "pipefs"
-	ffffffff81c87a20
-	  name = 0xffffffff81a5e6fb "configfs"
-	ffffffff81c87b40
-	  name = 0xffffffff81a5e83b "devpts"
-	ffffffff81c88900
-	  name = 0xffffffff81a5fbde "ext3"
-	ffffffff81c88940
-	  name = 0xffffffff81a5fbe3 "ext2"
-	ffffffff81c88000
-	  name = 0xffffffff81a5eeec "ext4"
-	ffffffff81c8dc40
-	  name = 0xffffffff81a60790 "hugetlbfs"
-	ffffffff81c8e000
-	  name = 0xffffffff81a607df "autofs"
-	ffffffff81c8e100
-	  name = 0xffffffff81a60a9a "pstore"
-	ffffffff81c8fd60
-	  name = 0xffffffff81a69ce6 "mqueue"
-	ffffffff81c95d00
-	  name = 0xffffffff81a6b00c "selinuxfs"
-	ffffffffa0139460
-	  name = 0xffffffffa012fc17 "rpc_pipefs"
-	ffffffffa01b2360
-	  name = 0xffffffffa01acbdb "nfsd"
-	ffffffffa04c8200
-	  name = 0xffffffffa04c2ac7 "nfs"
-	ffffffffa04c8180
-	  name = 0xffffffffa04c2ac2 "nfs4"
-	ffffffffa04ec000
-	  name = 0xffffffffa04eb024 "samplefs"
+		crash> list file_system_type.next -s file_system_type.name 0xffffffff81c87660
+		ffffffff81c87660
+		  name = 0xffffffff81a83554 "sysfs"
+		ffffffff81c1b440
+		  name = 0xffffffff81a5c060 "rootfs"
+		ffffffff81c8d960
+		  name = 0xffffffff81a2d869 "ramfs"
+		ffffffff81c82840
+		  name = 0xffffffff81a5c4b2 "bdev"
+		ffffffff81c870c0
+		  name = 0xffffffff81a521a3 "proc"
+		ffffffff81c641c0
+		  name = 0xffffffff81a7c140 "cgroup"
+		ffffffff81c65500
+		  name = 0xffffffff81a5a859 "cpuset"
+		ffffffff81c6cac0
+		  name = 0xffffffff81a8febc "tmpfs"
+		ffffffff81cc5860
+		  name = 0xffffffff81a8feb9 "devtmpfs"
+		ffffffff81c8e0c0
+		  name = 0xffffffff81a60a54 "debugfs"
+		ffffffff81c91e60
+		  name = 0xffffffff81a6a67e "securityfs"
+		ffffffff81cddde0
+		  name = 0xffffffff81ad7b6b "sockfs"
+		ffffffff81c7a100
+		  name = 0xffffffff81a5b8c1 "pipefs"
+		ffffffff81c87a20
+		  name = 0xffffffff81a5e6fb "configfs"
+		ffffffff81c87b40
+		  name = 0xffffffff81a5e83b "devpts"
+		ffffffff81c88900
+		  name = 0xffffffff81a5fbde "ext3"
+		ffffffff81c88940
+		  name = 0xffffffff81a5fbe3 "ext2"
+		ffffffff81c88000
+		  name = 0xffffffff81a5eeec "ext4"
+		ffffffff81c8dc40
+		  name = 0xffffffff81a60790 "hugetlbfs"
+		ffffffff81c8e000
+		  name = 0xffffffff81a607df "autofs"
+		ffffffff81c8e100
+		  name = 0xffffffff81a60a9a "pstore"
+		ffffffff81c8fd60
+		  name = 0xffffffff81a69ce6 "mqueue"
+		ffffffff81c95d00
+		  name = 0xffffffff81a6b00c "selinuxfs"
+		ffffffffa0139460
+		  name = 0xffffffffa012fc17 "rpc_pipefs"
+		ffffffffa01b2360
+		  name = 0xffffffffa01acbdb "nfsd"
+		ffffffffa04c8200
+		  name = 0xffffffffa04c2ac7 "nfs"
+		ffffffffa04c8180
+		  name = 0xffffffffa04c2ac2 "nfs4"
+		ffffffffa04ec000
+		  name = 0xffffffffa04eb024 "samplefs"
 
-  可以看到，samplefs的节点就在最后两行，由此可以打印它的file_system_type的结构内容，
+* 最后，找到samplefs对应节点地址，打印结构内容
 
-	crash> struct file_system_type ffffffffa04ec000
-	struct file_system_type {
-	  name = 0xffffffffa04eb024 "samplefs",
-	  fs_flags = 0,
-	  mount = 0xffffffffa04ea000 <samplefs_mount>,
-	  kill_sb = 0xffffffff812142d0 <kill_anon_super>,
-	  owner = 0xffffffffa04ec040 <__this_module>,
-	  next = 0x0,
-	  fs_supers = {
-	    first = 0x0
-	  },
-	  s_lock_key = {<No data fields>},
-	  s_umount_key = {<No data fields>},
-	  s_vfs_rename_key = {<No data fields>},
-	  s_writers_key = 0xffffffffa04ec038,
-	  i_lock_key = {<No data fields>},
-	  i_mutex_key = {<No data fields>},
-	  i_mutex_dir_key = {<No data fields>}
-	}
+  可以看到，samplefs的节点就在上面输出的最后两行，由此可以打印它的file_system_type的结构内容，
 
+		crash> struct file_system_type ffffffffa04ec000
+		struct file_system_type {
+		  name = 0xffffffffa04eb024 "samplefs",
+		  fs_flags = 0,
+		  mount = 0xffffffffa04ea000 <samplefs_mount>,
+		  kill_sb = 0xffffffff812142d0 <kill_anon_super>,
+		  owner = 0xffffffffa04ec040 <__this_module>,
+		  next = 0x0,
+		  fs_supers = {
+		    first = 0x0
+		  },
+		  s_lock_key = {<No data fields>},
+		  s_umount_key = {<No data fields>},
+		  s_vfs_rename_key = {<No data fields>},
+		  s_writers_key = 0xffffffffa04ec038,
+		  i_lock_key = {<No data fields>},
+		  i_mutex_key = {<No data fields>},
+		  i_mutex_dir_key = {<No data fields>}
+		}
+	
+
+TBD
