@@ -105,7 +105,7 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 	$ lsmod | grep samplefs
 	samplefs               12511  0
 
-##3. 关键数据结构
+##3. 源代码
 
 ###3.1 file_system_type - 文件系统类型结构
 
@@ -153,19 +153,43 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 		/*  .fs_flags */
 	};
 
-###3.2 实验和调试
+
+###3.2 VFS API - 文件系统注册和注销
+
+由于Linux支持70多种不同的文件系统，那么必然就需要在架构上保证不同的文件系统的实现可以做到高效和简洁。VFS可以说很好的实现了这个目标，
+
+* 向上的接口对用户程序提供统一一致的文件系统服务
+
+  VFS是Linux文件系统的通用抽象层，包含了所有文件系统的所需要的公共部分，最大程度消除了文件系统的重复代码，让不同文件系统可以专注于自己的差异化实现。
+
+* 向下的接口实现了让不同种类文件系统可以同时共存
+
+  通过VFS的通用抽象层，不同文件系统之间消除了耦合性。不然可以同时存在并运行，而且一个文件系统的bug，不会扩散影响到另外的文件系统。提高的文件系统的
+  可扩展性和健壮性。
+
+因此，即使是实现一个最简单的文件系统，也不可能绕开VFS的API。Day1的源码里在module init和remove的入口函数里用到了如下VFS API，
+
+	extern int register_filesystem(struct file_system_type *);
+	extern int unregister_filesystem(struct file_system_type *);
+
+这些API提供了向VFS注册和注销文件系统的基本功能。函数register_filesystem的实现代码非常简单，就是把它的输入，即文件系统类型结构(file_system_type)添加
+到名称为file_systems的全局链表的尾部。这个全局链表的节点数据类型就是file_system_type本身。
+
+正是因为这个函数，让上层的VFS代码可以在文件系统mount和umount操作可以直接通过这个链表上的结构去调用不同文件系统模块的具体实现。
+
+##4. 实验和调试
 
 如果利用crash，我们可以遍历文件系统的全局链表，并且找到samplefs的对应节点。若需要了解Linux Crash，可查看
 [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background)这篇文章。
 
 * 首先，crash默认并不加载模块调式信息，因此在实验之前，需要手动加载samplefs模块，
 
-	crash> mod -s samplefs /ws/lktm/fs/samplefs/day1/samplefs.ko
-	     MODULE       NAME                        SIZE  OBJECT FILE
-	ffffffffa04ec040  samplefs                   12511  /ws/lktm/fs/samplefs/day1/samplefs.ko
-
-	crash> lsmod |grep samplefs
-	ffffffffa04ec040  samplefs                   12511  /ws/lktm/fs/samplefs/day1/samplefs.ko
+		crash> mod -s samplefs /ws/lktm/fs/samplefs/day1/samplefs.ko
+		     MODULE       NAME               SIZE  OBJECT FILE
+		ffffffffa04ec040  samplefs           12511  /ws/lktm/fs/samplefs/day1/samplefs.ko
+	
+		crash> lsmod |grep samplefs
+		ffffffffa04ec040  samplefs           12511  /ws/lktm/fs/samplefs/day1/samplefs.ko
 
 * 然后，用crash去遍历文件系统类型的全局链表
 
@@ -174,7 +198,8 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 		crash> p file_systems
 		file_systems = $9 = (struct file_system_type *) 0xffffffff81c87660 <sysfs_fs_type>
 
-  没想到我的Fedora 20的VM上竟然有28个文件系统类型，是不是出乎意料呢？
+  没想到我的Fedora 20的VM上竟然有28个文件系统类型，不过大部分注册的文件系统是**特殊目的文件系统**。关于什么是特殊目的文件系统，请参考
+  [Linux File System Basic 1](http://oliveryang.net/2016/01/linux-file-system-basic-1)。
 
 		crash> list file_system_type.next -s file_system_type.name 0xffffffff81c87660 | grep name | wc -l
 		28
@@ -247,12 +272,12 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 		struct file_system_type {
 		  name = 0xffffffffa04eb024 "samplefs",
 		  fs_flags = 0,
-		  mount = 0xffffffffa04ea000 <samplefs_mount>,
+		  mount = 0xffffffffa04ea000 <samplefs_mount>,	/* .mount 实现 */
 		  kill_sb = 0xffffffff812142d0 <kill_anon_super>,
-		  owner = 0xffffffffa04ec040 <__this_module>,
+		  owner = 0xffffffffa04ec040 <__this_module>,	/* 指向了samplefs module的地址*/
 		  next = 0x0,
 		  fs_supers = {
-		    first = 0x0
+		    first = 0x0	/* Day1的代码还没有初始化这个成员 */
 		  },
 		  s_lock_key = {<No data fields>},
 		  s_umount_key = {<No data fields>},
@@ -262,6 +287,18 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 		  i_mutex_key = {<No data fields>},
 		  i_mutex_dir_key = {<No data fields>}
 		}
-	
 
-TBD
+  我们也可以打印出samplefs的module数据结构，比如模块名称，模块text和data段的起始地址和大小，
+
+		crash> struct module.name,module_core,core_size 0xffffffffa04ec040
+		  name = "samplefs\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
+		  module_core = 0xffffffffa04ea000 <samplefs_mount>
+		  core_size = 12511
+
+
+##5. 小结
+
+通过samplefs day1的源码和实验，我们可以对实现文件系统模块的一些基本概念有些了解。Linux内核一些特殊目的的文件系统也可以作为我们对照参考的例子。例如
+ramfs只有不到600行c代码，分析和学习ramfs代码也可以加深对Linux VFS的接口和基本实现的理解。此外，也可以直接下载本文中使用的
+[samplefs day1的全部代码和为新内核所做的修改](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day1)来做进一步的学习和实验。
+
