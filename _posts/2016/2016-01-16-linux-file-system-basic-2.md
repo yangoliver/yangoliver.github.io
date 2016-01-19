@@ -109,7 +109,7 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 
 ###3.1 file_system_type - 文件系统类型结构
 
-即然Linux支持70多种文件系统，那么必然要有一个数据结构来描述正在内核中运行的文件系统类型，这就是file_system_type结构，
+即然Linux支持同时运行不同的文件系统，那么必然要有一个数据结构来描述正在内核中运行的文件系统类型，这就是file_system_type结构，
 
 	struct file_system_type {
 		const char *name;		/* 文件系统名字*/
@@ -124,7 +124,7 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 			       const char *, void *);
 		void (*kill_sb) (struct super_block *);	/* umount文件系统时调用的入口函数*/
 		struct module *owner;	/* 指向这个文件系统模块数据结构的指针*/
-		struct file_system_type * next;	/* 全局文件系统类型链表的下一个文件系统类型节点*/
+		struct file_system_type * next;	/* 全局文件系统类型链表的下一个文件系统类型节点，应初始化为NULL */
 		struct hlist_head fs_supers;	/* 本文件系统的所有超级款的链表表头*/
 
 		struct lock_class_key s_lock_key;		/* LOCKDEP 所需的数据结构，lock debug特性打开才有用*/
@@ -167,7 +167,11 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
   通过VFS的通用抽象层，不同文件系统之间消除了耦合性。不然可以同时存在并运行，而且一个文件系统的bug，不会扩散影响到另外的文件系统。提高的文件系统的
   可扩展性和健壮性。
 
-因此，即使是实现一个最简单的文件系统，也不可能绕开VFS的API。Day1的源码里在module init和remove的入口函数里用到了如下VFS API，
+因此，即使是实现一个最简单的文件系统，也不可能绕开VFS的API。
+
+####3.2.1 注册和注销文件系统
+
+Day1的源码里在module init和remove的入口函数里用到了如下VFS API，
 
 	extern int register_filesystem(struct file_system_type *);
 	extern int unregister_filesystem(struct file_system_type *);
@@ -176,6 +180,28 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 到名称为file_systems的全局链表的尾部。这个全局链表的节点数据类型就是file_system_type本身。
 
 正是因为这个函数，让上层的VFS代码可以在文件系统mount和umount操作可以直接通过这个链表上的结构去调用不同文件系统模块的具体实现。
+
+####3.2.2 mount文件系统
+
+当用户调用mount命令去挂载文件系统时，VFS的代码将从file_systems链表找到对应类型的文件系统file_system_type结构，然后调用.mount入口函数。
+
+Samplefs的mount入口函数实现如下,
+
+	static struct dentry *samplefs_mount(struct file_system_type *fs_type, int flags,
+	    const char *dev_name, void *data)
+
+函数参数说明如下，
+
+	struct file_system_type *fs_type: 文件系统类型结构指针，samplefs已经做了部分的初始化。
+	int flags: mount的标志位。
+	const char *dev_name: mount文件系统时指定的设备名称。
+	void *data: mount时指定的命令选项，通常是ascii码。
+
+返回值，
+
+	mount函数必须返回文件系统树的root dentry(根目录项)。在mount时超级块的引用计数必须增加，
+	而且必须拿锁状态下操作。函数在失败时必须返回ERR_PTR(error)。
+
 
 ##4. 实验和调试
 
@@ -263,6 +289,12 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 		  name = 0xffffffffa04c2ac2 "nfs4"
 		ffffffffa04ec000
 		  name = 0xffffffffa04eb024 "samplefs"
+
+  Linux也提供了/proc/filesystems接口来查看所有注册的文件系统，
+
+		$ cat /proc/filesystems | grep samplefs
+		nodev   samplefs
+
 
 * 最后，找到samplefs对应节点地址，打印结构内容
 
