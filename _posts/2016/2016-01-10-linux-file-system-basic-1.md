@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Linux File System Basic - 1
+description: Linux文件系统基本概念和分类。关键字：集群文件系统，分布式文件系统，本地文件系统，特殊目的文件系统，Linux内核，文件系统架构。
 categories:
 - [Chinese, Software]
 tags:

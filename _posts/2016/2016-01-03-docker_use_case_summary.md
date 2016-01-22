@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Docker Use Case Summary
+description: Docker使用场景大全。关键字：Docker，容器，Devops，Docker镜像，PaaS，CaaS，内核，Linux，IaaS，云计算，虚拟化，微架构。
 categories:
 - [Chinese, Software]
 tags:
