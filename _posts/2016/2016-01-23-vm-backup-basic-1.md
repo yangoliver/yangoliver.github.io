@@ -48,13 +48,13 @@ tags:
 
   说直白一点，Datastore就是VMWare为虚拟机提供的存储抽象，这个logical container可以支持下面这些文件系统，
 
-1. VMFS文件系统
+  1. VMFS文件系统
+  
+     VMFS文件系统需要在LUN之上创建VMFS Volume和文件系统。
 
-   VMFS文件系统需要在LUN之上创建VMFS Volume和文件系统。
+  2. NFS文件系统
 
-2. NFS文件系统
-
-   直接使用第三方的NFS文件系统服务或者存储设备。
+     直接使用第三方的NFS文件系统服务或者存储设备。
 
 
 未完，待续
