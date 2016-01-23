@@ -17,8 +17,8 @@ tags:
 
 - **LUN(Logical Unit Number)**
 
-  LUN(逻辑单元编号)最早由SCSI协议引入，是SCSI总线协议寻址的设备地址。由于SAN存储技术的出现，后来越来越多的被引申为Logical
-  Disk(逻辑磁盘)或者Logical Volume(逻辑卷)。
+  [LUN](https://en.wikipedia.org/wiki/Lun)(逻辑单元编号)最早由SCSI协议引入，是SCSI总线协议寻址的设备地址。后来越来越多的被
+  引申为Logical Disk(逻辑磁盘)或者Logical Volume(逻辑卷)。
 
   一个LUN可以由多个硬盘组成。Linux的LVM，或者任何外部的磁盘阵列都可以把多个物理盘划分到一个LUN里。从主机的角度看，一个LUN就
   是一块物理硬盘。可以说LUN就是卷管理软件或者外置存储设备对物理硬盘的虚拟化。
