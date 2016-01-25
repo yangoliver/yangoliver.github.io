@@ -43,7 +43,7 @@ tags:
 	The crash is a kernel post-mortem debug tool, but kdb/kgdb is in situ kernel debugger.
 	Unlike gdb in user space, kdb/kgdb cannot be used to do kernel core dump analysis.
 
-	My another [crash tool blog](https://yangoliver.github.io/2015/06/linux-crash-background/) has more information about this topic.
+	My another [crash tool blog](https://oliveryang.net/2015/06/linux-crash-background/) has more information about this topic.
 
 ##HOWTO
 

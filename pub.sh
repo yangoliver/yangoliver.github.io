@@ -1,11 +1,11 @@
 #!/bin/bash
 
-echo "publish to github page\n"
+echo "publish to github page"
 git push -u origin
 
-echo "#################################################\n"
+echo "#################################################"
 #
 # git remote add gitcafe https://gitcafe.com/yangoliver/yangoliver.git
 #
-echo "publish to gitcafe page\n"
+echo "publish to gitcafe page"
 git push -u gitcafe master:gitcafe-pages

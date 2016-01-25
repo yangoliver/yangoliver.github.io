@@ -1,4 +1,4 @@
-This Git repository is for [Oliver Yang's Blog](http://yangoliver.github.io)
+This Git repository is for [Oliver Yang's Blog](http://oliveryang.net)
 
 It is built up by Jekyll, which is a Ruby application. With Jekyll, all posts
 written by Markdown could be converted to the static HTML files.

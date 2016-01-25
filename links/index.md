@@ -12,7 +12,7 @@ comments: yes
 
 ##My contributions for Open Source Projects
 
-- [The crash commits](http://yangoliver.github.io/2015/06/linux-crash-my-patches)
+- [The crash commits](http://oliveryang.net/2015/06/linux-crash-my-patches)
 
 - [The irqbalance commits](https://github.com/Irqbalance/irqbalance/commits?author=yangoliver)
 
