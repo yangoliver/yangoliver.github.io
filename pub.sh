@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "publish to github page\n"
-git push
+git push -u origin
 
 echo "#################################################\n"
 #
