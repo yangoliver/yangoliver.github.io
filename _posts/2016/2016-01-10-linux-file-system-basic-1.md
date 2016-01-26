@@ -5,7 +5,7 @@ description: Linux文件系统基本概念和分类。关键字：集群文件�
 categories:
 - [Chinese, Software]
 tags:
-- [fs, kernel, linux, storage]
+- [file system, kernel, linux, storage]
 ---
 
 

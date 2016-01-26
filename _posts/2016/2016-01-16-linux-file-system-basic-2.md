@@ -5,7 +5,7 @@ description: Linux file system(文件系统)模块的实现和基本数据结构
 categories:
 - [Chinese, Software]
 tags:
-- [fs, crash, kernel, linux, storage]
+- [file system, crash, kernel, linux, storage]
 ---
 
 
