@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Python and irqstat
+description: Using irqstat to debug irqbalance problem
 categories:
 - [English, Software]
 tags:
