@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Python and irqstat
-description: Using irqstat to debug irqbalance problem
+description: Using irqstat to debug irqbalance problem。THis irqstat tool is numa aware debug tool。
 categories:
 - [English, Software]
 tags:

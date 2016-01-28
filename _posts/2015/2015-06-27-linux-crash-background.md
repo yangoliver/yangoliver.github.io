@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Linux Crash Utility - background
-description: Linux kernel debug tool - crash introduction.
+description: Linux kernel debug tool - crash introduction. 用crash来调试Linux内核错误是内核程序员的基本技能。
 categories:
 - [English, Software]
 tags:
