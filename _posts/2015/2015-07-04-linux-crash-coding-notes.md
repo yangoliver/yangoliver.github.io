@@ -5,7 +5,7 @@ description: Linux crash introduction. Coding notes and guidelines for contribut
 categories:
 - [English, Software]
 tags:
-- [crash]
+- [crash, kernel, linux]
 ---
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
