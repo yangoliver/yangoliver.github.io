@@ -20,7 +20,7 @@ We can do following things by collecting and analyzing these perf counters,
   * Debug or tune scheduler
   * Debug or tune specific application or benchmark from scheduling perspective
 
-###2. How could we access SCHEDSTATS counters?
+### 2. How could we access SCHEDSTATS counters?
 
 When SCHEDSTATS is enabled, scheduler statistics could be accessed by following ways,
 
@@ -59,177 +59,177 @@ When SCHEDSTATS is enabled, scheduler statistics could be accessed by following 
 	 # perf record -e sched:sched_stat_blocked -a -g sleep 5
      # perf script></pre>
 
-3. SCHEDSTATS proc files use cases
+### 3. SCHEDSTATS proc files use cases
 
-* System wide statistic
+#### 3.1 System wide statistic
 
-  This includes per-cpu(run queue) or per-sched-domain statistics.
+This includes per-cpu(run queue) or per-sched-domain statistics.
 
-    **/proc/schedstat**
+**/proc/schedstat**
 
-    Implements in scheduler core, which is the common layer for all scheduling classes.
+Implements in scheduler core, which is the common layer for all scheduling classes.
 
-	The	CPU statistics in /proc/schedstat file is defined as members of ```struct rq``` in kernel/sched.c,
+The CPU statistics in /proc/schedstat file is defined as members of ```struct rq``` in kernel/sched.c,
 
-		struct rq {
-			[...snipped...]
+	struct rq {
+		[...snipped...]
 
-		#ifdef CONFIG_SCHEDSTATS
-			/* latency stats */
-			struct sched_info rq_sched_info;
-			unsigned long long rq_cpu_time;
-			/* could above be rq->cfs_rq.exec_clock + rq->rt_rq.rt_runtime ? */
+	#ifdef CONFIG_SCHEDSTATS
+		/* latency stats */
+		struct sched_info rq_sched_info;
+		unsigned long long rq_cpu_time;
+		/* could above be rq->cfs_rq.exec_clock + rq->rt_rq.rt_runtime ? */
 
-			/* sys_sched_yield() stats */
-			unsigned int yld_count;
+		/* sys_sched_yield() stats */
+		unsigned int yld_count;
 
-			/* schedule() stats */
-			unsigned int sched_switch;
-			unsigned int sched_count;
-			unsigned int sched_goidle;
-		
-			/* try_to_wake_up() stats */
-			unsigned int ttwu_count;
-			unsigned int ttwu_local;
-		#endif
+		/* schedule() stats */
+		unsigned int sched_switch;
+		unsigned int sched_count;
+		unsigned int sched_goidle;
 
-			[...snipped...]
-		};
+		/* try_to_wake_up() stats */
+		unsigned int ttwu_count;
+		unsigned int ttwu_local;
+	#endif
 
-	The Domain statistics in /proc/schedstat file is defined as members of ```struct sched_domain```
-	in include/linux/sched.h,
+		[...snipped...]
+	};
 
-		struct sched_domain {
-			[...snipped...]
+The Domain statistics in /proc/schedstat file is defined as members of ```struct sched_domain```
+in include/linux/sched.h,
 
-		#ifdef CONFIG_SCHEDSTATS
-			/* load_balance() stats */
-			unsigned int lb_count[CPU_MAX_IDLE_TYPES];
-			unsigned int lb_failed[CPU_MAX_IDLE_TYPES];
-			unsigned int lb_balanced[CPU_MAX_IDLE_TYPES];
-			unsigned int lb_imbalance[CPU_MAX_IDLE_TYPES];
-			unsigned int lb_gained[CPU_MAX_IDLE_TYPES];
-			unsigned int lb_hot_gained[CPU_MAX_IDLE_TYPES];
-			unsigned int lb_nobusyg[CPU_MAX_IDLE_TYPES];
-			unsigned int lb_nobusyq[CPU_MAX_IDLE_TYPES];
+	struct sched_domain {
+		[...snipped...]
 
-			/* Active load balancing */
-			unsigned int alb_count;
-			unsigned int alb_failed;
-			unsigned int alb_pushed;
+	#ifdef CONFIG_SCHEDSTATS
+		/* load_balance() stats */
+		unsigned int lb_count[CPU_MAX_IDLE_TYPES];
+		unsigned int lb_failed[CPU_MAX_IDLE_TYPES];
+		unsigned int lb_balanced[CPU_MAX_IDLE_TYPES];
+		unsigned int lb_imbalance[CPU_MAX_IDLE_TYPES];
+		unsigned int lb_gained[CPU_MAX_IDLE_TYPES];
+		unsigned int lb_hot_gained[CPU_MAX_IDLE_TYPES];
+		unsigned int lb_nobusyg[CPU_MAX_IDLE_TYPES];
+		unsigned int lb_nobusyq[CPU_MAX_IDLE_TYPES];
 
-			/* SD_BALANCE_EXEC stats */
-			unsigned int sbe_count;
-			unsigned int sbe_balanced;
-			unsigned int sbe_pushed;
+		/* Active load balancing */
+		unsigned int alb_count;
+		unsigned int alb_failed;
+		unsigned int alb_pushed;
 
-			/* SD_BALANCE_FORK stats */
-			unsigned int sbf_count;
-			unsigned int sbf_balanced;
-			unsigned int sbf_pushed;
+		/* SD_BALANCE_EXEC stats */
+		unsigned int sbe_count;
+		unsigned int sbe_balanced;
+		unsigned int sbe_pushed;
 
-			/* try_to_wake_up() stats */
-			unsigned int ttwu_wake_remote;
-			unsigned int ttwu_move_affine;
-			unsigned int ttwu_move_balance;
-		#endif
+		/* SD_BALANCE_FORK stats */
+		unsigned int sbf_count;
+		unsigned int sbf_balanced;
+		unsigned int sbf_pushed;
 
-			[...snipped...]
-		};
+		/* try_to_wake_up() stats */
+		unsigned int ttwu_wake_remote;
+		unsigned int ttwu_move_affine;
+		unsigned int ttwu_move_balance;
+	#endif
 
-* Per task statistic
+		[...snipped...]
+	};
 
-  **/proc/<pid\>/schedstat**
+#### 3.2 Per task statistic
 
-    Common for all scheduling classes.
+**/proc/<pid\>/schedstat**
 
-	The statistics for /proc/<pid\>/schedstat is defined as member of ```struct task_struct``` in include/linux/sched.h,
+Common for all scheduling classes.
 
-		#if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
-		struct sched_info {
-			/* cumulative counters */
-			unsigned long pcount;	      /* # of times run on this cpu */
-			unsigned long long run_delay; /* time spent waiting on a runqueue */
+The statistics for /proc/<pid\>/schedstat is defined as member of ```struct task_struct``` in include/linux/sched.h,
 
-			/* timestamps */
-			unsigned long long last_arrival,/* when we last ran on a cpu */
-					   last_queued;	/* when we were last queued to run */
-		};
-		#endif /* defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT) */
+	#if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+	struct sched_info {
+		/* cumulative counters */
+		unsigned long pcount;	      /* # of times run on this cpu */
+		unsigned long long run_delay; /* time spent waiting on a runqueue */
 
-
-		struct task_struct {
-			[...snipped...]
-		
-		#if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
-			struct sched_info sched_info;
-		#endif
-		
-			[...snipped...]
-		};
-
-  **/proc/<pid\>/sched**
-
-    Only available for CFS tasks. Need enable SCHED_DEBUG as well.
-
-	The se statistics for /proc/<pid\>/sched is defined as member of ```struct task_struct``` in include/linux/sched.h,
+		/* timestamps */
+		unsigned long long last_arrival,/* when we last ran on a cpu */
+				   last_queued;	/* when we were last queued to run */
+	};
+	#endif /* defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT) */
 
 
-		#ifdef CONFIG_SCHEDSTATS
-		struct sched_statistics {
-			u64			wait_start;
-			u64			wait_max;
-			u64			wait_count;
-			u64			wait_sum;
-			u64			iowait_count;
-			u64			iowait_sum;
+	struct task_struct {
+		[...snipped...]
 
-			u64			sleep_start;
-			u64			sleep_max;
-			s64			sum_sleep_runtime;
+	#if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
+		struct sched_info sched_info;
+	#endif
 
-			u64			block_start;
-			u64			block_max;
-			u64			exec_max;
-			u64			slice_max;
+		[...snipped...]
+	};
 
-			u64			nr_migrations_cold;
-			u64			nr_failed_migrations_affine;
-			u64			nr_failed_migrations_running;
-			u64			nr_failed_migrations_hot;
-			u64			nr_forced_migrations;
+**/proc/<pid\>/sched**
 
-			u64			nr_wakeups;
-			u64			nr_wakeups_sync;
-			u64			nr_wakeups_migrate;
-			u64			nr_wakeups_local;
-			u64			nr_wakeups_remote;
-			u64			nr_wakeups_affine;
-			u64			nr_wakeups_affine_attempts;
-			u64			nr_wakeups_passive;
-			u64			nr_wakeups_idle;
-		};
-		#endif
+Only available for CFS tasks. Need enable SCHED_DEBUG as well.
+
+The se statistics for /proc/<pid\>/sched is defined as member of ```struct task_struct``` in include/linux/sched.h,
 
 
-		struct sched_entity {
-			[...snipped...]
+	#ifdef CONFIG_SCHEDSTATS
+	struct sched_statistics {
+		u64			wait_start;
+		u64			wait_max;
+		u64			wait_count;
+		u64			wait_sum;
+		u64			iowait_count;
+		u64			iowait_sum;
 
-		#ifdef CONFIG_SCHEDSTATS
-			struct sched_statistics statistics;
-		#endif
+		u64			sleep_start;
+		u64			sleep_max;
+		s64			sum_sleep_runtime;
 
-			[...snipped...]
-		};
+		u64			block_start;
+		u64			block_max;
+		u64			exec_max;
+		u64			slice_max;
+
+		u64			nr_migrations_cold;
+		u64			nr_failed_migrations_affine;
+		u64			nr_failed_migrations_running;
+		u64			nr_failed_migrations_hot;
+		u64			nr_forced_migrations;
+
+		u64			nr_wakeups;
+		u64			nr_wakeups_sync;
+		u64			nr_wakeups_migrate;
+		u64			nr_wakeups_local;
+		u64			nr_wakeups_remote;
+		u64			nr_wakeups_affine;
+		u64			nr_wakeups_affine_attempts;
+		u64			nr_wakeups_passive;
+		u64			nr_wakeups_idle;
+	};
+	#endif
 
 
-		struct task_struct {
-			[...snipped...]
+	struct sched_entity {
+		[...snipped...]
 
-			struct sched_entity se;
+	#ifdef CONFIG_SCHEDSTATS
+		struct sched_statistics statistics;
+	#endif
 
-			[...snipped...]
-		};
+		[...snipped...]
+	};
+
+
+	struct task_struct {
+		[...snipped...]
+
+		struct sched_entity se;
+
+		[...snipped...]
+	};
 
 
 ###4. SCHEDSTATS source files
@@ -238,45 +238,47 @@ To use SCHEDSTATS, need to enable kernel config ```SCHEDSTATS```. All related co
 
 As far as we know, Linux kernel scheduler defined two layers,
 
-- The upper layer is scheduler core which is common layer for all scheduling class.
+#### 4.1 The upper layer - scheduler core 
 
-  In Linux 3.2.x, The SCHEDSTATS source files in scheduler common layer are,
+This is a common layer for all scheduling class.
 
-  **include/linux/sched.h**
+In Linux 3.2.x, The SCHEDSTATS source files in scheduler common layer are,
 
-  Per-sched-domain and per-task perf counters definitions.
+**include/linux/sched.h**
 
-  **kernel/sched_stats.h**
+Per-sched-domain and per-task perf counters definitions.
 
-  /proc/schestat proc file implementation
+**kernel/sched_stats.h**
 
-  **fs/proc/base.c**
+/proc/schestat proc file implementation
 
-  /proc/<pid\>/schedstat proc file implementation
+**fs/proc/base.c**
 
-  **kernel/sched.c**
+/proc/<pid\>/schedstat proc file implementation
 
-  Per-runqueue perf counters definitions.
+**kernel/sched.c**
 
-  Per-runqueue, per-sched-domain, per-task perf counters implementation, for example, ttwu_stat
+Per-runqueue perf counters definitions.
 
-  **kernel/profile.c**
+Per-runqueue, per-sched-domain, per-task perf counters implementation, for example, ttwu_stat
 
-  The legacy code, profiling code for /proc/profile support, readprofile(1) could read it.
+**kernel/profile.c**
 
-  **kernel/sched_debug.c**
+The legacy code, profiling code for /proc/profile support, readprofile(1) could read it.
 
-  SCHEDSTATS in /proc/sched_debug and /proc/<pid\>/sched proc files implementation.
-  Need enable SCHED_DEBUG at same time.
+**kernel/sched_debug.c**
 
-- The underlying layer is per scheduling class source code.
+SCHEDSTATS in /proc/sched_debug and /proc/<pid\>/sched proc files implementation.
+Need enable SCHED_DEBUG at same time.
 
-  In Linux 3.2.x, only the CFS scheduling class code has the SCHEDSTATS implementation.
+#### 4.2 The underlying layer - per scheduling class
 
-  **kernel/sched_fair.c**
+In Linux 3.2.x, only the CFS scheduling class code has the SCHEDSTATS implementation.
 
-  SCHEDSTATS in /proc/<pid\>/sched. Need enable SCHED_DEBUG at same time.
+**kernel/sched_fair.c**
 
-  /proc/schedstat counters for load balance.
+SCHEDSTATS in /proc/<pid\>/sched. Need enable SCHED_DEBUG at same time.
 
-  Kernel Trace points for wait, sleep, iowait, blocked(not in 3.2.x) events. See section 3 in this blog.
+/proc/schedstat counters for load balance.
+
+Kernel Trace points for wait, sleep, iowait, blocked(not in 3.2.x) events. See section 3 in this blog.
