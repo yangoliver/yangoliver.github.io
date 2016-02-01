@@ -1,11 +1,14 @@
 ---
 layout: post
 title: Network write system call latency
+description: An issue related to 2ms latency in 10G network. Using ftrace to diagnosis network latency problems.
 categories:
 - [English, Software]
 tags:
 - [network, perf, linux]
 ---
+
+>This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
 Today, one guy told me he observed the write system call latency for 80 bytes write is about 2ms on a 10G network.
 He suspected that this indicates some network latency problems.
@@ -17,85 +20,85 @@ The answer is no. At least, I am not sure. Depending on your workload.
 I told him to capture the packets by the tools like tcpdump to confirm his suspects.
 For network write system call, 2ms latency might not be quite bad.
 
-* Why do I think 2ms write system call latency is not bad?
+### Why do I think 2ms write system call latency is not bad?
 
-   Because it is quite possible that write system call could be returned at millisecond level, but packet got sent out at
-   microsecond level.
+Because it is quite possible that write system call could be returned at millisecond level, but packet got sent out at
+microsecond level.
 
-   In Linux network stack, under the write system call context, it could send the packets first, then got interrupted
-   by NIC driver RX interrupts, and run into packets receive loop. Especially, when write code put the packets to NIC,
-   it disabled interrupts in that period. That means, after interrupt got enabled, it would cause the interrupts got fired
-   immediately if any IRQs were bound to this CPU.
+In Linux network stack, under the write system call context, it could send the packets first, then got interrupted
+by NIC driver RX interrupts, and run into packets receive loop. Especially, when write code put the packets to NIC,
+it disabled interrupts in that period. That means, after interrupt got enabled, it would cause the interrupts got fired
+immediately if any IRQs were bound to this CPU.
 
-   If the system is under heavy network traffic, the ```net_rx_action``` code actually allows polling loop for more than
-   2 jiffies, which is actually 2ms.
+If the system is under heavy network traffic, the ```net_rx_action``` code actually allows polling loop for more than
+2 jiffies, which is actually 2ms.
 
-		static void net_rx_action(struct softirq_action *h)
-		{
-			struct softnet_data *sd = this_cpu_ptr(&softnet_data);
-			unsigned long time_limit = jiffies + 2;
-			int budget = netdev_budget;
-			LIST_HEAD(list);
-			LIST_HEAD(repoll);
-		
-			local_irq_disable();
-			list_splice_init(&sd->poll_list, &list);
-			local_irq_enable();
-		
-			for (;;) {
-				struct napi_struct *n;
-		
-				if (list_empty(&list)) {
-					if (!sd_has_rps_ipi_waiting(sd) && list_empty(&repoll))
-						return;
-					break;
-				}
-		
-				n = list_first_entry(&list, struct napi_struct, poll_list);
-				budget -= napi_poll(n, &repoll);
-		
-				/* If softirq window is exhausted then punt.
-				 * Allow this to run for 2 jiffies since which will allow
-				 * an average latency of 1.5/HZ.
-				 */
-				if (unlikely(budget <= 0 ||
-					     time_after_eq(jiffies, time_limit))) { // time limitation check, break if more than 2ms
-					sd->time_squeeze++;
-					break;
-				}
+	static void net_rx_action(struct softirq_action *h)
+	{
+		struct softnet_data *sd = this_cpu_ptr(&softnet_data);
+		unsigned long time_limit = jiffies + 2;
+		int budget = netdev_budget;
+		LIST_HEAD(list);
+		LIST_HEAD(repoll);
+
+		local_irq_disable();
+		list_splice_init(&sd->poll_list, &list);
+		local_irq_enable();
+
+		for (;;) {
+			struct napi_struct *n;
+
+			if (list_empty(&list)) {
+				if (!sd_has_rps_ipi_waiting(sd) && list_empty(&repoll))
+					return;
+				break;
 			}
 
-			[...........snipped..........]
+			n = list_first_entry(&list, struct napi_struct, poll_list);
+			budget -= napi_poll(n, &repoll);
 
+			/* If softirq window is exhausted then punt.
+			 * Allow this to run for 2 jiffies since which will allow
+			 * an average latency of 1.5/HZ.
+			 */
+			if (unlikely(budget <= 0 ||
+				     time_after_eq(jiffies, time_limit))) { // time limitation check, break if more than 2ms
+				sd->time_squeeze++;
+				break;
+			}
 		}
 
+		[...........snipped..........]
 
-	In fact, in latest kernel ```__do_softirq``` has the similar logic to limit the soft_irq loop by both
-	```MAX_SOFTIRQ_RESTART``` and 2 jiffies time limitations.
-
-	Anyway, today's Linux interrupt context, the latency could be many milliseconds.
-
-	For this reason it is quite possible that the packet is sent by write system call first at us speed.
-	But after that, write system call continue to receive the packets, and run into longer loop for packets RX handling.
-
-	Just few times of 2ms latency is not a problem. What if he saw average write system call latency is 2ms?
-
-	It is hard to say. His testing is a system wide testing, which will not only stress network stack, bust also stress
-	file system and storage IO stack. That means, if write system call got pinned by the interrupts not related to
-	network workload, he can also see this issue. In this case, it is not network problem.
+	}
 
 
-* How does the code path look like?
+In fact, in latest kernel ```__do_softirq``` has the similar logic to limit the soft_irq loop by both
+```MAX_SOFTIRQ_RESTART``` and 2 jiffies time limitations.
 
-	Linux provides the rich set of dynamic tracing tools to allow us to learn kernel code path.
+Anyway, today's Linux interrupt context, the latency could be many milliseconds.
 
-	In this case, I used [funcgraph](https://github.com/brendangregg/perf-tools/blob/master/examples/funcgraph_example.txt),
-	which is a shell scripts based on Linux Ftrace tool.
+For this reason it is quite possible that the packet is sent by write system call first at us speed.
+But after that, write system call continue to receive the packets, and run into longer loop for packets RX handling.
 
-	From the output, we can see in do_sync_write code path, after the packets got sent, it started to receive packet. 
-	At the end of rx code path, it calls into ```ep_poll_callback``` to notify the data is ready.
+Just few times of 2ms latency is not a problem. What if he saw average write system call latency is 2ms?
 
-	This is a not a very busy system, but the do_sync_write took more than 82us to return.
+It is hard to say. His testing is a system wide testing, which will not only stress network stack, bust also stress
+file system and storage IO stack. That means, if write system call got pinned by the interrupts not related to
+network workload, he can also see this issue. In this case, it is not network problem.
+
+
+### How does the code path look like?
+
+Linux provides the rich set of dynamic tracing tools to allow us to learn kernel code path.
+
+In this case, I used [funcgraph](https://github.com/brendangregg/perf-tools/blob/master/examples/funcgraph_example.txt),
+which is a shell scripts based on Linux Ftrace tool.
+
+From the output, we can see in do_sync_write code path, after the packets got sent, it started to receive packet. 
+At the end of rx code path, it calls into ```ep_poll_callback``` to notify the data is ready.
+
+This is a not a very busy system, but the do_sync_write took more than 82us to return.
 
 	# ./funcgraph -d 1 do_sync_write
 
