@@ -16,7 +16,7 @@ SMI link is the Scalable Memory Interconnect communication channels between the 
 
 The topology of SMI link is,
 
-	Core-----QPI bus----->iMC(Integrated Memory Controller)-----SMI link----->Scalable Memory Buffer-----DDR2/3/4 bus-----> Memory DIMMs
+	Core--->QPI bus--->iMC(Integrated Memory Controller)--->SMI link--->Scalable Memory Buffer--->DDR2/3/4 bus---> Memory DIMMs
 
 ###2. How do we find SMI link error?
 
