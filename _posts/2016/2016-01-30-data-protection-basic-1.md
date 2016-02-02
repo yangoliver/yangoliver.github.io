@@ -101,15 +101,53 @@ tags:
 
 ### 2. 备份的那些概念
 
-TBD
+#### 2.1 备份需求
+
+下面介绍的概念直接决定了用户如何选择潜在的数据保护方案，
+
+- **RPO(Recovery Point Objective)**
+  即目标恢复点。RPO关系到最大可容忍的数据丢失量。
+
+- **RTO(Recovery Time Objective)**
+  即目标恢复时间。RTO关系到最大可容忍的业务中断时间。此外，RTO也直接决定了恢复的性能要求。
 
 - **Backup window**
+  备份窗口指备份软件执行备份所需的时间窗口。由于备份或多或少的会对被保护的应用造成一定程度的干扰，
+  备份窗口的大小直接反映了备份对业务的干扰程度。备份窗口的限制也直接决定了对备份的性能要求。
 
-- **RPO**
+#### 2.2 备份方法
 
-- **RTO**
+为满足用户业务不同的RPO/RTO/Backup window需求，以下备份方法可以会被采用，
 
-- **Backup methods**
+- **Full Backup**
+
+- **Incremental Backup**
+
+- **Differential Backup**
+
+- **CDP(Continuous Data Protection)**
+
+以下表格给出了不同RPO和RTO的需求可能的数据保护方案的选择，
+
+| RPO     | RTO     | Possible Data Protection Solutions   |
+|---------|---------|--------------------------------------|
+| Zero    | Minutes | 业务的双活方案。如Stretched clusters |
+| Zero    | Minutes | 业务的主备方案。如CDP + VMware SRM   |
+| Minutes | Minutes | Near CDP 方案或者VM备份方案。        |
+| Hours   | Minutes | 一般备份和恢复方案                   |
+| Hours   | Hours   | 一般备份和恢复方案。                 |
+
+备份恢复方案的选择，不但和用户的RPO/RTO/Backup window有关，还可能和以下因素有关，
+
+- **Retention Timeframei**, 即备份数据的存放时间。
+- 数据中心基础架构
+- 用于灾备的预算
+
+#### 2.3 数据的一致性
+
+- **Crash Consistent**
+- **File System Consistent**
+- **Application Consistent**
 
 ### 3. 备份相关的产品
 
