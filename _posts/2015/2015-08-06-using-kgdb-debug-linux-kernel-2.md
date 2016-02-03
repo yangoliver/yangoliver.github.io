@@ -1,13 +1,16 @@
 ---
 layout: post
 title: Using kdb/kgdb debug Linux kernel - 2
+description: Linux kernel could be debugged by kgdb via serial console. For console server, that need some sepcial settings.
 categories:
 - [English, Software]
 tags:
 - [kgdb, kernel, linux]
 ---
 
-## Background
+>This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+
+## 1. Background
 
 Lots of kernel panics could happen without a valid kernel core file. 
 For example, for IO/file system/early boot/repeatable panic bugs, the only way is using printk or kdb/kgdb to debug the problems.
@@ -18,7 +21,7 @@ There are two big problems for kdb debugging,
 
    In mainline, kdb has less features than original kdb private patch. It is just a front end of new kernel debugger - kgdb.
    Now kdb becomes useless because the disassembly command was removed. In recent mainline code changes, more kdb commands were removed.
-                
+ 
 2. Kdb could not understand C data structure
 
    For example, if you want to check input arguments of an API, it doesn’t understand the C data structures. 
@@ -26,7 +29,7 @@ There are two big problems for kdb debugging,
 
    The other big advantage of kgdb is, if we specify the source code path, we can do source code level debugging by kgdb.
 
-## How to debug Linux kernel by kgdb via console server
+## 2. How to debug Linux kernel by kgdb via console server
 
 1. Terminal server setting
 
