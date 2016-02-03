@@ -8,7 +8,7 @@ tags:
 - [backup, data protection, file system, virtualization, storage, cloud]
 ---
 
->本文首发于<http://oliveryang.net>. 转载时请包含原文或者作者网站链接。
+>本文首发于<http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
 ## 数据保护的那点儿事儿
 
