@@ -1,13 +1,16 @@
 ---
 layout: post
 title: Pitfalls of TSC usage
+description: TSC is a widely used by many applications to measure the latency. However, there are lots of pitfalls of TSC usage.
 categories:
 - [English, Software, Hardware]
 tags:
 - [perf, kernel, linux, virtualization, hardware]
 ---
 
-## 1 Latency measurement in user space
+>This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+
+## 1. Latency measurement in user space
 
 While user application developers are working on performance sensitive code, one common requirement is do latency/time
 measurement in their code. This kind of code could be temporary code for debug, test or profiling purpose, or permanent
@@ -25,7 +28,7 @@ by avoiding context switch from user to kernel space. But some other arch still 
 system call code path. This is really hardware dependent optimization.
 
 
-## 2 Why using TSC?
+## 2. Why using TSC?
 
 Although vsyscalls implementation of gettimeofday() and clock_gettime() is faster than regular system calls, the perf cost
 of them is still too high to meet the latency measurement requirements for some perf sensitive application.
@@ -98,7 +101,7 @@ rdtsc instruction to be executed at privilege level, although x86 support the se
 Linux application read TSC directly by above implementation, but these applications have to prepare to handle some
 strange TSC behaviors due to some known pitfalls.
 	
-## 3 Known TSC pitfalls
+## 3. Known TSC pitfalls
 
 ### 3.1 TSC unstable hardware
 
@@ -497,7 +500,7 @@ use case problems. And hyper-V has no TSC sync solution. All these TSC sync solu
 kernel TSC clocksource continuously work. The tiny TSC skew may still be observed in VM although TSC sync is supported by
 some hypervisors. Thus application may still have a wrong TSC duration for time measurement.
 
-## 4 Conclusion
+## 4. Conclusion
 
 Linux kernel could detect TSC sync problem and try to be "TSC-resilient". The major problem is in user application.
 There is no reliable TSC sync mechanism for user application especially under a Virtualization environment.
