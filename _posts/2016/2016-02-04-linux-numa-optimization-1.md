@@ -16,44 +16,44 @@ tags:
 
 理解NUMA的概念首先要熟悉多处理器计算机系统的几个重要概念。
 
-- **SMP** vs. **AMP**
+### 1.1 SMP vs. AMP
 
-  [SMP(Symmetric Multiprocessing)](https://en.wikipedia.org/wiki/Symmetric_multiprocessing)，
-  即对称多处理器架构，是目前最常见的多处理器计算机架构。
-  [AMP(Asymmetric Multiprocessing)](https://en.wikipedia.org/wiki/Asymmetric_multiprocessing)，
-  即非对称多处理器架构，则是与SMP相对的概念。那么两者之间的主要区别是什么呢？
+[SMP(Symmetric Multiprocessing)](https://en.wikipedia.org/wiki/Symmetric_multiprocessing)，
+即对称多处理器架构，是目前最常见的多处理器计算机架构。
+[AMP(Asymmetric Multiprocessing)](https://en.wikipedia.org/wiki/Asymmetric_multiprocessing)，
+即非对称多处理器架构，则是与SMP相对的概念。那么两者之间的主要区别是什么呢？
 
-  总结下来有这么几点，
+总结下来有这么几点，
 
-  1. SMP的多个处理器都是同构的，使用相同架构的CPU；而AMP的多个处理器则可能是异构的。
-  2. SMP的多个处理器共享同一内存地址空间；而AMP的每个处理器则拥有自己独立的地址空间。
-  3. SMP的多个处理器操通常共享一个操作系统的实例；而AMP的每个处理器可以有或者没有运行操作系统，
-  运行操作系统的CPU也是在运行多个独立的实例。
-  4. SMP的多处理器之间可以通过共享内存来协同通信；而AMP则需要提供一种处理器间的通信机制。
+1. SMP的多个处理器都是同构的，使用相同架构的CPU；而AMP的多个处理器则可能是异构的。
+2. SMP的多个处理器共享同一内存地址空间；而AMP的每个处理器则拥有自己独立的地址空间。
+3. SMP的多个处理器操通常共享一个操作系统的实例；而AMP的每个处理器可以有或者没有运行操作系统，
+运行操作系统的CPU也是在运行多个独立的实例。
+4. SMP的多处理器之间可以通过共享内存来协同通信；而AMP则需要提供一种处理器间的通信机制。
 
-  SMP和AMP的深入介绍很多经典文章书籍可参考，此处不再赘述。现今主流的x86多处理器服务器都是SMP架构的，
-  而很多嵌入式系统则是AMP架构的。
+SMP和AMP的深入介绍很多经典文章书籍可参考，此处不再赘述。现今主流的x86多处理器服务器都是SMP架构的，
+而很多嵌入式系统则是AMP架构的。
 
-- **NUMA** vs. **UMA**
+### 1.2 NUMA vs. UMA
 
-  [NUMA(Non-Uniform Memory Access)](https://en.wikipedia.org/wiki/Non-uniform_memory_access)
-  非均匀内存访问架构是指多处理器系统中，内存的访问时间是依赖于处理器和内存之间的相对位置的。
-  这种设计里存在和处理器相对近的内存，通常被称作本地内存；还有和处理器相对远的内存，
-  通常被称为非本地内存。
+[NUMA(Non-Uniform Memory Access)](https://en.wikipedia.org/wiki/Non-uniform_memory_access)
+非均匀内存访问架构是指多处理器系统中，内存的访问时间是依赖于处理器和内存之间的相对位置的。
+这种设计里存在和处理器相对近的内存，通常被称作本地内存；还有和处理器相对远的内存，
+通常被称为非本地内存。
 
-  [UMA(Uniform Memory Access)](https://en.wikipedia.org/wiki/Uniform_memory_access)
-  均匀内存访问架构则是与NUMA相反，所以处理器对共享内存的访问距离和时间是相同的。
+[UMA(Uniform Memory Access)](https://en.wikipedia.org/wiki/Uniform_memory_access)
+均匀内存访问架构则是与NUMA相反，所以处理器对共享内存的访问距离和时间是相同的。
 
-  由此可以，不论是NUMA还是UMA都是SMP架构的一种设计和实现上的选择。
+由此可以，不论是NUMA还是UMA都是SMP架构的一种设计和实现上的选择。
 
-  阅读文档时，也常常能看到**ccNUMA(Cache Coherent NUMA)**，即缓存一致性NUMA架构。
-  这种架构主要是在NUMA架构之上保证了多处理器之间的缓存一致性。降低了系统程序的编写难度。
+阅读文档时，也常常能看到**ccNUMA(Cache Coherent NUMA)**，即缓存一致性NUMA架构。
+这种架构主要是在NUMA架构之上保证了多处理器之间的缓存一致性。降低了系统程序的编写难度。
 
-  x86多处理器发展历史上，早期的多核和多处理器系统都是UMA架构的。这种架构下，
-  多个CPU通过同一个北桥(North Bridge)芯片与内存链接。北桥芯片里集成了内存控制器(Memory Controller)，
-  因此，这些CPU和内存控制器之间的前端总线(FSB)在系统CPU数量不断增加的前提下，
-  成为了系统性能的瓶颈。因此，AMD在引入64位x86架构时，实现了NUMA架构。之后，
-  Intel也推出了x64的Nehalem架构，x86终于全面进入到NUMA时代。x86 NUMA目前的实现属于ccNUMA。
+x86多处理器发展历史上，早期的多核和多处理器系统都是UMA架构的。这种架构下，
+多个CPU通过同一个北桥(North Bridge)芯片与内存链接。北桥芯片里集成了内存控制器(Memory Controller)，
+因此，这些CPU和内存控制器之间的前端总线(FSB)在系统CPU数量不断增加的前提下，
+成为了系统性能的瓶颈。因此，AMD在引入64位x86架构时，实现了NUMA架构。之后，
+Intel也推出了x64的Nehalem架构，x86终于全面进入到NUMA时代。x86 NUMA目前的实现属于ccNUMA。
 
 ## 2 NUMA Hierarchy
 
