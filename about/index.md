@@ -1,28 +1,16 @@
 ---
-title: About me
+title: About Me
 layout: page
 comments: yes
 ---
-
-##Oliver Yang
-
+<script src="//platform.linkedin.com/in.js" type="text/javascript"></script>
+<script type="IN/MemberProfile" data-id="https://www.linkedin.com/in/yayong" data-format="inline" data-related="false"></script>
 I'm a software engineer who works in Linux/Unix kernel area.
 This site is used for personal notes and knowledge sharing. 
 
-My personal interests are in following areas,
-
-   * Hardware: x86, PCIe, device drivers, hardware RAS features
-   * OS: Linux/Unix kernel, virtualization, perfromance, scale out architecture
-   * Solutions: server, storage, cloud computing
-
-##Contact
-
+###Contact
 - Email: yangoliver ~~at~~ gmail ~~dot~~ com
-- Blog: <http://oliveryang.net>
 - Github: <http://github.com/yangoliver>
-- Linkedin: <https://www.linkedin.com/in/yayong>
+- Wechat Quick Response Code
 
-	
-##Wechat Public Account
-
-![Please scan it by your phone](/media/images/wechat_account.jpg)
+![Quick Response Code](/media/images/wechat_account.jpg "Please scan it by your wechat app")
