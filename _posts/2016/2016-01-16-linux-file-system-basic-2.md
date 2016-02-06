@@ -8,6 +8,7 @@ tags:
 - [file system, crash, kernel, linux, storage]
 ---
 
+>本文首发于<http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
 ##1. 简单文件系统- samplefs
 
@@ -334,4 +335,3 @@ Samplefs的mount入口函数实现如下,
 通过samplefs day1的源码和实验，我们可以对实现文件系统模块的一些基本概念有些了解。Linux内核一些特殊目的的文件系统也可以作为我们对照参考的例子。例如
 ramfs只有不到600行c代码，分析和学习ramfs代码也可以加深对Linux VFS的接口和基本实现的理解。此外，也可以直接下载本文中使用的
 [samplefs day1的全部代码和为新内核所做的修改](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day1)来做进一步的学习和实验。
-
