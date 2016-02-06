@@ -21,8 +21,9 @@ tags:
 [SMP(Symmetric Multiprocessing)](https://en.wikipedia.org/wiki/Symmetric_multiprocessing)，
 即对称多处理器架构，是目前最常见的多处理器计算机架构。
 [AMP(Asymmetric Multiprocessing)](https://en.wikipedia.org/wiki/Asymmetric_multiprocessing)，
-即非对称多处理器架构，则是与SMP相对的概念。那么两者之间的主要区别是什么呢？
+即非对称多处理器架构，则是与SMP相对的概念。
 
+那么两者之间的主要区别是什么呢？
 总结下来有这么几点，
 
 1. SMP的多个处理器都是同构的，使用相同架构的CPU；而AMP的多个处理器则可能是异构的。
@@ -58,8 +59,6 @@ Intel也推出了x64的Nehalem架构，x86终于全面进入到NUMA时代。x86 
 ## 2 NUMA Hierarchy
 
 NUMA Hierarchy就是NUMA的层级结构。一个Intel x86 NUMA系统就是由多个NUMA Node组成。
-不借助第三方的Node Controller，2个或4个NUMA node可以通过QPI(QuickPath Interconnect)总线互联起来，
-构成一个NUMA系统。
 
 ### 2.1 NUMA Node内部
 
@@ -121,24 +120,23 @@ ACPI规范就是这么抽象一个NUMA Node的。
 如果同一个NUMA Node内的CPU和内存和另外一个NUMA Node的IO资源发生互操作，因为要跨越QPI链路，
 会存在额外的访问延迟问题。
 
+其它体系结构里，为降低外设访问延迟，也有将IB(Infiniband)总线集成到CPU里的。
+这样IB设备也属于NUMA Node的一部分了。
+
 可以假设，操作系统如果是NUMA Aware的话，应该会尽量针对本地IO资源低延迟的优点进行优化。
 
 ### 2.2 NUMA Node互联
 
-这里主要关注以下两个方面，
+在Intel x86上，NUMA Node之间的互联是通过
+[QPI((QuickPath Interconnect) Link](https://en.wikipedia.org/wiki/Intel_QuickPath_Interconnect)的。
+CPU的Uncore部分有QPI的控制器来控制CPU到QPI的数据访问。 
 
-- **NUMA Node之间互联**
-  实际上是过去UMA FSB的替代。在Intel x86上，NUMA Node之间的互联是通过
-  [QPI((QuickPath Interconnect) Link](https://en.wikipedia.org/wiki/Intel_QuickPath_Interconnect)的。
-  CPU的Uncore部分有QPI的控制器来控制CPU到QPI的数据访问。 
-
-- **NUMA Node与外设互联**
-  由于Uncore部分集成了PCIe Root Complex，所以，大多数PCIe外设是通过PCIe Bus与CPU导出的PCIe Root Port互联的。
-  例如，Intel Ivybridge的CPU直接引出PCIe Gen3.0的链路，允许PICe设备与NUMA Node互联。
-
-  其它体系结构里，为降低外设访问延迟，也有将IB(Infiniband)总线集成到CPU里的。
-  这样IB设备也和NUMA Node直接互联了。
-
+不借助第三方的Node Controller，2/4/8个NUMA Node(取决于具体架构)可以通过QPI(QuickPath Interconnect)总线互联起来，
+构成一个NUMA系统。例如，[SGI UV计算机系统](http://www.sgi.com/products/servers/uv/index.html)，
+它就是借助自家的SGI NUMAlink®互联技术来达到4到256个CPU socket扩展的能力的。这是一个SMP系统，
+所以支持运行一个Linux操作系统实例去管理系统。在我的另一篇文章
+[Pitfalls Of TSC Usage](http://oliveryang.net/2015/09/pitfalls-of-TSC-usage)
+曾经提到过SGI UV平台上遇到的TSC同步的问题(见3.1.2小节)。
 
 ## 3. NUMA Affinity
 
