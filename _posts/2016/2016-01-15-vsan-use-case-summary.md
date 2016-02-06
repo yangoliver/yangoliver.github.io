@@ -8,6 +8,7 @@ tags:
 - [storage, virtualization, cloud]
 ---
 
+>本文首发于<http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
 ##1. 关于VSAN的一些概念
 
