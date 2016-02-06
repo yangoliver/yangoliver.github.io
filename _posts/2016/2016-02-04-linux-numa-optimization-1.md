@@ -194,8 +194,8 @@ ACPI规范里用**Proximity Domain**对NUMA Node做了抽象，两者的概念�
 
   从Device NUMA角度看，这个表格给出了系统boot时的外设都属于哪个Proximity Domain(NUMA Node)。
 
-对ACPI规范不了解的同学可能不清楚啥是OSPM(Operating System-directed configuration and Power Management)和OSPM的各种方法。
-其实OSPM及其各种方法就是操作系统里的ACPI驱动和ACPI firmware之间的一个互动的接口。
+ACPI规范OSPM(Operating System-directed configuration and Power Management)
+和OSPM各种方法就是操作系统里的ACPI驱动和ACPI firmware之间的一个互动的接口。
 x86启动OS后，没有ACPI之前，firmware(BIOS)的代码是无法被执行了，除非通过SMI中断处理程序。
 但有了ACPI，BIOS提前把ACPI的一些静态表格和AML的bytecode代码装载到内存，
 然后ACPI驱动就会加载AML的解释器，这样OS就可以通过ACPI驱动调用预先装载的AML代码。
