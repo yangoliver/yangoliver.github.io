@@ -4,13 +4,20 @@ layout: page
 comments: yes
 ---
 
-##My blog
+### My write-ups
 
 - [http://oliveryang.net](http://oliveryang.net)
 
-- [Old CSDN blog](http://blog.csdn.net/yayong)
+- [Wechat Public Account](memdump)
 
-##My contributions for Open Source Projects
+- [Docin](http://www.docin.com/yang_oliver)
+
+- [CSDN blog](http://blog.csdn.net/yayong)
+
+- [Weibo](http://weibo.com/yangoliver)
+
+
+### My contributions for Open Source Projects
 
 - [The crash commits](http://oliveryang.net/2015/06/linux-crash-my-patches)
 
