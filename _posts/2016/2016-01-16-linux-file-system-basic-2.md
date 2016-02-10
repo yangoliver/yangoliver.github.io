@@ -69,7 +69,7 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 
 由于samplefs是为早期内核版本开发的，因此直接编译会有错误。最主要的原因是数据结构file_system_type在新老内核版本中的定义被修改
 了。原来结构体中的.get_sb被修改为.mount，接口和代码的实现都有所不同。为了支持3.19.8，需要重新实现.mount的函数，因此做了一些
-[新的改动](https://github.com/yangoliver/lktm/commit/e5f50a26df7faf2e7fb96da7d241539fa5e35597#diff-57116b78c8dc087dcd2b746b39b1290b)。
+[新的改动](https://github.com/yangoliver/lktm/commit/9488166625cd70248211e03024729d52a993048a)。
 有了这个改动，内核模块的编译就可以成功了。
 
 ###2.4 加载sampelfs

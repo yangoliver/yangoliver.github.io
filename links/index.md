@@ -8,8 +8,6 @@ comments: yes
 
 - [http://oliveryang.net](http://oliveryang.net)
 
-- [Wechat Public Account](memdump)
-
 - [Docin](http://www.docin.com/yang_oliver)
 
 - [CSDN blog](http://blog.csdn.net/yayong)
