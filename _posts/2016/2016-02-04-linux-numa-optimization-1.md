@@ -45,7 +45,7 @@ SMP和AMP的深入介绍很多经典文章书籍可参考，此处不再赘述�
 [UMA(Uniform Memory Access)](https://en.wikipedia.org/wiki/Uniform_memory_access)
 均匀内存访问架构则是与NUMA相反，所以处理器对共享内存的访问距离和时间是相同的。
 
-由此可以，不论是NUMA还是UMA都是SMP架构的一种设计和实现上的选择。
+由此可知，不论是NUMA还是UMA都是SMP架构的一种设计和实现上的选择。
 
 阅读文档时，也常常能看到**ccNUMA(Cache Coherent NUMA)**，即缓存一致性NUMA架构。
 这种架构主要是在NUMA架构之上保证了多处理器之间的缓存一致性。降低了系统程序的编写难度。
