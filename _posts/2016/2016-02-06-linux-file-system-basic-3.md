@@ -8,26 +8,34 @@ tags:
 - [file system, crash, kernel, linux, storage]
 ---
 
->本文首发于<http://oliveryang.net>，转载时请包含原文或者作者网站链接。
+>本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
 TBD.
 
-## Samplefs day2
+## 文件系统 mount 和 Super Block
 
-### 1. 编译和加载
+Samplefs Day2 的代码涉及到了文件系统 mount 和 Super Block (超级块)的实现。
+本文将以 [Day2 的代码](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day2)
+为例，讲解相关概念。
 
-### 2. 源代码
+### 1. Samplefs Day2
 
-#### 2.1 主流程
+#### 1.1 源代码
 
-#### 2.2 超级块
+#### 1.2 编译和加载
 
-#### 2.3 装载实例
+### 2. 相关概念和接口
+
+#### 2.1 Super Block
+
+#### 2.2 mount 实例
 
 ### 3. 实验和调试
 
-#### 3.1 文件系统装载
+#### 3.1 文件系统 mount
 
-#### 3.2 遍历装载实例
+#### 3.2 遍历 mount 实例
 
-#### 3.3 查看超级块
+#### 3.3 查看 Super Block
+
+### 4. 小结
