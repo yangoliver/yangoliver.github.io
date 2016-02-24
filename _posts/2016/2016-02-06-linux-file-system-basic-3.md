@@ -22,6 +22,18 @@ Samplefs Day2 的代码涉及到了文件系统 mount 和 Super Block (超级块
 
 #### 1.1 源代码
 
+与 Day1 相比，Day2 的实现增加下面两个主要功能，
+
+1. 填充和释放 Super Block
+
+   - samplefs_fill_super
+
+   - amplefs_put_super
+
+2. 解析 mount 的命令行参数
+
+   samplefs_parse_mount_options
+
 #### 1.2 编译和加载
 
 ### 2. 相关概念和接口
