@@ -8,16 +8,23 @@ tags:
 - [file system, crash, kernel, linux, storage]
 ---
 
->本文首发于<http://oliveryang.net>，转载时请包含原文或者作者网站链接。
+>本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
-##1. 简单文件系统- samplefs
+## 文件系统注册
+
+本文将以Samplefs Day1为例来说明文件系统注册的相关概念。
 
 简单文件系统(samplefs)是Steve French写的用于教学目的的文件系统。它的设计初衷是帮助初学者理解如何实现一个文件系统，并且在Linux环境下对文件系统
 如何debug和tunning。
 
 Samplefs的源代码可以到[samba.org](http://svn.samba.org/samba/ftp/cifs-cvs/samplefs.tar.gz)
 的SVN服务器上去下载。
-本文的内容将基于[day1目录的源代码](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day1)展开。
+
+### 1. Samplefs Day1
+
+本文的内容将基于[day1的源代码](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day1)展开。
+
+#### 1.1 源代码
 
 文件系统的代码可以实现为一个独立的内核模块，也可以被编译为内核的一部分。而samplefs day1的代码则展示了文件系统内核模块
 的实现，主要包括以下几部分,
@@ -38,16 +45,10 @@ Samplefs的源代码可以到[samba.org](http://svn.samba.org/samba/ftp/cifs-cvs
 
 整个实现中，file_system_type结构是关键数据结构，模块的代码去要初始化该结构里必要的成员。
 
-##2. 编译和加载samplefs
-
-本节讲述编译samplefs day1的详细步骤。
-
-###2.1 准备内核源码
+#### 1.2 编译 Linux 内核
 
 编译模块前，需要先编译内核源代码。由于开发环境是Fedroa22，所以内核源代码的编译可以通过下载对应版本的源码rpm来完成。Fedora源码
 的下载和编译过程参考了[在Fedora 20环境下安装系统内核源代码](http://www.cnblogs.com/kuliuheng/p/3976780.html)这篇文章。
-
-###2.2 编译内核
 
 Samplefs需要修改fs/Kconfig文件。可以直接通过打
 [Kconfig.diff patch](https://github.com/yangoliver/lktm/blob/master/fs/samplefs/Kconfig.diff)来修改。由于samplefs的代码不支
@@ -61,7 +62,7 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 
 运行`make all`后，内核编译开始，需要一直等待编译结束。
 
-###2.3 编译samplefs模块
+#### 1.3 编译 samplefs 模块
 
 内核编译完成后，可以在同一目录下继续编译samplefs模块，
 
@@ -72,7 +73,7 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 [新的改动](https://github.com/yangoliver/lktm/commit/9488166625cd70248211e03024729d52a993048a)。
 有了这个改动，内核模块的编译就可以成功了。
 
-###2.4 加载sampelfs
+#### 1.4 加载 sampelfs
 
 加载samplefs时，遇到了下面的错误，
 
@@ -107,9 +108,9 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 	$ lsmod | grep samplefs
 	samplefs               12511  0
 
-##3. 源代码
+### 2. 相关概念和接口
 
-###3.1 file_system_type - 文件系统类型结构
+#### 2.1 file_system_type - 文件系统类型结构
 
 即然Linux支持同时运行不同的文件系统，那么必然要有一个数据结构来描述正在内核中运行的文件系统类型，这就是file_system_type结构，
 
@@ -156,7 +157,7 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 	};
 
 
-###3.2 VFS API - 文件系统注册和注销
+#### 2.2 VFS (Virtual Filesystem Switch)
 
 由于Linux支持70多种不同的文件系统，那么必然就需要在架构上保证不同的文件系统的实现可以做到高效和简洁。VFS可以说很好的实现了这个目标，
 
@@ -171,7 +172,7 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 
 因此，即使是实现一个最简单的文件系统，也不可能绕开VFS的API。
 
-####3.2.1 注册和注销文件系统
+#### 2.3 注册和注销文件系统
 
 Day1的源码里在module init和remove的入口函数里用到了如下VFS API，
 
@@ -183,7 +184,7 @@ Day1的源码里在module init和remove的入口函数里用到了如下VFS API�
 
 正是因为这个函数，让上层的VFS代码可以在文件系统mount和umount操作可以直接通过这个链表上的结构去调用不同文件系统模块的具体实现。
 
-####3.2.2 mount文件系统
+#### 2.3 mount 文件系统
 
 当用户调用mount命令去挂载文件系统时，VFS的代码将从file_systems链表找到对应类型的文件系统file_system_type结构，然后调用.mount入口函数。
 
@@ -205,7 +206,7 @@ Samplefs的mount入口函数实现如下,
 	而且必须拿锁状态下操作。函数在失败时必须返回ERR_PTR(error)。
 
 
-##4. 实验和调试
+### 3. 实验和调试
 
 如果利用crash，我们可以遍历文件系统的全局链表，并且找到samplefs的对应节点。若需要了解Linux Crash，可查看
 [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background)这篇文章。
@@ -330,7 +331,7 @@ Samplefs的mount入口函数实现如下,
 		  core_size = 12511
 
 
-##5. 小结
+### 4. 小结
 
 通过samplefs day1的源码和实验，我们可以对实现文件系统模块的一些基本概念有些了解。Linux内核一些特殊目的的文件系统也可以作为我们对照参考的例子。例如
 ramfs只有不到600行c代码，分析和学习ramfs代码也可以加深对Linux VFS的接口和基本实现的理解。此外，也可以直接下载本文中使用的
