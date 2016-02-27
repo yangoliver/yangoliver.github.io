@@ -188,12 +188,7 @@ Day1的源码里在module init和remove的入口函数里用到了如下VFS API�
 
 当用户调用mount命令去挂载文件系统时，VFS的代码将从file_systems链表找到对应类型的文件系统file_system_type结构，然后调用.mount入口函数。
 
-Samplefs的mount入口函数实现如下,
-
-	static struct dentry *samplefs_mount(struct file_system_type *fs_type, int flags,
-	    const char *dev_name, void *data)
-
-函数参数说明如下，
+mount入口函数参数说明如下，
 
 	struct file_system_type *fs_type: 文件系统类型结构指针，samplefs已经做了部分的初始化。
 	int flags: mount的标志位。
@@ -205,6 +200,55 @@ Samplefs的mount入口函数实现如下,
 	mount函数必须返回文件系统树的root dentry(根目录项)。在mount时超级块的引用计数必须增加，
 	而且必须拿锁状态下操作。函数在失败时必须返回ERR_PTR(error)。
 
+根据文件系统的类型，即fs_type，mount函数的参数可能会被解释成不同的含义。例如，
+文件系统是基于块设备的，dev_name应该是块设备的名字。如果这个设备上包含文件系统，
+它将会被打开，同时这个方法会根据磁盘文件系统的超级块内容，在内存中创建和初始化VFS Super Block(超级块)，
+并且返回该文件系统在VFS中的root dentry。
+
+通常，VFS为文件系统实现mount入口函数提供了如下三个不同的方法。这三个方法中除了新分配或者获取已经存在的VFS Super Block，
+还可能进一步使用调用者实现指定的fill_super回调来初始化Super Block。因此，每个文件系统都需要实现fill_super函数回调。
+
+- mount_bdev: mount存在于块设备之上的文件系统。
+
+	struct dentry *mount_bdev(struct file_system_type *fs_type,
+		int flags, const char *dev_name, void *data,
+		int (*fill_super)(struct super_block *, void *, int));
+
+  磁盘文件系统在内存中的超级块通常是由磁盘上存储的超级块构造或者与之紧密关联的。
+  这类函数实现中，通常是同一个块设备返回相同的Super Block，不同的块设备返回不同的Super Block。
+  这时fill_super在块设备首次被mount时才被调用。
+
+- mount_nodev: mount没有后备设备(不存在于任何设备之上)的文件系统。
+
+	struct dentry *mount_nodev(struct file_system_type *fs_type,
+		int flags, void *data,
+		int (*fill_super)(struct super_block *, void *, int));
+
+  用于非磁盘文件系统。每次mount都会返回一个新的VFS Super Block。例如ramfs。
+  这时fill_super总是被无条件调用。
+
+- mount_single: mount可以在所有mount实例上全局共享的文件系统。
+
+	struct dentry *mount_single(struct file_system_type *fs_type,
+		int flags, void *data,
+		int (*fill_super)(struct super_block *, void *, int));
+
+  用于非磁盘文件系统。每次mount都使用同一个VFS Super Block。例如debugfs。
+  这时fill_super只在第一次分配Super Block后被调用，用于首次初始化。
+
+Samplefs不是磁盘文件系统，它使用了mount_nodev来实现mount入口函数，并且，
+fill_super回调被初始化为samplefs_fill_super。
+
+	static struct dentry *samplefs_mount(struct file_system_type *fs_type, int flags,
+		const char *dev_name, void *data)
+	{
+		return mount_nodev(fs_type, flags, data, samplefs_fill_super);
+	}
+
+Day1的代码里samplefs_fill_super是空函数。这就意味着，Day1的实现里，
+每次mount文件系统，都会调用samplefs_mount入口函数。在这个函数里，
+mount_nodev总会分配一个新的samplefs在VFS层面上的Super Block。但是，
+由于samplefs_fill_super是空函数，这些Super Block并没有初始化。
 
 ### 3. 实验和调试
 
