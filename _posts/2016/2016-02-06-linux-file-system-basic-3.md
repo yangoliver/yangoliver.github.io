@@ -38,12 +38,15 @@ Samplefs Day2 的代码涉及到了文件系统 mount 和 Super Block (超级块
 
   mount_nodev 分配了新的 VFS Supoer Block 然后调用 samplefs_fill_super 回调做了如下几件事情，
 
-  1. 分配 root inode
-  2. 分配了属于 samplefs 模块的内存 Super Block: samplefs_sb_info，并让它在 VFS 层的 Super Block 指向它。
-  3. 根据 root inode，分配 root dentry，作为 mount_nodev，也是 samplefs_mount 的最终返回值。
-  4. 使用 load_nls_default() 函数初始化 samplefs 模块的内存 Super Block。
+  1. 初始化了由 mount_nodev 分配好并传入的 VFS Super Block。
+     其中把 Super Block 的操作表 samplefs_super_ops 赋值给了 struct super_block 的 s_op 成员。
+	 而在 samplefs_super_ops 初始化好了 samplefs_put_super 回调函数用于未来释放 samplefs 自己的 Super Block。
+  2. 分配 root inode。
+  3. 分配了属于 samplefs 模块的内存 Super Block: samplefs_sb_info，并让它在 VFS 层的 Super Block 指向它。
+  4. 根据 root inode，分配 root dentry，作为 mount_nodev，也是 samplefs_mount 的最终返回值。
+  5. 使用 load_nls_default() 函数初始化 samplefs 模块的内存 Super Block。
      主要用于 mount 时对不同编码字符集的支持, Linux NLS Kconfig 里有对 Native language support 的说明。
-  5. 调用 samplefs_parse_mount_options 来解析 mount 时的选项参数。
+  6. 调用 samplefs_parse_mount_options 来解析 mount 时的选项参数。
 
 - samplefs_parse_mount_options: 解析 mount 文件系统时的选项参数。
 
@@ -109,13 +112,142 @@ Samplefs 的编译可以在 Linux 内核编译成功后，运行下面的命令�
 请参考[针对新内核接口的 Patch](https://github.com/yangoliver/lktm/commit/dd2b5a7332ff61ee8a4ded3281616b0f77d6eddf#diff-2e79772ae929f397a8bb5817fc4e6c4f)
 来查看本文中的 Day2 代码针对原有代码做了哪些修改。
 
-### 2. 相关概念和接口
+### 2. 关键数据结构和概念
 
-TBD
+本节对文件系统的一些关键数据结构和概念做简单介绍。
 
-#### 2.1 Super Block
+#### 2.1 struct file_system_type: 文件系统类型
 
-#### 2.2 mount 实例
+用于描述和表示一个具体的文件系统类型。每个文件系统模块都声明和初始化一个文件系统类型数据结构，
+然后在模块加载和初始化时通过 VFS register_filesystem API 向 VFS 核心层注册。
+模块在被卸载时，可以通过 VFS unregister_filesystem 从 VFS 核心层注销。
+
+VFS 核心层维护一个全局链表，可以查找系统中目前注册的所有文件系统类型，
+并且调用该数据结构里提供的 mount 和 kill_sb 方法在 文件系统的 mount/umount 操作时做相应的处理。
+[Linux file system basic - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2/)
+中已经有过详细介绍，这里就不再展开详述。
+
+#### 2.2 struct super_block: 超级块
+
+Super Block 既是表示一个已经 mount 的文件系统的内存对象，也是关联所有文件系统 Meta Data (元数据) 的核心对象。
+讨论 Super Block 这个概念的时候，需要搞清楚是哪个层面上的 Super Block。
+否则会引起很多误会和混淆。一个基于磁盘的文件系统，会涉及到三个不同层面上的 Super Block，
+
+- VFS **内存中**的 Super Block
+
+  是 VFS 对所有文件系统**共性**做的数据抽象，所有文件系统都使用相同的定义：`struct super_block`。
+
+- 具体文件系统**内存中**的 Super Block
+ 
+  是具体文件系统基于磁盘介质上的 Super Block 在内存中创建的对象。
+  每个文件系统都需要自己定义，属于该文件系统**个性**的部分。Samplefs 的对应数据结构为：`struct samplefs_sb_info`。
+
+- 具体文件系统**磁盘上**存储的 Super Block
+
+  是具体文件系统 Disk Layout (磁盘布局)整体设计的一部分，属于该文件系统**个性**的一部分。
+  通常磁盘 Super Block 存储在磁盘设备上的固定偏移的一个或者多个 Block (块)里。
+  由于 samplefs 不是一个磁盘文件系统，因此没有磁盘上的 Super Block。
+
+Linux 3.19的 [struct super_block 的定义](https://github.com/torvalds/linux/blob/v3.19/include/linux/fs.h#L1215)
+里的部分成员在 samplefs_fill_super 回调里被初始化了, 下面的定义仅列出相关成员，
+
+	struct super_block {
+
+		[...snipped...]
+
+		unsigned char		s_blocksize_bits;
+		unsigned long		s_blocksize;
+		loff_t			s_maxbytes;	/* Max file size */
+		struct file_system_type	*s_type;
+		const struct super_operations	*s_op;
+
+		[...snipped...]
+
+		unsigned long		s_magic;
+		struct dentry		*s_root;
+
+		[...snipped...]
+
+		void 			*s_fs_info;	/* Filesystem private info */
+
+		[...snipped...]
+
+		/* Granularity of c/m/atime in ns.
+		   Cannot be worse than a second */
+		u32		   s_time_gran;
+
+		[...snipped...]
+	};
+
+这里只介绍其中三个重要的结构成员，
+
+1. s_fs_info 成员
+
+   该成员直接指向 samplefs 模块的内存 Super Block。通过把 s_fs_info 指向 samplefs_sb_info，
+   VFS 的 Super Block 结构 super_block 和 samplefs_sb_info 结构关联了起来。
+
+2. s_op 成员
+
+   该成员直接指向 VFS Super Block 的操作表结构：`struct super_operations`，
+
+		struct super_operations samplefs_super_ops = {
+			.statfs         = simple_statfs,
+			.drop_inode     = generic_delete_inode, /* Not needed, is the default */
+			.put_super      = samplefs_put_super,
+		};
+
+   Samplefs只初始化了 super_operations 的三个方法，其中前两个是 VFS 代码提供的默认回调。
+   而 samplefs 只自定义及使用了第三个方法：put_super，用于释放 samplefs 模块自定的 Super Block。
+
+3. s_root 成员
+
+   指向 root dentry，而 root dentry 又可以指向 root inode。
+   Samplefs 通过 VFS 函数，先后分配了 root inode 和 root dentry，并且赋值给 s_root 成员。
+
+#### 2.3 struct inode: 索引节点
+
+inode 数据结构存放了文件系统内的各种对象(常规文件，目录，符号链接，设备文件等)的元数据。
+与 Super Block 类似，inode 在文件系统的不同层次都有具体定义，
+
+- VFS **内存中**的 inode
+- 具体文件系统**内存中**的 inode
+- 具体文件系统**磁盘上**存储的 inode
+
+Samplefs day2 的代码里只涉及了 VFS inode，它在 samplefs_fill_super 中调用了 iget_locked 分配了 root inode。
+本文暂不对 inode 做详细说明。
+
+#### 2.4 struct dentry: 目录项
+
+dentry 数据结构描述文件系统对象(常规文件，目录，符号链接，设备文件等)在内核中的文件系统树中的位置。
+与 Super Block 类似，理论上 dentry 在文件系统的不同层次也可以有不同定义，
+
+- VFS **内存中**的 dentry
+- 具体文件系统**内存中**的 dentry
+- 具体文件系统**磁盘上**存储的 dentry
+
+Samplefs day2 的代码里只涉及了 VFS dentry，它在 samplefs_fill_super 中调用了 d_make_root 分配了 root dentry。
+这个 root dentry 也是 samplefs_mount 返回给 VFS 的返回值。该 root dentry 也被 VFS Super Block 的 s_root 成员指向。
+dentry 结构的 d_inode 成员也会指向它所关联的 root inode，这里即 samplefs 的 root inode。
+本文暂不对 dentry 做详细说明。
+
+#### 2.5 struct vfsmount: VFS文件系统装载
+
+vfsmount 代表了文件系统的已装载实例。其中主要由文件系统的 root dentry 和 Super Block 构成。
+
+	struct vfsmount {
+		struct dentry *mnt_root;	/* root of the mounted tree */
+		struct super_block *mnt_sb;	/* pointer to superblock */
+		int mnt_flags;
+	};
+
+早期内核里，vfsmount 还用于将局部文件系统的装载实例链接在一起，形成一个全局树状数据结构，
+用于访问各文件系统装载实例。因此 vfsmount 有很多其它结构成员。
+
+新内核中，vfsmount 的大部分成员都被转移到 `struct mount` 数据结构中。这样，
+链接所有文件系统装载实例的工作改由 `struct mount` 结构完成。由于 vfsmount 也被用于 VFS API 的参数，
+因此，把不需要暴露给 VFS API 使用者的成员转移到内部 mount 结构的好处还是显而易见的。
+
+本文暂不对 vfsmount 做更详细的说明。
 
 ### 3. 实验和调试
 
