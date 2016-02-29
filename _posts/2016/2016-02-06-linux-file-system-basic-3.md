@@ -399,9 +399,56 @@ crash 内置的 mount 命令可以列出当前名字空间的所有文件系统 
 
 	ffff880136d02c80 ffff8800ba4af000 samplefs nodev   /mnt >>>>>>> samplefs 的记录
 
-
-
 #### 3.3 查看 Super Block
+
+利用前面得到的 samplefs 的 VFS Super Block 地址，可以进一步查看
+struct super_block 的内容。比如，其中三个重要的成员，s_op，s_root，s_fs_into，
+
+	crash> struct super_block.s_op,s_root,s_fs_info ffff8800ba4af000
+	  s_op = 0xffffffffa0575040 <samplefs_super_ops>
+	  s_root = 0xffff880053e41540  >>>>>>> 与前面得到的 root dentry 地址一致
+	  s_fs_info = 0xffff88012ab4d5c0 >>>>>>> smaplefs模块内部的 Super Block
+
+进一步打印出 VFS Super Block 操作表，可以看到与源代码初始化的回调是一致的，
+
+	crash> p samplefs_super_ops
+	samplefs_super_ops = $11 = {
+	  alloc_inode = 0x0,
+	  destroy_inode = 0x0,
+	  dirty_inode = 0x0,
+	  write_inode = 0x0,
+	  drop_inode = 0xffffffff8122bc10 <generic_delete_inode>,
+	  evict_inode = 0x0,
+	  put_super = 0xffffffffa0573000 <samplefs_put_super>, >>>>>>> 释放 samplefs_sb_info 的函数
+	  sync_fs = 0x0,
+	  freeze_super = 0x0,
+	  freeze_fs = 0x0,
+	  thaw_super = 0x0,
+	  unfreeze_fs = 0x0,
+	  statfs = 0xffffffff81238820 <simple_statfs>,
+	  remount_fs = 0x0,
+	  umount_begin = 0x0,
+	  show_options = 0x0,
+	  show_devname = 0x0,
+	  show_path = 0x0,
+	  show_stats = 0x0,
+	  quota_read = 0x0,
+	  quota_write = 0x0,
+	  get_dquots = 0x0,
+	  bdev_try_to_free_page = 0x0,
+	  nr_cached_objects = 0x0,
+	  free_cached_objects = 0x0
+	}
+
+查看 samplefs 模块内部定义的 Super Block，即 `struct samplefs_sb_info`，
+
+	crash> struct samplefs_sb_info 0xffff88012ab4d5c0
+	struct samplefs_sb_info {
+	  rsize = 0,
+	  wsize = 0,
+	  mnt_flags = 0,
+	  local_nls = 0xffffffffa04ec000
+	}
 
 ### 4. 小结
 
