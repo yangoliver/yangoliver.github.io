@@ -246,6 +246,7 @@ vfsmount 代表了文件系统的已装载实例。其中主要由文件系统�
 新内核中，vfsmount 的大部分成员都被转移到 `struct mount` 数据结构中。这样，
 链接所有文件系统装载实例的工作改由 `struct mount` 结构完成。由于 vfsmount 也被用于 VFS API 的参数，
 因此，把不需要暴露给 VFS API 使用者的成员转移到内部 mount 结构的好处还是显而易见的。
+这时，vfsmount 是 mount 结构的一个成员，通过 mount.mnt 就可以访问。
 本文暂不对 vfsmount 做更详细的说明。
 
 ### 3. 实验和调试
@@ -287,6 +288,118 @@ samplefs_put_super 释放 samplefs 的 Super Block。最后，deactivate_super �
 VFS Super Block。相关内容已经在1.1节与 samplefs_put_super 相关的部分详细描述。
 
 #### 3.2 遍历 mount 实例
+
+文件系统 mount 后，内核使用 mount 和 vfsmount 数据结构来描述该实例。
+同时，这个 mount 实例被加入到一个全局的数据结构中。早期内核里，这个全局数据结构是系统全局的,
+是以 vfsmntlist 为表头的全局链表。后来，由于
+[namespace 命名空间](http://man7.org/linux/man-pages/man7/namespaces.7.html)的引入，
+mount 的全局数据结构是进城所属命名空间内全局的。这些数据结构都可以使用 crash 来遍历。
+
+要 crash 识别模块符号，需要手动加载 day2 编译好的模块，
+
+	crash> mod -s samplefs /ws/lktm/fs/samplefs/day2/samplefs.ko
+	MODULE          NAME     SIZE  OBJECT FILE
+	ffffffffa0575120 samplefs 12641  /ws/lktm/fs/samplefs/day2/samplefs.ko
+
+因为系统内没有创建容器，因此利用 pid 是1的进程来得倒 mount_ns 即 mount 的命名空间，
+
+	crash> ps 1
+	   PID    PPID  CPU       TASK        ST  %MEM     VSZ    RSS  COMM
+	      1      0   1  ffff88013abd0000  IN   0.1  135096   6904  systemd
+	crash> task_struct.nsproxy ffff88013abd0000
+	  nsproxy = 0xffffffff81c4e400 <init_nsproxy>
+	crash> nsproxy.mnt_ns 0xffffffff81c4e400
+	  mnt_ns = 0xffff88013b08eb00  >>>>>>>>>>>>>>>>> mount 命名空间
+	crash> struct mnt_namespace 0xffff88013b08eb00
+	struct mnt_namespace {
+	  count = {
+	    counter = 7
+	  },
+	  ns = {
+	    stashed = {
+	      counter = 0
+	    },
+	    ops = 0xffffffff8182d960 <mntns_operations>,
+	    inum = 4026531840
+	  },
+	  root = 0xffff88013ab2e000,   >>>>>>>> struct mount 的地址
+	  list = {
+	    next = 0xffff88013ab2e088,
+	    prev = 0xffff880136d02d08
+	  },
+	  user_ns = 0xffffffff81c46b20 <init_user_ns>,
+
+	  [...snipped...]
+
+	}
+
+遍历 mount 链表，可以获得该名字空间内所有已经装载的文件系统 mount 结构，
+
+	crash> list -h 0xffff88013ab2e000 mount.mnt_list -s mount.mnt_devname
+	ffff88013ab2e000
+	  mnt_devname = 0xffff88013b028108 "rootfs"
+	ffff8800b92a6000
+	  mnt_devname = 0xffff8800b9116030 "sysfs"
+	ffff8800b92a6140
+	  mnt_devname = 0xffff8800b9116040 "proc"
+	ffff8800b92a6280
+	  mnt_devname = 0xffff880139adc1f0 "devtmpfs"
+	ffff8800b92a63c0
+	  mnt_devname = 0xffff880139adc200 "securityfs"
+	ffff8800b92a6500
+	  mnt_devname = 0xffff8800b9116050 "tmpfs"
+	ffff8800b92a6640
+	  mnt_devname = 0xffff8800b9116060 "devpts"
+	ffff8800b92a6780
+	  mnt_devname = 0xffff8800b9116068 "tmpfs"
+	ffff8800b92a68c0
+	  mnt_devname = 0xffff8800b9116078 "tmpfs"
+	ffff8800b92a6a00
+	  mnt_devname = 0xffff8800b9116088 "cgroup"
+
+	[...snipped...]
+
+	ffff880136d02c80                           >>>>>>> samplefs struct mount 地址
+	  mnt_devname = 0xffff880100f9bda8 "nodev" >>>>>>> samplefs mount 时设备名
+	ffff88013b08eaa0
+	  mnt_devname = 0xffff88013ab2e000 ""
+
+使用上面得到的 samplefs mount 结构的地址，可以打印出其内嵌的 vfsmount 结构，
+
+	crash> struct mount.mnt ffff880136d02c80
+	  mnt = {
+	    mnt_root = 0xffff880053e41540,
+	    mnt_sb = 0xffff8800ba4af000,
+	    mnt_flags = 4128
+	  }
+
+根据2.5节所述内容，可以知道 mnt_root 是 root dentry 地址，mnt_sb 是 VFS Super Block地址。
+可以利用 crash 已经内置的 files 命令，验证是 root dentry 地址是正确的，
+
+	crash> files -d 0xffff880053e41540
+	     DENTRY           INODE           SUPERBLK     TYPE PATH
+	ffff880053e41540 ffff88013ae56a28 ffff8800ba4af000 DIR  /mnt/  >>>>>> 正是 samplefs 挂载点
+
+crash 内置的 mount 命令可以列出当前名字空间的所有文件系统 mount 实例，
+可以看到，前两列的地址与我们找到的 samplefs 的 mount 结构和 Super Block
+结构是一样的。
+
+	crash> mount
+	     MOUNT           SUPERBLK     TYPE   DEVNAME   DIRNAME
+	ffff88013ab2e000 ffff88013b010800 rootfs rootfs    /
+	ffff8800b92a6000 ffff8800b92b8000 sysfs  sysfs     /sys
+	ffff8800b92a6140 ffff88013b014000 proc   proc      /proc
+	ffff8800b92a6280 ffff88013a548000 devtmpfs devtmpfs /dev
+	ffff8800b92a63c0 ffff8800b92b8800 securityfs securityfs /sys/kernel/security
+	ffff8800b92a6500 ffff8800b92b9000 tmpfs  tmpfs     /dev/shm
+	ffff8800b92a6640 ffff88013a54a000 devpts devpts    /dev/pts
+	ffff8800b92a6780 ffff8800b92b9800 tmpfs  tmpfs     /run
+
+	[...snipped...]
+
+	ffff880136d02c80 ffff8800ba4af000 samplefs nodev   /mnt >>>>>>> samplefs 的记录
+
+
 
 #### 3.3 查看 Super Block
 
