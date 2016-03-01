@@ -456,3 +456,10 @@ struct super_block 的内容。比如，其中三个重要的成员，s_op，s_r
 同时，day2 新增的代码还涉及到了 Super Block 分配，释放，初始化的相关内容。
 让我们对 Super Block 的概念有了更近一步的了解。而 day2 涉及到的其它文件系统相关的概念，
 inode，dentry，vfsmount 等，在本文只做初步介绍。后续的文章中会逐步详细说明。
+
+### 5. 关联阅读
+
+* [Linux File System Basic - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1/)
+* [Linux File System Basic - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2/)
+* [Toward a safer fput()](https://lwn.net/Articles/494158/)
+* [NAMESPACES(7)](http://man7.org/linux/man-pages/man7/namespaces.7.html)
