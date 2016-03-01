@@ -463,3 +463,4 @@ inode，dentry，vfsmount 等，在本文只做初步介绍。后续的文章中
 * [Linux File System Basic - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2/)
 * [Toward a safer fput()](https://lwn.net/Articles/494158/)
 * [NAMESPACES(7)](http://man7.org/linux/man-pages/man7/namespaces.7.html)
+* [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)

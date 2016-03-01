@@ -156,7 +156,6 @@ Samplefs需要修改fs/Kconfig文件。可以直接通过打
 		/*  .fs_flags */
 	};
 
-
 #### 2.2 VFS (Virtual Filesystem Switch)
 
 由于Linux支持70多种不同的文件系统，那么必然就需要在架构上保证不同的文件系统的实现可以做到高效和简洁。VFS可以说很好的实现了这个目标，
@@ -380,3 +379,10 @@ mount_nodev总会分配一个新的samplefs在VFS层面上的Super Block。但�
 通过samplefs day1的源码和实验，我们可以对实现文件系统模块的一些基本概念有些了解。Linux内核一些特殊目的的文件系统也可以作为我们对照参考的例子。例如
 ramfs只有不到600行c代码，分析和学习ramfs代码也可以加深对Linux VFS的接口和基本实现的理解。此外，也可以直接下载本文中使用的
 [samplefs day1的全部代码和为新内核所做的修改](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day1)来做进一步的学习和实验。
+
+### 5. 关联阅读
+
+* [Linux File System Basic - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1/)
+* [在Fedora 20环境下安装系统内核源代码](http://www.cnblogs.com/kuliuheng/p/3976780.html)
+* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background)
+* [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)

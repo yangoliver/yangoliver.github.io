@@ -130,3 +130,7 @@ on multiple servers.</pre>
   为支持多个文件操作的原子性设计的文件系统。例如, Transactional NTFS，目前多为研究实验性质。
 	
 以上内容在互联网上已有不少论述，在此不一一赘述。
+
+### 3. 关联阅读
+
+* [维基百科文件系统的定义](http://en.wikipedia.org/wiki/Filesystem)
