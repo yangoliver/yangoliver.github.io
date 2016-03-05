@@ -185,6 +185,7 @@ p code {
     font-family: monospace;
     font-size: 14px;
     border: 1px solid #edebea;
+	background-color: #e5e5e5;
     overflow: auto;
 }
 hr {
