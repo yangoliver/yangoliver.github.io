@@ -2,9 +2,8 @@
 layout: post
 title: Linux Scheduler - 1
 description: Linux 调度器的系列文章。本文主要介绍抢占的基本概念和 Linux 内核的相关实现。 
-categories: [Chinese, Software]
-tags:
-- [scheduler, kernel, linux]
+categories: [Chinese, Software, Hardware]
+tags: [scheduler, kernel, linux, hardware]
 ---
 
 >本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
@@ -120,12 +119,12 @@ TBD
 1. 任务因为等待 IO 操作完成或者其它资源而阻塞。
 
    任务显式地调用 schedule 前，把任务运行态设置成 `TASK_UNINTERRUPTIBLE`。保证任务阻塞后不能因信号到来而引起睡眠过程的中断，从而被唤醒。
-   Linux 内核各种同步互斥原语，如 Mutex，Semaphore，R/W Semaphore，及其他各种引起阻塞的内核函数。
+   Linux 内核各种同步互斥原语，如 Mutex，Semaphore，wait_queue，R/W Semaphore，及其他各种引起阻塞的内核函数。
 
 2. 等待资源和特定事件的发生而主动睡眠。
 
    任务显式地调用 schedule 前，把任务运行态被设为 `TASK_INTERRUPTIBLE`。保证即使等待条件不满足也可以被任务接收到的信号所唤醒，重新进入运行态。
-   Linux 内核各种同步互斥原语，如 Mutex，Semaphore，及其它各种引起睡眠的内核函数。
+   Linux 内核各种同步互斥原语，如 Mutex，Semaphore，wait_queue，及其它各种引起睡眠的内核函数。
 
 3. 特殊目的，例如 debug 和 trace。
 
@@ -143,7 +142,7 @@ TBD
 
    需要注意的是，TIF_NEED_RESCHED 标志置位后，并没有立即调用 schedule 函数发生上下文切换。真正的上下文切换动作是 User Preemption 或 Kernel Preemption 的代码完成的。
 
-   User Preemption 或 Kernel Preemption 在很多代码路径上放置了检查当前任务的 TIF_NEED_RESCHED 标志，并显式调用 schedule 的逻辑。
+   User Preemption 或 Kernel Preemption 在很多代码路径上放置了检查当前任务的 `TIF_NEED_RESCHED` 标志，并显式调用 schedule 的逻辑。
    接下来很快就会有机会调用 schedule 来触发任务切换，这时抢占就真正的完成了。上下文切换发生时，下一个被调度的任务将由具体调度器算法来决定从运行队列里挑选。
 
    例如，如果时钟中断刚好打断正在用户空间运行的进程，那么当 Tick Preemption 的代码将当前被打断的用户进程的 `TIF_NEED_RESCHED` 标志置位。随后，时钟中断处理完成，并返回用户空间。
@@ -151,10 +150,25 @@ TBD
 
 2. Wakeup Preemption
 
-   任务被唤醒，变成 TASK_RUNNING 状态，插入到 Run Queue 上。此时调度器将新唤醒的任务和正在 CPU 上执行的任务交给具体的调度算法去比较，决定是否剥夺当前任务的运行。
-   与 Tick Preemption 一样，一旦决定剥夺在 CPU 上执行的任务的运行，则会给当前任务设置一个 `TIF_NEED_RESCHED` 标志。实际的 schedule 调用并不是在这时完成的。
+   当一个进程因各种原因需要唤醒另一个进程时，`try_to_wake_up` 的内核函数将会帮助被唤醒的进程选择一个 CPU 的 Run Queue，然后把进程插入到 Run Queue 里，并设置成 `TASK_RUNNING` 状态。
+   这个过程中 CPU Run Queue 的选择和 Run Queue 插入操作都是调用具体的调度算法回调函数来实现的。
 
-   接下来只要当前任务运行到任何一处 User Preemption 或 Kernel Preemption 的代码，这些代码就会检查到 `TIF_NEED_RESCHED` 标志，并调用 schedule 的位置，上下文切换才真正发生。
+   任务插入到 Run Queue 后，调度器立即将新唤醒的任务和正在 CPU 上执行的任务交给具体的调度算法去比较，决定是否剥夺当前任务的运行。
+   与 Tick Preemption 一样，一旦决定剥夺在 CPU 上执行的任务的运行，则会给当前任务设置一个 `TIF_NEED_RESCHED` 标志。而实际的 schedule 调用并不是在这时完成的。
+   但 Wakeup Preemption 在此处真正特殊的地方在于，执行唤醒操作的任务可能把被唤醒的任务插入到**本地 CPU** 的 Run Queue，但还可能插入到**远程 CPU** 的 Run Queue。
+   因此，schedule 函数的调用可能有两种情况，
+
+   * 被唤醒任务在本地 CPU Run Queue
+
+     唤醒函数在返回过程中，只要当前任务运行到任何一处 User Preemption 或 Kernel Preemption 的代码，这些代码就会检查到 `TIF_NEED_RESCHED` 标志，并调用 schedule 的位置，上下文切换才真正发生。
+     实际上，如果 Kernel Preemption 是打开的，在唤醒操作结束时的 `spin_unlock` 或者随后的各种可能的中断退出路径都有 Kernel Preemption 调用 schedule 的时机。
+
+   * 被唤醒任务在远程 CPU Run Queue
+
+     这种情况下，唤醒操作在设置 `TIF_NEED_RESCHED` 标志之后，会立即向被唤醒任务 Run Queue 所属的 CPU 发送一个 IPI (处理器间中断)，然后才返回。
+     以 Intel x86 架构为例，那个远程 CPU 的 `RESCHEDULE_VECTOR` 被初始化来响应这个中断，最终中断处理函数 `scheduler_ipi` 在远程 CPU 上执行。
+     早期 Linux 内核，`scheduler_ipi` 其实是个空函数，因为所有中断返回用户空间或者内核空间都的出口位置都已经有 User Preemption 和 Kernel Preemption 的代码在那里，所以 schedule 一定会被调用。
+     后来的 Linux 内核里，又利用 `scheduler_ipi` 让远程 CPU 来做远程唤醒的主要操作，从而减少 Run Queue 锁竞争。所以现在的 `scheduler_ipi` 加入了新的代码。
 
    因 Wakeup Preemption 而导致的上下文切换发生时，下一个被调度的任务将由具体调度器算法来决定从运行队列里挑选。
    对于刚唤醒的任务，如果成功触发了 Wakeup Preemption，则某些具体的调度算法会给它一个优先被调度的机会。
