@@ -1,8 +1,7 @@
 ---
 layout: post
 title: Chinese VS. English
-categories:
-- [Chinese, Career]
+categories: [Chinese, Career]
 tags:
 - [misc]
 ---

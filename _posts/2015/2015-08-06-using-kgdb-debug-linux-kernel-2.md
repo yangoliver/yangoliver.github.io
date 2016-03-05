@@ -2,8 +2,7 @@
 layout: post
 title: Using kdb/kgdb debug Linux kernel - 2
 description: Linux kernel could be debugged by kgdb via serial console. For console server, that need some sepcial settings.
-categories:
-- [English, Software]
+categories: [English, Software]
 tags:
 - [kgdb, kernel, linux]
 ---

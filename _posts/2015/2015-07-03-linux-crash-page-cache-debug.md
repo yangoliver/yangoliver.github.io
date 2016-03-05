@@ -2,8 +2,7 @@
 layout: post
 title: Linux Crash Utility - page cache debug
 description: Oliver's new page cache debug command is available in crash. The artile shows how to use it for kernel debug.
-categories:
-- [English, Software]
+categories: [English, Software]
 tags:
 - [crash, kernel, linux]
 ---

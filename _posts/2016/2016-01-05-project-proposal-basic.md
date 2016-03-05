@@ -2,8 +2,7 @@
 layout: post
 title: Project Proposal Basic
 description: 如何使一个好的创意落地？关键字：讲故事，创意，创见，计划，里程碑。概要设计，系统流程，系统架构，解决方案架构，项目管理，项目建议书。
-categories:
-- [Chinese, Software, Industry]
+categories: [Chinese, Software, Industry]
 tags:
 - [engineering]
 ---

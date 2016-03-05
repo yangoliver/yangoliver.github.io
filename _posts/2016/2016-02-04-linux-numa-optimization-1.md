@@ -2,8 +2,7 @@
 layout: post
 title: Linux NUMA Optimization - 1
 description: 本文介绍x86 NUMA的基本知识，包括简单的NUMA系统架构知识和ACPI规范中提供给OS的相关接口。
-categories:
-- [Chinese, Software, Hardware]
+categories: [Chinese, Software, Hardware]
 tags:
 - [perf, kernel, linux, hardware]
 ---

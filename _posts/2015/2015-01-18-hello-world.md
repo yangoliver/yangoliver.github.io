@@ -2,8 +2,7 @@
 layout: post
 title: Hello World
 description: 2004年9月,开始在CSDN写博客.六年后的某天写了CSDN的最后一篇博客. http://blog.csdn.net/yayong
-categories:
-- [Chinese, Career]
+categories: [Chinese, Career]
 tags:
 - [misc]
 ---

@@ -2,8 +2,7 @@
 layout: post
 title: Network write system call latency
 description: An issue related to 2ms latency in 10G network. Using ftrace to diagnosis network latency problems.
-categories:
-- [English, Software]
+categories: [English, Software]
 tags:
 - [network, perf, linux]
 ---

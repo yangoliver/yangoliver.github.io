@@ -2,8 +2,7 @@
 layout: post
 title: Using kdb/kgdb debug Linux kernel - 1
 description: The kgdb is a kernel debugger. This article introduces how to use kdb and kgdb to debug Linux kernel issue.
-categories:
-- [English, Software]
+categories: [English, Software]
 tags:
 - [kgdb, kernel, linux]
 ---

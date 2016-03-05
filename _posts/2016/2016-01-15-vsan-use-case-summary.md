@@ -2,8 +2,7 @@
 layout: post
 title: VSAN use case summary
 description: VMWare Virtual SAN的基本概念和使用场景介绍。关键字：VSAN, 软件定义存储，Hyperscale，虚拟化，软件定义数据中心。
-categories:
-- [Chinese, Software]
+categories: [Chinese, Software]
 tags:
 - [storage, virtualization, cloud]
 ---

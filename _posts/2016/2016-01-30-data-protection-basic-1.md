@@ -2,8 +2,7 @@
 layout: post
 title: Data Protection Basic - 1
 description: 数据保护系列文章。介绍什么是数据保护。数据保护的主要手段之一，备份的基本概念。内容从传统备份存储开始，也涉及到了云计算的对象存储和冷存储。
-categories:
-- [Chinese, Software, Hardware]
+categories: [Chinese, Software, Hardware]
 tags:
 - [backup, data protection, file system, virtualization, storage, cloud]
 ---

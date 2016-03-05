@@ -2,8 +2,7 @@
 layout: post
 title: Linux Crash Utility - coding notes
 description: Linux crash introduction. Coding notes and guidelines for contribute crash patch to community.
-categories:
-- [English, Software]
+categories: [English, Software]
 tags:
 - [crash, kernel, linux]
 ---

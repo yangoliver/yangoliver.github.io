@@ -2,8 +2,7 @@
 layout: post
 title: Linux scheduler profiling - 3
 description: Leverage schestats provided by Linux, any app latency could be devided by CPU time, runq wait time and sleep time.
-categories:
-- [English, Software]
+categories: [English, Software]
 tags:
 - [scheduler, perf, kernel, linux]
 ---

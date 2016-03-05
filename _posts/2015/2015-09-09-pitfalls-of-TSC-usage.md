@@ -2,8 +2,7 @@
 layout: post
 title: Pitfalls of TSC usage
 description: TSC is a widely used by many applications to measure the latency. However, there are lots of pitfalls of TSC usage.
-categories:
-- [English, Software, Hardware]
+categories: [English, Software, Hardware]
 tags:
 - [perf, kernel, linux, virtualization, hardware]
 ---

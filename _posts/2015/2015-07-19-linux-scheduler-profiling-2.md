@@ -2,8 +2,7 @@
 layout: post
 title: Linux scheduler profiling - 2
 description: Linux kernel SCHEDSTATS Perf Counters overview. How to access SCHEDSTATS counter and what is the implementation.
-categories:
-- [English, Software]
+categories: [English, Software]
 tags:
 - [scheduler, perf, kernel, linux]
 ---

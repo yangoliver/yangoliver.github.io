@@ -2,8 +2,7 @@
 layout: post
 title: First experiences on Github
 description: My first experience for github projects, which include irqbalance and perf-tools projects.
-categories:
-- [English, Software]
+categories: [English, Software]
 tags:
 - [irqbalance, perf]
 ---

@@ -2,9 +2,8 @@
 layout: post
 title: Linux Crash Utility - my patches
 description: This page is used to hold Oliver Yang's upstream patch for Linux crash utility.
-categories:
-- [English, Software]
-tags:
+categories: [English, Software]
+tgs:
 - [crash]
 ---
 

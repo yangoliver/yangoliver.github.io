@@ -2,8 +2,7 @@
 layout: post
 title: About SMI link error
 description: The article talks about what is the possible fault causes regarding to SMI link error.
-categories:
-- [English, Hardware]
+categories: [English, Hardware]
 tags:
 - [hardware]
 ---

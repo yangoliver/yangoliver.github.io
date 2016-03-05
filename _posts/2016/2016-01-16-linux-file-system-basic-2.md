@@ -2,8 +2,7 @@
 layout: post
 title: Linux File System Basic - 2
 description: Linux file system(文件系统)模块的实现和基本数据结构。关键字：文件系统，内核，samplefs，VFS，存储。
-categories:
-- [Chinese, Software]
+categories: [Chinese, Software]
 tags:
 - [file system, crash, kernel, linux, storage]
 ---

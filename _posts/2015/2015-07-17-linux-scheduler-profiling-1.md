@@ -2,8 +2,7 @@
 layout: post
 title: Linux scheduler profiling - 1
 description: Linux kernel scheduling perf profiling goals. The major symptoms of scheduling perf issues.
-categories:
-- [English, Software]
+categories: [English, Software]
 tags:
 - [scheduler, perf, kernel, linux]
 ---
