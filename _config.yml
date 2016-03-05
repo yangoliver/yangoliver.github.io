@@ -5,4 +5,4 @@ author: Oliver Yang
 description: This article may cover Linux, Kernel, Storage, Network, Hardware, Virtualization and Cloud Computing.
 highlighter: rouge
 gems: [jekyll-paginate]
-paginate: 24
+paginate: 15
