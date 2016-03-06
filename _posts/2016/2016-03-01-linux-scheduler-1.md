@@ -227,7 +227,20 @@ TBD
 
 4. Kernel Preemption
 
-   TBD
+   早期 Linux 内核只支持 User Preemption。2.6内核 Kernel Preemption 支持被引入。
+
+   Kernel Preemption 发生在以下几种情况，
+
+   * 中断，异常结束处理后，返回到内核空间时。
+
+     以 x86 为例，Linux 在中断和异常处理代码的公共代码部分(即从具体 handler 代码退出后)，判断是否返回内核空间，然后调用 `preempt_schedule_irq` 检查 `TIF_NEED_RESCHED` 标志，触发任务切换。
+
+   * 禁止内核抢占处理结束时
+
+     作为完全抢占内核，Linux 只允许在当前内核上下文需要禁止抢占的时候才使用 `preempt_disable` 禁止抢占，内核代码在禁止抢占后，应该尽早调用 `preempt_enable` 使能抢占，避免引入高调度延迟。
+     为尽快处理在禁止抢占期间 pending 的重新调度申请，内核在 `preempt_enable` 里会调用 `preempt_schedule` 检查 `TIF_NEED_RESCHED` 标志，触发任务切换。
+
+     使用 `preempt_disable` 和 `preempt_enable` 的内核上下文有很多，典型而又为人熟知的有各种内核锁的实现，如 Spin Lock，Mutex，Semaphore，R/W Semaphore，RCU 等。
 
 ### 4. schedule 函数
 
