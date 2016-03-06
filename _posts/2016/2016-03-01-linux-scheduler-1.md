@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux Scheduler - 1
+title: Context Switch And Preemption
 description: Linux 调度器的系列文章。本文主要介绍抢占的基本概念和 Linux 内核的相关实现。 
 categories: [Chinese, Software, Hardware]
 tags: [scheduler, kernel, linux, hardware]
@@ -8,39 +8,46 @@ tags: [scheduler, kernel, linux, hardware]
 
 >本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
-## Preemption (抢占)
-
 本文主要围绕 Linux 内核调度器 Preemption 的相关实现进行讨论。其中涉及的一般操作系统和 x86 处理器和硬件概念，可能也适用于其它操作系统。
 
-### 1. 背景知识
+## 1. 背景知识
 
-#### 1.1 Preemption
+### 1.1 Context Switch
+
+**Context Switch (上下文切换)** 指任何操作系统上下文保存和恢复执行状态，以便于被安全地打断和稍后被正确地恢复执行。
+一般操作系统中通常因以下三种方式引起上下文切换，
+
+- Interrupt (中断) 或 Exception (异常) 
+
+  中断和异常是由硬件产生但由软件来响应和处理的。
+  这个过程中，涉及到将用户态或内核态代码切换至**中断处理代码**。同时可能还涉及到用户进程栈或内核栈切换到**中断栈**。
+  支持保护模式的处理器可能还涉及到保护模式的切换。x86 处理器是通过 Interrupt Gate (中断门) 完成的。
+
+- System Call (系统调用)
+
+  系统调用是由用户态代码主动调用，使用户进程陷入到内核态调用内核定义的各种系统调用服务。
+  这个过程中，涉及到将任务的用户态代码和栈在同一任务上下文上切换至**内核系统调用代码**和同一任务的**内核栈**。
+
+- Task Scheduling (任务调度)
+
+  任务调度一般是由调度器代码在内核空间完成的。
+  通常需要将当前 CPU 执行任务的代码，用户或内核栈，地址空间切换到**下一个要运行任务的代码**，**用户或内核栈**，**地址空间**。
+
+
+### 1.2 Preemption
 
 **Preemption (抢占)** 是指操作系统允许满足某些重要条件(例如：优先级，公平性)的任务打断当前正在 CPU 上运行的任务而得到调度执行。
 并且这种打断不需要当前正在运行的任务的配合，同时被打断的程序可以在后来可以再次被调度恢复执行。
 
-在操作系统里，打断正在执行的任务有两种常见的机制，
+多任务操作系统可以按照 Cooperative Multitasking (协作多任务) 和 Preemptive Multitasking (抢占式多任务) 来划分。
+本质上，抢占就是允许高优先级的任务可以立即打断低优先级的任务而得到运行。对低 Scheduling Latency (调度延迟) 或者 Real Time (实时) 操作系统的需求来说，支持完全抢占的特性是必须的。
 
-- Interrupt (中断)或 Exception (异常) 处理
-- Task Scheduling (任务调度)
+三种上下文切换方式中，系统调用始终发生在同一任务的上下文中，只有**中断异常**和**任务调度**机制才涉及到一个任务被令一个上下文打断。
+Preemption 最终需要借助任务调度来完成任务的打断。但是，任务调度却和这三种上下文切换方式都密切相关，要理解 Preemption，必须对三种机制有深入的了解。
 
-Preemption 最终需要借助任务调度来完成任务的打断。但任务调度却和中断，异常机制密切相关。
+## 2. 中断和异常
 
-#### 1.2 Preemption 的主要原因
-
-TBD
-
-#### 1.3 Preemption 发生的时机
-
-TBD
-
-##### 1.3.1 User Preemption
-
-##### 1.3.2 Kernel Preemption
-
-### 2. 中断和异常
-
-#### 2.1 中断和异常的上下文切换
+### 2.1 中断和异常的上下文切换
 
 很多英文技术文档和讨论里把这种类型的打断动作叫做 Pin，意思就是当前的任务没有被切换走，而是被 Pin 住不能动弹了。
 这种打断不像 Context Switch 那样，涉及到地址空间的切换。而且这种打断通畅和处理器和外围硬件的中断机制有关。
@@ -66,15 +73,29 @@ x64 的异常机制与中断机制类似，都利用了 IDT 来完被打断任�
 [Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html)
 里的 **6.14 EXCEPTION AND INTERRUPT HANDLING IN 64-BIT MODE** 章节里有硬件的详细介绍，尤其详细说明了32位和64位，以及中断和异常的详细差异。
 
-#### 2.2 中断引起的任务调度
+### 2.2 中断引起的任务调度
 
 TBD
 
-##### 2.2.1 时钟中断
+#### 2.2.1 Timer Interrupt
 
-##### 2.2.2 IPI (处理器间中断)
+TBD
 
-### 3. 任务调度
+#### 2.2.2 Scheduler IPI
+
+TBD
+
+## 3. 系统调用
+
+### 3.1 系统调用的上下文切换
+
+TBD
+
+### 3.2 系统调用引起的任务调度
+
+TBD
+
+## 4. 任务调度
 
 任务的调度需要内核代码通过调用调度器核心的 schedule 函数引起。它主要完成以下工作，
 
@@ -83,7 +104,7 @@ TBD
 
 本文主要关注上下文切换和引起任务调度的原因。
 
-#### 3.1 任务调度上下文切换
+### 4.1 任务调度上下文切换
 
 内核 schedule 函数其中一个重要的处理就是 Task Context Switch (任务上下文切换)。调度器的任务上下文切换主要做两件事，
 
@@ -105,14 +126,12 @@ TBD
    [Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html)
    的章节 **13.4 DESIGNING OS FACILITIES FOR SAVING X87 FPU, SSE AND EXTENDED STATES ON TASK OR CONTEXT SWITCHES** 里建议的方式。
 
-#### 3.2 任务调度的时机和方式
-
 一般来说，任务调度，或者说任务上下文切换，可以分为以下两大方式来进行，
 
 - Voluntary Context Switch (主动上下文切换)
 - Involuntary Context Switch (强制上下文切换)
 
-##### 3.2.1 主动上下文切换
+### 4.2 主动上下文切换
 
 主动上下文切换就是任务主动通过直接或者间接调用 schedule 函数引起的上下文切换。引起主动上下文切换的常见时机有，
 
@@ -131,118 +150,122 @@ TBD
    任务在显式地用 schedule 函数前，利用 set_current_state 将任务设置成**非 TASK_RUNNING 状态**。
    例如，设置成 TASK_STOPPED 状态，然后调用 schedule 函数。
 
-##### 3.2.2 强制上下文切换
+### 4.3 强制上下文切换
 
-强制上下文切换是指并非任务自身意愿调用 schedule 函数而引发的上下文切换。
+强制上下文切换是指并非任务自身意愿调用 schedule 函数而引发的上下文切换。从定义可以看出，强制上下文切换的主要原因都和 Preemption 有关。
 
-1. Tick Preemption
+#### 4.3.1 触发 Preemption
 
-   在周期性的时钟中断里，内核调度器检查当前正在运行任务的持续运行时间是否超出具体调度算法支持的时间上限，从而决定是否剥夺当前任务的运行。
-   一旦决定剥夺在 CPU 上任务的运行，则会给正在 CPU 上运行的当前任务设置一个**请求重新调度的标志**：`TIF_NEED_RESCHED`。
+##### 4.4.1.1 Tick Preemption
 
-   需要注意的是，TIF_NEED_RESCHED 标志置位后，并没有立即调用 schedule 函数发生上下文切换。真正的上下文切换动作是 User Preemption 或 Kernel Preemption 的代码完成的。
+在周期性的时钟中断里，内核调度器检查当前正在运行任务的持续运行时间是否超出具体调度算法支持的时间上限，从而决定是否剥夺当前任务的运行。
+一旦决定剥夺在 CPU 上任务的运行，则会给正在 CPU 上运行的当前任务设置一个**请求重新调度的标志**：`TIF_NEED_RESCHED`。
 
-   User Preemption 或 Kernel Preemption 在很多代码路径上放置了检查当前任务的 `TIF_NEED_RESCHED` 标志，并显式调用 schedule 的逻辑。
-   接下来很快就会有机会调用 schedule 来触发任务切换，这时抢占就真正的完成了。上下文切换发生时，下一个被调度的任务将由具体调度器算法来决定从运行队列里挑选。
+需要注意的是，TIF_NEED_RESCHED 标志置位后，并没有立即调用 schedule 函数发生上下文切换。真正的上下文切换动作是 User Preemption 或 Kernel Preemption 的代码完成的。
 
-   例如，如果时钟中断刚好打断正在用户空间运行的进程，那么当 Tick Preemption 的代码将当前被打断的用户进程的 `TIF_NEED_RESCHED` 标志置位。随后，时钟中断处理完成，并返回用户空间。
-   此时，User Preemption 的代码会在中断返回用户空间时检查 `TIF_NEED_RESCHED` 标志，如果置位就会调用 schedule 来完成上下文切换。
+User Preemption 或 Kernel Preemption 在很多代码路径上放置了检查当前任务的 `TIF_NEED_RESCHED` 标志，并显式调用 schedule 的逻辑。
+接下来很快就会有机会调用 schedule 来触发任务切换，这时抢占就真正的完成了。上下文切换发生时，下一个被调度的任务将由具体调度器算法来决定从运行队列里挑选。
 
-2. Wakeup Preemption
+例如，如果时钟中断刚好打断正在用户空间运行的进程，那么当 Tick Preemption 的代码将当前被打断的用户进程的 `TIF_NEED_RESCHED` 标志置位。随后，时钟中断处理完成，并返回用户空间。
+此时，User Preemption 的代码会在中断返回用户空间时检查 `TIF_NEED_RESCHED` 标志，如果置位就会调用 schedule 来完成上下文切换。
 
-   当一个进程因各种原因需要唤醒另一个进程时，`try_to_wake_up` 的内核函数将会帮助被唤醒的进程选择一个 CPU 的 Run Queue，然后把进程插入到 Run Queue 里，并设置成 `TASK_RUNNING` 状态。
-   这个过程中 CPU Run Queue 的选择和 Run Queue 插入操作都是调用具体的调度算法回调函数来实现的。
+##### 4.4.1.2 Wakeup Preemption
 
-   任务插入到 Run Queue 后，调度器立即将新唤醒的任务和正在 CPU 上执行的任务交给具体的调度算法去比较，决定是否剥夺当前任务的运行。
-   与 Tick Preemption 一样，一旦决定剥夺在 CPU 上执行的任务的运行，则会给当前任务设置一个 `TIF_NEED_RESCHED` 标志。而实际的 schedule 调用并不是在这时完成的。
-   但 Wakeup Preemption 在此处真正特殊的地方在于，执行唤醒操作的任务可能把被唤醒的任务插入到**本地 CPU** 的 Run Queue，但还可能插入到**远程 CPU** 的 Run Queue。
-   因此，schedule 函数的调用可能有两种情况，
+当原因需要唤醒另一个进程时，`try_to_wake_up` 的内核函数将会帮助被唤醒的进程选择一个 CPU 的 Run Queue，然后把进程插入到 Run Queue 里，并设置成 `TASK_RUNNING` 状态。
+这个过程中 CPU Run Queue 的选择和 Run Queue 插入操作都是调用具体的调度算法回调函数来实现的。
 
-   * 被唤醒任务在本地 CPU Run Queue
+任务插入到 Run Queue 后，调度器立即将新唤醒的任务和正在 CPU 上执行的任务交给具体的调度算法去比较，决定是否剥夺当前任务的运行。
+与 Tick Preemption 一样，一旦决定剥夺在 CPU 上执行的任务的运行，则会给当前任务设置一个 `TIF_NEED_RESCHED` 标志。而实际的 schedule 调用并不是在这时完成的。
+但 Wakeup Preemption 在此处真正特殊的地方在于，执行唤醒操作的任务可能把被唤醒的任务插入到**本地 CPU** 的 Run Queue，但还可能插入到**远程 CPU** 的 Run Queue。
+因此，schedule 函数的调用可能有两种情况，
 
-     唤醒函数在返回过程中，只要当前任务运行到任何一处 User Preemption 或 Kernel Preemption 的代码，这些代码就会检查到 `TIF_NEED_RESCHED` 标志，并调用 schedule 的位置，上下文切换才真正发生。
-     实际上，如果 Kernel Preemption 是打开的，在唤醒操作结束时的 `spin_unlock` 或者随后的各种可能的中断退出路径都有 Kernel Preemption 调用 schedule 的时机。
+* 被唤醒任务在本地 CPU Run Queue
 
-   * 被唤醒任务在远程 CPU Run Queue
+  唤醒函数在返回过程中，只要当前任务运行到任何一处 User Preemption 或 Kernel Preemption 的代码，这些代码就会检查到 `TIF_NEED_RESCHED` 标志，并调用 schedule 的位置，上下文切换才真正发生。
+  实际上，如果 Kernel Preemption 是打开的，在唤醒操作结束时的 `spin_unlock` 或者随后的各种可能的中断退出路径都有 Kernel Preemption 调用 schedule 的时机。
 
-     这种情况下，唤醒操作在设置 `TIF_NEED_RESCHED` 标志之后，会立即向被唤醒任务 Run Queue 所属的 CPU 发送一个 IPI (处理器间中断)，然后才返回。
-     以 Intel x86 架构为例，那个远程 CPU 的 `RESCHEDULE_VECTOR` 被初始化来响应这个中断，最终中断处理函数 `scheduler_ipi` 在远程 CPU 上执行。
-     早期 Linux 内核，`scheduler_ipi` 其实是个空函数，因为所有中断返回用户空间或者内核空间都的出口位置都已经有 User Preemption 和 Kernel Preemption 的代码在那里，所以 schedule 一定会被调用。
-     后来的 Linux 内核里，又利用 `scheduler_ipi` 让远程 CPU 来做远程唤醒的主要操作，从而减少 Run Queue 锁竞争。所以现在的 `scheduler_ipi` 加入了新的代码。
+* 被唤醒任务在远程 CPU Run Queue
 
-   因 Wakeup Preemption 而导致的上下文切换发生时，下一个被调度的任务将由具体调度器算法来决定从运行队列里挑选。
-   对于刚唤醒的任务，如果成功触发了 Wakeup Preemption，则某些具体的调度算法会给它一个优先被调度的机会。
+  这种情况下，唤醒操作在设置 `TIF_NEED_RESCHED` 标志之后，会立即向被唤醒任务 Run Queue 所属的 CPU 发送一个 IPI (处理器间中断)，然后才返回。
+  以 Intel x86 架构为例，那个远程 CPU 的 `RESCHEDULE_VECTOR` 被初始化来响应这个中断，最终中断处理函数 `scheduler_ipi` 在远程 CPU 上执行。
+  早期 Linux 内核，`scheduler_ipi` 其实是个空函数，因为所有中断返回用户空间或者内核空间都的出口位置都已经有 User Preemption 和 Kernel Preemption 的代码在那里，所以 schedule 一定会被调用。
+  后来的 Linux 内核里，又利用 `scheduler_ipi` 让远程 CPU 来做远程唤醒的主要操作，从而减少 Run Queue 锁竞争。所以现在的 `scheduler_ipi` 加入了新的代码。
 
-3. User Preemption
+因 Wakeup Preemption 而导致的上下文切换发生时，下一个被调度的任务将由具体调度器算法来决定从运行队列里挑选。
+对于刚唤醒的任务，如果成功触发了 Wakeup Preemption，则某些具体的调度算法会给它一个优先被调度的机会。
 
-   User Preemption 发生在如下两种典型的状况，
+#### 4.3.2 执行 Preemption
 
-   * 系统调用，中断及异常在**返回用户空间**前，检查 CPU 当前正在运行的任务的 `TIF_NEED_RESCHED` 标志，如果置位则直接调用 schedule 函数。
+#### 4.3.2.1 User Preemption
 
-   * 内核态的代码在循环体内调用 cond_resched()，yield() 等内核 API，给其它任务得到调度的机会，防止独占滥用 CPU。
+User Preemption 发生在如下两种典型的状况，
 
-     在内核态写逻辑上造成长时间循环的代码，有可能造成内核死锁或者造成超长调度延迟，尤其是当 Kernel Preemption 没有打开时。
-     这时可以在循环体内调用 cond_resched()，yield() 等内核 API，有条件的让出 CPU。这里说的有条件是因为 cond_resched 要检查 `TIF_NEED_RESCHED` 标志。
-	 而 yield 在所在 CPU Run Queue 没有任务的情况下，也不会发生真正的任务切换。
+* 系统调用，中断及异常在**返回用户空间**前，检查 CPU 当前正在运行的任务的 `TIF_NEED_RESCHED` 标志，如果置位则直接调用 schedule 函数。
 
-   User Preemption 的代码同样是显示地调用 schedule 函数，与前面主动上下文切换中不同的是，调用 schedule 函数时，当前上下文任务的状态还是 **TASK_RUNNING**。
-   只要调用 schedule 时当前任务是 TASK_RUNNING，这时 schedule 的代码就把这次上下文切换算作强制上下文切换。下面是 schedule 代码在 Linux 3.19 的实现，
+* 内核态的代码在循环体内调用 cond_resched()，yield() 等内核 API，给其它任务得到调度的机会，防止独占滥用 CPU。
 
-		static void __sched __schedule(void)
-		{
-			struct task_struct *prev, *next;
-			unsigned long *switch_count;
-			struct rq *rq;
-			int cpu;
+  在内核态写逻辑上造成长时间循环的代码，有可能造成内核死锁或者造成超长调度延迟，尤其是当 Kernel Preemption 没有打开时。
+  这时可以在循环体内调用 cond_resched()，yield() 等内核 API，有条件的让出 CPU。这里说的有条件是因为 cond_resched 要检查 `TIF_NEED_RESCHED` 标志。
+  而 yield 在所在 CPU Run Queue 没有任务的情况下，也不会发生真正的任务切换。
 
-			[...snipped...]
+User Preemption 的代码同样是显示地调用 schedule 函数，与前面主动上下文切换中不同的是，调用 schedule 函数时，当前上下文任务的状态还是 **TASK_RUNNING**。
+只要调用 schedule 时当前任务是 TASK_RUNNING，这时 schedule 的代码就把这次上下文切换算作强制上下文切换。下面是 schedule 代码在 Linux 3.19 的实现，
 
-			raw_spin_lock_irq(&rq->lock);
+	static void __sched __schedule(void)
+	{
+		struct task_struct *prev, *next;
+		unsigned long *switch_count;
+		struct rq *rq;
+		int cpu;
 
-			switch_count = &prev->nivcsw; /* 默认 switch_count 是强制上下文切换的 */
-			if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+		[...snipped...]
 
-				[...snipped...]
+		raw_spin_lock_irq(&rq->lock);
 
-				switch_count = &prev->nvcsw; /* 如果 pre->state 不是 TASK_RUNNING，
-				                             swtich_count 则指向主动上下文切换计数器 */
-			}
+		switch_count = &prev->nivcsw; /* 默认 switch_count 是强制上下文切换的 */
+		if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
 
 			[...snipped...]
 
-			next = pick_next_task(rq, prev);
+			switch_count = &prev->nvcsw; /* 如果 pre->state 不是 TASK_RUNNING，
+			                             swtich_count 则指向主动上下文切换计数器 */
+		}
 
-			[...snipped...]
+		[...snipped...]
 
-			if (likely(prev != next)) {
-				rq->nr_switches++;
-				rq->curr = next;
-				++*switch_count; /* 此时确实发生了调度，要给 nivcsw 或者 nvcsw 计数器累加 */
+		next = pick_next_task(rq, prev);
 
-				rq = context_switch(rq, prev, next); /* unlocks the rq */
-				cpu = cpu_of(rq);
-			} else
-				raw_spin_unlock_irq(&rq->lock);
+		[...snipped...]
+
+		if (likely(prev != next)) {
+			rq->nr_switches++;
+			rq->curr = next;
+			++*switch_count; /* 此时确实发生了调度，要给 nivcsw 或者 nvcsw 计数器累加 */
+
+			rq = context_switch(rq, prev, next); /* unlocks the rq */
+			cpu = cpu_of(rq);
+		} else
+			raw_spin_unlock_irq(&rq->lock);
 
 
-4. Kernel Preemption
+#### 4.3.2.2 Kernel Preemption
 
-   早期 Linux 内核只支持 User Preemption。2.6内核 Kernel Preemption 支持被引入。
+早期 Linux 内核只支持 User Preemption。2.6内核 Kernel Preemption 支持被引入。
 
-   Kernel Preemption 发生在以下几种情况，
+Kernel Preemption 发生在以下几种情况，
 
-   * 中断，异常结束处理后，返回到内核空间时。
+* 中断，异常结束处理后，返回到内核空间时。
 
-     以 x86 为例，Linux 在中断和异常处理代码的公共代码部分(即从具体 handler 代码退出后)，判断是否返回内核空间，然后调用 `preempt_schedule_irq` 检查 `TIF_NEED_RESCHED` 标志，触发任务切换。
+  以 x86 为例，Linux 在中断和异常处理代码的公共代码部分(即从具体 handler 代码退出后)，判断是否返回内核空间，然后调用 `preempt_schedule_irq` 检查 `TIF_NEED_RESCHED` 标志，触发任务切换。
 
-   * 禁止内核抢占处理结束时
+* 禁止内核抢占处理结束时
 
-     作为完全抢占内核，Linux 只允许在当前内核上下文需要禁止抢占的时候才使用 `preempt_disable` 禁止抢占，内核代码在禁止抢占后，应该尽早调用 `preempt_enable` 使能抢占，避免引入高调度延迟。
-     为尽快处理在禁止抢占期间 pending 的重新调度申请，内核在 `preempt_enable` 里会调用 `preempt_schedule` 检查 `TIF_NEED_RESCHED` 标志，触发任务切换。
+  作为完全抢占内核，Linux 只允许在当前内核上下文需要禁止抢占的时候才使用 `preempt_disable` 禁止抢占，内核代码在禁止抢占后，应该尽早调用 `preempt_enable` 使能抢占，避免引入高调度延迟。
+  为尽快处理在禁止抢占期间 pending 的重新调度申请，内核在 `preempt_enable` 里会调用 `preempt_schedule` 检查 `TIF_NEED_RESCHED` 标志，触发任务切换。
 
-     使用 `preempt_disable` 和 `preempt_enable` 的内核上下文有很多，典型而又为人熟知的有各种内核锁的实现，如 Spin Lock，Mutex，Semaphore，R/W Semaphore，RCU 等。
+  使用 `preempt_disable` 和 `preempt_enable` 的内核上下文有很多，典型而又为人熟知的有各种内核锁的实现，如 Spin Lock，Mutex，Semaphore，R/W Semaphore，RCU 等。
 
-### 4. schedule 函数
+### 4.3.3 preempt_schedule 函数
 
 TBD
 
