@@ -17,6 +17,11 @@ tags: [scheduler, kernel, linux, hardware]
 **Context Switch (上下文切换)** 指任何操作系统上下文保存和恢复执行状态，以便于被安全地打断和稍后被正确地恢复执行。
 一般操作系统中通常因以下三种方式引起上下文切换，
 
+- Task Scheduling (任务调度)
+
+  任务调度一般是由调度器代码在内核空间完成的。
+  通常需要将当前 CPU 执行任务的代码，用户或内核栈，地址空间切换到**下一个要运行任务的代码**，**用户或内核栈**，**地址空间**。
+
 - Interrupt (中断) 或 Exception (异常) 
 
   中断和异常是由硬件产生但由软件来响应和处理的。
@@ -27,12 +32,6 @@ tags: [scheduler, kernel, linux, hardware]
 
   系统调用是由用户态代码主动调用，使用户进程陷入到内核态调用内核定义的各种系统调用服务。
   这个过程中，涉及到将任务的用户态代码和栈在同一任务上下文上切换至**内核系统调用代码**和同一任务的**内核栈**。
-
-- Task Scheduling (任务调度)
-
-  任务调度一般是由调度器代码在内核空间完成的。
-  通常需要将当前 CPU 执行任务的代码，用户或内核栈，地址空间切换到**下一个要运行任务的代码**，**用户或内核栈**，**地址空间**。
-
 
 ### 1.2 Preemption
 
@@ -45,57 +44,7 @@ tags: [scheduler, kernel, linux, hardware]
 三种上下文切换方式中，系统调用始终发生在同一任务的上下文中，只有**中断异常**和**任务调度**机制才涉及到一个任务被令一个上下文打断。
 Preemption 最终需要借助任务调度来完成任务的打断。但是，任务调度却和这三种上下文切换方式都密切相关，要理解 Preemption，必须对三种机制有深入的了解。
 
-## 2. 中断和异常
-
-### 2.1 中断和异常的上下文切换
-
-很多英文技术文档和讨论里把这种类型的打断动作叫做 Pin，意思就是当前的任务没有被切换走，而是被 Pin 住不能动弹了。
-这种打断不像 Context Switch 那样，涉及到地址空间的切换。而且这种打断通畅和处理器和外围硬件的中断机制有关。
-依赖于不同操作系统的实现，可能中断或者异常处理程序有自己的独立内核栈，例如当前 Linux 版本在32位和64位 x86 上的实现；
-也可能使用任务当前的内核栈，例如早期 Linux 在32位 x86 上的实现。
-
-以 Intel 的 x64 处理器为例，当外设产生中断后，CPU 通过 Interrupt Gate (中断门) 打断了当前任务的执行。
-此时，不论正在执行的任务处于用户态还是内核态，中断门都会无条件保存当前任务执行的寄存器执行上下文。
-这些寄存器里就有当前任务下一条待执行的代码段指令寄存器 `CS:RIP` 和当前任务栈指针寄存器 `SS:RSP`。
-而新的中断上下文的代码段指令寄存器 `CS:RIP` 的值，早由系统启动时由 x86 的 IDT (中断描述符表) 相关的初始化代码设置为所有外设中断的公共 IRQ Routine (中断处理例程) 函数。
-在 Linux 3.19 的这个公共中断处理例程 entry_64.S 的 irq_entries_start 汇编函数里，
-[SAVE_ARGS_IRQ](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/entry_64.S#L782) 宏定义会把存储在 per-CPU 变量 irq_stack_ptr 里的内核 IRQ Stack (中断栈) 赋值给 SS:RSP。
-这样一来，一个完整的中断上下文切换就由 CPU 和中断处理例程共同协作完成。中断执行完毕，从中断例程的返回过程则会利用之前保存的上下文，恢复之前被打断的任务。
-
-x64 的异常机制与中断机制类似，都利用了 IDT 来完被打断任务的 `CS:RIP` 和 `SS:RSP` 的保存，但 IDT 表里异常的公共入口函数却是不同的函数。
-而且在这个函数的汇编实现里，切换到内核 IRQ Stack 的代码是借助硬件里预先被内核初始化好的 IST (中断服务表) 里保存的 `SS:RSP` 的值，这是与一般外设中断处理的不同之处。
-
-另外，x64 和 x32 的 IDT 机制在从内核态进入到中断门时，硬件在是否把当前任务的 `SS:RSP` 寄存器压栈的处理上有明显差别。
-此外，IDT 在初始化时，IDT 描述符里的 IST 选择位如果非零，则意味着内核 IRQ Stack 的切换是要由内核代码借助 IST 实现。
-但如果 IDT 描述符的 IST 选择位是零，则内核的 IRQ Stack 切换由内核代码借助 per-CPU 的内核中断栈变量实现。
-
-由于主题和篇幅限制，这里不会详细介绍中断的上下文切换机制。了解 x86 平台中断和异常的上下文切换机制，需要对 x86 处理器的硬件规范有所了解。
-[Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html)
-里的 **6.14 EXCEPTION AND INTERRUPT HANDLING IN 64-BIT MODE** 章节里有硬件的详细介绍，尤其详细说明了32位和64位，以及中断和异常的详细差异。
-
-### 2.2 中断引起的任务调度
-
-TBD
-
-#### 2.2.1 Timer Interrupt
-
-TBD
-
-#### 2.2.2 Scheduler IPI
-
-TBD
-
-## 3. 系统调用
-
-### 3.1 系统调用的上下文切换
-
-TBD
-
-### 3.2 系统调用引起的任务调度
-
-TBD
-
-## 4. 任务调度
+## 2. 任务调度
 
 任务的调度需要内核代码通过调用调度器核心的 schedule 函数引起。它主要完成以下工作，
 
@@ -104,7 +53,7 @@ TBD
 
 本文主要关注上下文切换和引起任务调度的原因。
 
-### 4.1 任务调度上下文切换
+### 2.1 任务调度上下文切换
 
 内核 schedule 函数其中一个重要的处理就是 Task Context Switch (任务上下文切换)。调度器的任务上下文切换主要做两件事，
 
@@ -131,7 +80,7 @@ TBD
 - Voluntary Context Switch (主动上下文切换)
 - Involuntary Context Switch (强制上下文切换)
 
-### 4.2 主动上下文切换
+### 2.2 主动上下文切换
 
 主动上下文切换就是任务主动通过直接或者间接调用 schedule 函数引起的上下文切换。引起主动上下文切换的常见时机有，
 
@@ -150,13 +99,13 @@ TBD
    任务在显式地用 schedule 函数前，利用 set_current_state 将任务设置成**非 TASK_RUNNING 状态**。
    例如，设置成 TASK_STOPPED 状态，然后调用 schedule 函数。
 
-### 4.3 强制上下文切换
+### 2.3 强制上下文切换
 
 强制上下文切换是指并非任务自身意愿调用 schedule 函数而引发的上下文切换。从定义可以看出，强制上下文切换的主要原因都和 Preemption 有关。
 
-#### 4.3.1 触发 Preemption
+#### 2.3.1 触发 Preemption
 
-##### 4.4.1.1 Tick Preemption
+##### 2.3.1.1 Tick Preemption
 
 在周期性的时钟中断里，内核调度器检查当前正在运行任务的持续运行时间是否超出具体调度算法支持的时间上限，从而决定是否剥夺当前任务的运行。
 一旦决定剥夺在 CPU 上任务的运行，则会给正在 CPU 上运行的当前任务设置一个**请求重新调度的标志**：`TIF_NEED_RESCHED`。
@@ -169,7 +118,7 @@ User Preemption 或 Kernel Preemption 在很多代码路径上放置了检查当
 例如，如果时钟中断刚好打断正在用户空间运行的进程，那么当 Tick Preemption 的代码将当前被打断的用户进程的 `TIF_NEED_RESCHED` 标志置位。随后，时钟中断处理完成，并返回用户空间。
 此时，User Preemption 的代码会在中断返回用户空间时检查 `TIF_NEED_RESCHED` 标志，如果置位就会调用 schedule 来完成上下文切换。
 
-##### 4.4.1.2 Wakeup Preemption
+##### 2.3.1.2 Wakeup Preemption
 
 当原因需要唤醒另一个进程时，`try_to_wake_up` 的内核函数将会帮助被唤醒的进程选择一个 CPU 的 Run Queue，然后把进程插入到 Run Queue 里，并设置成 `TASK_RUNNING` 状态。
 这个过程中 CPU Run Queue 的选择和 Run Queue 插入操作都是调用具体的调度算法回调函数来实现的。
@@ -194,9 +143,9 @@ User Preemption 或 Kernel Preemption 在很多代码路径上放置了检查当
 因 Wakeup Preemption 而导致的上下文切换发生时，下一个被调度的任务将由具体调度器算法来决定从运行队列里挑选。
 对于刚唤醒的任务，如果成功触发了 Wakeup Preemption，则某些具体的调度算法会给它一个优先被调度的机会。
 
-#### 4.3.2 执行 Preemption
+#### 2.3.2 执行 Preemption
 
-#### 4.3.2.1 User Preemption
+#### 2.3.2.1 User Preemption
 
 User Preemption 发生在如下两种典型的状况，
 
@@ -248,7 +197,7 @@ User Preemption 的代码同样是显示地调用 schedule 函数，与前面主
 			raw_spin_unlock_irq(&rq->lock);
 
 
-#### 4.3.2.2 Kernel Preemption
+#### 2.3.2.2 Kernel Preemption
 
 早期 Linux 内核只支持 User Preemption。2.6内核 Kernel Preemption 支持被引入。
 
@@ -265,7 +214,71 @@ Kernel Preemption 发生在以下几种情况，
 
   使用 `preempt_disable` 和 `preempt_enable` 的内核上下文有很多，典型而又为人熟知的有各种内核锁的实现，如 Spin Lock，Mutex，Semaphore，R/W Semaphore，RCU 等。
 
-### 4.3.3 preempt_schedule 函数
+### 2.3.3 preempt_schedule 函数
+
+TBD
+
+## 3. 中断和异常
+
+### 3.1 中断和异常的上下文切换
+
+很多英文技术文档和讨论里把这种类型的打断动作叫做 Pin，意思就是当前的任务没有被切换走，而是被 Pin 住不能动弹了。
+这种打断不像 Context Switch 那样，涉及到地址空间的切换。而且这种打断通畅和处理器和外围硬件的中断机制有关。
+依赖于不同操作系统的实现，可能中断或者异常处理程序有自己的独立内核栈，例如当前 Linux 版本在32位和64位 x86 上的实现；
+也可能使用任务当前的内核栈，例如早期 Linux 在32位 x86 上的实现。
+
+以 Intel 的 x64 处理器为例，当外设产生中断后，CPU 通过 Interrupt Gate (中断门) 打断了当前任务的执行。
+此时，不论正在执行的任务处于用户态还是内核态，中断门都会无条件保存当前任务执行的寄存器执行上下文。
+这些寄存器里就有当前任务下一条待执行的代码段指令寄存器 `CS:RIP` 和当前任务栈指针寄存器 `SS:RSP`。
+而新的中断上下文的代码段指令寄存器 `CS:RIP` 的值，早由系统启动时由 x86 的 IDT (中断描述符表) 相关的初始化代码设置为所有外设中断的公共 IRQ Routine (中断处理例程) 函数。
+在 Linux 3.19 的这个公共中断处理例程 entry_64.S 的 irq_entries_start 汇编函数里，
+[SAVE_ARGS_IRQ](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/entry_64.S#L782) 宏定义会把存储在 per-CPU 变量 irq_stack_ptr 里的内核 IRQ Stack (中断栈) 赋值给 SS:RSP。
+这样一来，一个完整的中断上下文切换就由 CPU 和中断处理例程共同协作完成。中断执行完毕，从中断例程的返回过程则会利用之前保存的上下文，恢复之前被打断的任务。
+
+x64 的异常机制与中断机制类似，都利用了 IDT 来完被打断任务的 `CS:RIP` 和 `SS:RSP` 的保存，但 IDT 表里异常的公共入口函数却是不同的函数。
+而且在这个函数的汇编实现里，切换到内核 IRQ Stack 的代码是借助硬件里预先被内核初始化好的 IST (中断服务表) 里保存的 `SS:RSP` 的值，这是与一般外设中断处理的不同之处。
+
+另外，x64 和 x32 的 IDT 机制在从内核态进入到中断门时，硬件在是否把当前任务的 `SS:RSP` 寄存器压栈的处理上有明显差别。
+此外，IDT 在初始化时，IDT 描述符里的 IST 选择位如果非零，则意味着内核 IRQ Stack 的切换是要由内核代码借助 IST 实现。
+但如果 IDT 描述符的 IST 选择位是零，则内核的 IRQ Stack 切换由内核代码借助 per-CPU 的内核中断栈变量实现。
+
+由于主题和篇幅限制，这里不会详细介绍中断的上下文切换机制。了解 x86 平台中断和异常的上下文切换机制，需要对 x86 处理器的硬件规范有所了解。
+[Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html)
+里的 **6.14 EXCEPTION AND INTERRUPT HANDLING IN 64-BIT MODE** 章节里有硬件的详细介绍，尤其详细说明了32位和64位，以及中断和异常的详细差异。
+
+### 3.2 中断引起的任务调度
+
+Linux 内核里，中断和异常因其打断的上下文不同，在返回时可能会触发以下类型的任务调度，
+
+- User Preemption
+
+  中断和异常打断了用户态运行的任务，在返回时检查 `TIF_NEED_RESCHED` 标志，决定是否调用 `schedule`。
+
+- Kernel Preemption
+
+  中断和异常打断了内核态运行的任务，在返回时调用 `preempt_schedule_irq`。其代码会检查 `TIF_NEED_RESCHED` 标志，决定是否调用 `schedule`。
+
+User 和 Kernel Preemption 的代码是实现在 Linux 内核所有中断和异常处理函数通用处理代码层的，因此，中断异常的具体处理函数返回后就会被执行。
+尽管所有类型中断都可能引发任务切换，和任务调度和抢占密切相关，但以下两种中断直接与调度器相关，是内核调度器设计的一部分，
+
+- Timer Interrupt (时钟中断)
+- Scheduler IPI (调度器处理器间中断)
+
+#### 3.2.1 时钟中断
+
+TBD
+
+#### 3.2.2 调度器处理器间中断
+
+TBD
+
+## 4. 系统调用
+
+### 4.1 系统调用的上下文切换
+
+TBD
+
+### 4.2 系统调用引起的任务调度
 
 TBD
 
