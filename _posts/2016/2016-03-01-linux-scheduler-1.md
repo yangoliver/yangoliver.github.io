@@ -291,7 +291,19 @@ User 和 Kernel Preemption 的代码是实现在 Linux 内核所有中断和异�
 
 #### 3.2.2 调度器处理器间中断
 
-TBD
+**Scheduler IPI (调度器处理器间中断)** 最初的引入主要是为了解决 SMP 系统中，唤醒代码触发 Wakeup Preemption 时，需要远程 CPU 协助产生 User Preemption 或 Kernel Preemption 而引入的机制。
+其具体的过程如下，
+
+1. 唤醒代码经过具体调度器算法为被唤醒任务选择 CPU。
+2. 当选择的 CPU 是远程的时，将处于睡眠的进程唤醒并放入到远程 CPU 所属的 Run Queue
+3. 唤醒代码调用具体调度算法检查是否触发 Wakeup Preemption，并在返回前触发 Scheduler IPI (调度器处理器间中断)。
+4. 远程 CPU 正在执行的代码被打断，Scheduler IPI 处理函数被执行。
+5. Scheduler IPI 处理函数内部并无针对 Preemption 的实际处理。
+6. Scheduler IPI 处理函数退出时会进入中断处理的公共代码部分，根据中断返回上下文是用户还是内核上下文，触发 User Preemption 或 Kernel Preemption。
+
+需要指出的是，新的 x86 平台和 Linux 内核里，Timer Interrupt 和 Scheduler IPI 都属于 CPU Local APIC 处理的中断。
+在 Linux 内核里，在 entry_64.S 里的公共入口和返回都由 `apicinterrupt` 处理。
+而 `apicinterrupt` 和其它外设中断的公共入口返回代码共享 User Preemption 或 Kernel Preemption 的处理逻辑，即 `ret_from_intr` 的处理。
 
 ## 4. 系统调用
 
