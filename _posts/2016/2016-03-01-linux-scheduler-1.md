@@ -328,7 +328,10 @@ User 和 Kernel Preemption 的代码是实现在 Linux 内核所有中断和异�
 
 ### 4.2 系统调用引起的任务调度
 
-TBD
+与中断处理类似，具体系统调用函数退出后，公共系统调用代码返回用户空间时，可能会触发 User Preemption，即检查 `TIF_NEED_RESCHED` 标志，决定是否调用 `schedule`。
+系统调用不会触发 Kernel Preemption，因为系统调用返回时，总是返回到用户空间，这一点与中断和异常有很大的不同。
+
+在 x86 64位平台，[系统调用触发 User Preemption 的代码](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/entry_64.S#L459) 定义在 entry_64.S 的 `system_call` 函数里。
 
 ### 5. 关联阅读
 
