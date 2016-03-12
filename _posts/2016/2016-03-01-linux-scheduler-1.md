@@ -297,7 +297,49 @@ User 和 Kernel Preemption 的代码是实现在 Linux 内核所有中断和异�
 与中断处理类似，具体系统调用函数退出后，公共系统调用代码返回用户空间时，可能会触发 User Preemption，即检查 `TIF_NEED_RESCHED` 标志，决定是否调用 `schedule`。
 系统调用不会触发 Kernel Preemption，因为系统调用返回时，总是返回到用户空间，这一点与中断和异常有很大的不同。
 
-### 5. 关联阅读
+### 5. 调度触发时机总结
+
+Linux 内核源码 `schedule` 的注释写的非常精炼，所以就不啰嗦了，直接上源码，
+
+	/*
+	 * __schedule() is the main scheduler function.
+	 *
+	 * The main means of driving the scheduler and thus entering this function are:
+	 *
+	 *   1. Explicit blocking: mutex, semaphore, waitqueue, etc.
+	 *
+	 *   2. TIF_NEED_RESCHED flag is checked on interrupt and userspace return
+	 *      paths. For example, see arch/x86/entry_64.S.
+	 *
+	 *      To drive preemption between tasks, the scheduler sets the flag in timer
+	 *      interrupt handler scheduler_tick().
+	 *
+	 *   3. Wakeups don't really cause entry into schedule(). They add a
+	 *      task to the run-queue and that's it.
+	 *
+	 *      Now, if the new task added to the run-queue preempts the current
+	 *      task, then the wakeup sets TIF_NEED_RESCHED and schedule() gets
+	 *      called on the nearest possible occasion:
+	 *
+	 *       - If the kernel is preemptible (CONFIG_PREEMPT=y):
+	 *
+	 *         - in syscall or exception context, at the next outmost
+	 *           preempt_enable(). (this might be as soon as the wake_up()'s
+	 *           spin_unlock()!)
+	 *
+	 *         - in IRQ context, return from interrupt-handler to
+	 *           preemptible context
+	 *
+	 *       - If the kernel is not preemptible (CONFIG_PREEMPT is not set)
+	 *         then at the next:
+	 *
+	 *          - cond_resched() call
+	 *          - explicit schedule() call
+	 *          - return from syscall or exception to user-space
+	 *          - return from interrupt-handler to user-space
+	 */
+
+### 6. 关联阅读
 
 本文主要介绍了解 Preemption 所需的基本概念，以及 Linux 内核是如何实现 User Preemption 和 Kernel Preemption 的。由于 Context Switch 与 Preemption 密切相关，所以也结合 Intel x86 处理器做了详细分析。
 这些内容在很多 Linux 内核书籍也都有覆盖，但要深入理解，还是需要结合某种处理器架构相关的知识来一起学习，否则很难深入理解。因此了解些硬件相关的知识是必要的。
