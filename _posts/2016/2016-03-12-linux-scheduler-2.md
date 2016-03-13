@@ -14,6 +14,14 @@ tags: [scheduler, kernel, linux, hardware]
 
 TBD
 
+### 1.1 核心调度和调度类
+
+TBD
+
+### 1.2 preempt_count
+
+TBD
+
 ## 2. User Preemption
 
 如前所述，User Preemption 主要发生在以下两类场景，
@@ -42,12 +50,62 @@ TBD
   这里不再分析 `yield` 的实现。但需要注意的是，内核中的循环代码应该尽量使用 `cond_resched` 来让出 CPU，而不是使用 `yield`。
   [详见 `yield` 的注释](https://github.com/torvalds/linux/blob/v3.19/kernel/sched/core.c#L4287)。
 
+### 2.1 schedule 对 User Preemption 的处理
+
+User Preemption 的代码同样是显示地调用 schedule 函数，但与主动上下文切换中很大的不同是，调用 schedule 函数时，当前上下文任务的状态还是 **TASK_RUNNING**。
+只要调用 schedule 时当前任务是 TASK_RUNNING，这时 schedule 的代码就把这次上下文切换算作强制上下文切换，并且这次上下文切换不会涉及到把被 Preempt 任务从 Run Queue 移除操作。
+
+下面是 schedule 代码在 Linux 3.19 的实现，
+
+	static void __sched __schedule(void)
+	{
+		struct task_struct *prev, *next;
+		unsigned long *switch_count;
+		struct rq *rq;
+		int cpu;
+
+		[...snipped...]
+
+		raw_spin_lock_irq(&rq->lock);
+
+		switch_count = &prev->nivcsw; /* 默认 switch_count 是强制上下文切换的 */
+		if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) { /* User Preemption 是 TASK_RUNNING 且无 PREEMPT_ACTIVE 置位，所以下面代码不会执行 */
+			if (unlikely(signal_pending_state(prev->state, prev))) {
+				prev->state = TASK_RUNNING;	/* 可中断睡眠有 Pending 信号，只做上下文切换，无需从运行队列移除 */
+			} else {
+				deactivate_task(rq, prev, DEQUEUE_SLEEP); /* 不是 TASK_RUNNING 且无 PREEMPT_ACTIVE 置位，需要从运行队列移除 */
+				prev->on_rq = 0;
+
+
+			[...snipped...]
+
+			switch_count = &prev->nvcsw; /* 不是 TASK_RUNNING 且无 PREEMPT_ACTIVE 置位，
+			                             swtich_count 则指向主动上下文切换计数器 */
+		}
+
+		[...snipped...]
+
+		next = pick_next_task(rq, prev);
+
+		[...snipped...]
+
+		if (likely(prev != next)) { /* Run Queue 上真有待调度的任务才做上下文切换 */
+			rq->nr_switches++;
+			rq->curr = next;
+			++*switch_count; /* 此时确实发生了调度，要给 nivcsw 或者 nvcsw 计数器累加 */
+
+			rq = context_switch(rq, prev, next); /* unlocks the rq 真正上下文切换发生 */
+			cpu = cpu_of(rq);
+		} else
+			raw_spin_unlock_irq(&rq->lock);
+
+从代码可以看出，User Preemption 触发的上下文切换，都被算作了**强制上下文切换**。
+
 ## 3. Kernel Preemption
 
-内核抢占需要打开特定的 Kconfig (CONFIG_PREEMPT=y)。Tick Preemption 和 Wakeup Preemption 的主要实现都在具体调度类算法里，这里不做详细介绍。
-本文只介绍引起 Kernel Preemption 的关键代码。如前所述，Kernel Preemption 主要发生在以下两类场景，
+内核抢占需要打开特定的 Kconfig (CONFIG_PREEMPT=y)。本文只介绍引起 Kernel Preemption 的关键代码。如前所述，Kernel Preemption 主要发生在以下两类场景，
 
-- 中断和异常时返回用户空间时。
+- 中断和异常时返回内核空间时。
 
   如前面章节介绍，系统调用返回不会发生 Kernel Preemption，但中断和异常则会。
   [中断和异常返回内核空间的代码](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/entry_64.S#L929)是共享同一段实现，
@@ -57,11 +115,29 @@ TBD
 
   内核代码调用 `preempt_enable`，`preempt_check_resched` 和 `preempt_schedule` 退出禁止抢占的临界区。下面主要针对这部分实现做详细介绍。
 
-### 3.1 preempt_count
+如 [Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/) 所述，User Preemption 总是限定在任务处于 `TASK_RUNNING` 的几个有限的固定时机发生。
+而 Kernel Preemption 发生时，任务的运行态是不可预料的，任务运行态可能处于任何运行状态，如 `TASK_UNINTERRUPTIBLE` 状态。
 
-TBD
+一个典型的例子就是，任务睡眠时要先将任务设置成睡眠态，然后再调用 `schedule` 来做真正的睡眠。
 
-### 3.2 preempt_disable 和 preempt_enable
+	set_current_state(TASK_UNINTERRUPTIBLE);
+	/* 中断在 schedule 之前发生，触发 Kernel Preemption */
+	schedule();
+
+设置睡眠态和 `schedule` 调用之间并不是原子的操作，大多时候也没有禁止抢占和关中断。这时 Kernel Preemption 如果正好发生在两者之间，那么就会造成我们所说的情况。
+上面的例子里，中断恰好在任务被设置成 `TASK_UNINTERRUPTIBLE` 之后发生。中断退出后，`preempt_schedule_irq` 就会触发 Kernel Preemption。
+
+下面的例子里，Kernel Preemption 可以发生在最后一个 `spin_unlock` 退出时，这时当前任务状态是 `TASK_UNINTERRUPTIBLE`，
+
+	prepare_to_wait(wq, &wait.wait, TASK_UNINTERRUPTIBLE);
+	spin_unlock(&inode->i_lock);
+	spin_unlock(&inode_hash_lock); /* preempt_enable 在 spin_unlock 内部被调用 */
+	schedule();
+
+不论是中断退出代码调用 `preempt_schedule_irq`， 还是 `preempt_enable` 调用 `preempt_schedule`，都会最在满足条件时触发 Kernel Preemption。
+下面以 `preempt_enable` 调用 `preempt_schedule` 为例，剖析内核代码实现。
+
+### 3.1 preempt_disable 和 preempt_enable
 
 在内核中需要禁止抢占的临界区代码，直接使用 preempt_disable 和 preempt_enable 即可达到目的。
 关于为何以及如何禁止抢占，请参考 [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt) 这篇文档。
@@ -78,7 +154,7 @@ TBD
 			__preempt_schedule(); \  /* 最终会调用 preempt_schedule */
 	} while (0)
 
-### 3.3 preempt_schedule
+### 3.2 preempt_schedule
 
 在 `preempt_schedule` 函数内部，在调用 `schedule` 之前，做如下检查，
 
@@ -111,9 +187,9 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 			return;
 
 		do {
-			__preempt_count_add(PREEMPT_ACTIVE);
-			__schedule();	/* 调用 schedule 时，PREEMPT_ACTIVE 被设置 */
-			__preempt_count_sub(PREEMPT_ACTIVE);
+			__preempt_count_add(PREEMPT_ACTIVE); /* 调用 schedule 前，PREEMPT_ACTIVE 被设置 */
+			__schedule();
+			__preempt_count_sub(PREEMPT_ACTIVE); /* 结束一次抢占，PREEMPT_ACTIVE 被清除 */
 
 			/*
 			 * Check again in case we missed a preemption opportunity
@@ -123,11 +199,25 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 		} while (need_resched());	/* 恢复执行时，检查 TIF_NEED_RESCHED 标志是否设置 */
 	}
 
-## 4. schedule 函数
+需要注意，`schedule` 调用前，`PREEMPT_ACTIVE` 标志已经被设置好了。
 
-User 或 Kernel Preemption 的代码同样是显示地调用 schedule 函数，但与主动上下文切换中很大的不同是，调用 schedule 函数时，当前上下文任务的状态还是 **TASK_RUNNING**。
+### 3.2 schedule 对 Kernel Preemption 的处理
 
-只要调用 schedule 时当前任务是 TASK_RUNNING，这时 schedule 的代码就把这次上下文切换算作强制上下文切换。下面是 schedule 代码在 Linux 3.19 的实现，
+如前所述，进入函数调用前，`PREEMPT_ACTIVE` 标志已经被设置。根据当前的任务的运行状态，我们分别做出如下分析，
+
+1. 当前任务是 `TASK_RUNNING`。
+
+   任务不会被从 CPU 所属 Run Queue 移除，上下文切换发生，当前任务被下一个任务取代在 CPU 上运行。
+
+2. 当前任务是其它非运行态。
+
+   继续本节开始的例子，当前任务设置好 `TASK_UNINTERRUPTIBLE` 状态，即将调用 `schedule` 之前被 `spin_unlock` 里的 `preempt_enable` 调用 `preempt_schedule`。
+
+   由于是 Kernel Preemption 上下文，`PREEMPT_ACTIVE` 被设置，任务不会被从 CPU 所属 Run Queue 移除，上下文切换发生，当前任务被下一个任务取代在 CPU 上运行。
+   当 Run Queue 中已经处于 `TASK_UNINTERRUPTIBLE` 状态的任务被调度到 CPU 上时，`PREEMPT_ACTIVE` 标志早被清除，因此，该任务会被 `deactivate_task` 从 Run Queue 上删除，进入到睡眠状态。
+   这样的处理保证了正确的调度的逻辑，当前被打断的任务从 Run Queue 移除的工作，被来就应该由任务自己代码调用的 `schedule` 来完成。
+
+下面是 `schedule` 的代码，针对 Kernel Preemption 做了详细注释，
 
 	static void __sched __schedule(void)
 	{
@@ -140,35 +230,24 @@ User 或 Kernel Preemption 的代码同样是显示地调用 schedule 函数，�
 
 		raw_spin_lock_irq(&rq->lock);
 
-		switch_count = &prev->nivcsw; /* 默认 switch_count 是强制上下文切换的 */
-		if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+		switch_count = &prev->nivcsw; /* Kernel Preemption 使用强制上下文切换计数器 */
+		if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) { /* 非 TASK_RUNNING 和非 Kernel Preemption 任务才从运行队列移除 */
+			if (unlikely(signal_pending_state(prev->state, prev))) {
+				prev->state = TASK_RUNNING;	/* 可中断睡眠有 Pending 信号，只做上下文切换，无需从运行队列移除 */
+			} else {
+				deactivate_task(rq, prev, DEQUEUE_SLEEP); /* 非 TASK_RUNNING，非 Kernel Preemption，需要从运行队列移除 */
+				prev->on_rq = 0;
+
 
 			[...snipped...]
 
-			switch_count = &prev->nvcsw; /* 如果 pre->state 不是 TASK_RUNNING，
-			                             swtich_count 则指向主动上下文切换计数器 */
+				switch_count = &prev->nvcsw; /* 非 TASK_RUNNING 和非 Kernel Preemption 任务使用这个计数器 */
+			}
 		}
-
-		[...snipped...]
-
-		next = pick_next_task(rq, prev);
-
-		[...snipped...]
-
-		if (likely(prev != next)) {
-			rq->nr_switches++;
-			rq->curr = next;
-			++*switch_count; /* 此时确实发生了调度，要给 nivcsw 或者 nvcsw 计数器累加 */
-
-			rq = context_switch(rq, prev, next); /* unlocks the rq */
-			cpu = cpu_of(rq);
-		} else
-			raw_spin_unlock_irq(&rq->lock);
-
-TBD
 
 ### 5. 关联阅读
 
+* [Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/)
 * [Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html) 6.14 和 13.4 章节
 * [x86 系统调用入门](http://blog.csdn.net/yayong/article/details/416477)
 * [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt)
