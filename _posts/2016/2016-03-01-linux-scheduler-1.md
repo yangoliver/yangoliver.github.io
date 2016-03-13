@@ -178,6 +178,10 @@ Kernel Preemption 发生在以下几种情况，
 
   使用 `preempt_disable` 和 `preempt_enable` 的内核上下文有很多，典型而又为人熟知的有各种内核锁的实现，如 Spin Lock，Mutex，Semaphore，R/W Semaphore，RCU 等。
 
+与 User Preemption 不同的是，上述两种 Kernel Preemption 的情况发生时，任务的运行态可能已经被设置成 `TASK_RUNNING` 以外的睡眠状态，如 `TASK_UNINTERRUPTIBLE`。
+此时接下来的内核 `__schedule` 代码会有特殊处理，检查 `PREEMPT_ACTIVE` 对上一个被 Preempt 的任务跳过移除队列操作，保证 Kernel Preemption 尽快被处理。
+而 User Preemption 则不会在当前任务在 `TASK_RUNNING` 以外的状态下发生，这是因为 User Preemption 总是发生在当前任务处于 `TASK_RUNNING` 的特殊位置。
+
 ## 3. 中断和异常
 
 **Interrupt (中断)** 通常是由硬件或者是特殊软件指令触发的处理器需要立即响应的信号。**Exception (异常)** 广义上被归类为中断的一种。
