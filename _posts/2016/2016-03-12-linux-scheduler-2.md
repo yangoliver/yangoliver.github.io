@@ -250,4 +250,5 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 * [Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/)
 * [Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html) 6.14 和 13.4 章节
 * [x86 系统调用入门](http://blog.csdn.net/yayong/article/details/416477)
+* [Linux Kernel Stack](https://github.com/torvalds/linux/blob/v3.19/Documentation/x86/x86_64/kernel-stacks)
 * [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt)

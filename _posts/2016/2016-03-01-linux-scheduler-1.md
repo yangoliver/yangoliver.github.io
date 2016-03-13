@@ -350,4 +350,5 @@ Linux 内核源码 `schedule` 的注释写的非常精炼，所以就不啰嗦�
 
 * [Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html) 6.14 和 13.4 章节
 * [x86 系统调用入门](http://blog.csdn.net/yayong/article/details/416477)
+* [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt)
 * [Linux Kernel Stack](https://github.com/torvalds/linux/blob/v3.19/Documentation/x86/x86_64/kernel-stacks)
