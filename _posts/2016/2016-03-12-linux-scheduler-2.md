@@ -22,7 +22,19 @@ TBD
 
 TBD
 
-## 2. User Preemption
+## 2. 触发抢占
+
+### 2.1 Tick Preemption
+
+TBD
+
+### 2.2 Wakeup Preemption
+
+TBD
+
+## 3. 执行 Preemption
+
+### 3.1 User Preemption
 
 如前所述，User Preemption 主要发生在以下两类场景，
 
@@ -50,7 +62,7 @@ TBD
   这里不再分析 `yield` 的实现。但需要注意的是，内核中的循环代码应该尽量使用 `cond_resched` 来让出 CPU，而不是使用 `yield`。
   [详见 `yield` 的注释](https://github.com/torvalds/linux/blob/v3.19/kernel/sched/core.c#L4287)。
 
-### 2.1 schedule 对 User Preemption 的处理
+#### 3.1.1 schedule 对 User Preemption 的处理
 
 User Preemption 的代码同样是显示地调用 schedule 函数，但与主动上下文切换中很大的不同是，调用 schedule 函数时，当前上下文任务的状态还是 **TASK_RUNNING**。
 只要调用 schedule 时当前任务是 TASK_RUNNING，这时 schedule 的代码就把这次上下文切换算作强制上下文切换，并且这次上下文切换不会涉及到把被 Preempt 任务从 Run Queue 移除操作。
@@ -101,7 +113,7 @@ User Preemption 的代码同样是显示地调用 schedule 函数，但与主动
 
 从代码可以看出，User Preemption 触发的上下文切换，都被算作了**强制上下文切换**。
 
-## 3. Kernel Preemption
+### 3.2 Kernel Preemption
 
 内核抢占需要打开特定的 Kconfig (CONFIG_PREEMPT=y)。本文只介绍引起 Kernel Preemption 的关键代码。如前所述，Kernel Preemption 主要发生在以下两类场景，
 
@@ -137,7 +149,7 @@ User Preemption 的代码同样是显示地调用 schedule 函数，但与主动
 不论是中断退出代码调用 `preempt_schedule_irq`， 还是 `preempt_enable` 调用 `preempt_schedule`，都会最在满足条件时触发 Kernel Preemption。
 下面以 `preempt_enable` 调用 `preempt_schedule` 为例，剖析内核代码实现。
 
-### 3.1 preempt_disable 和 preempt_enable
+#### 3.2.1 preempt_disable 和 preempt_enable
 
 在内核中需要禁止抢占的临界区代码，直接使用 preempt_disable 和 preempt_enable 即可达到目的。
 关于为何以及如何禁止抢占，请参考 [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt) 这篇文档。
@@ -154,7 +166,7 @@ User Preemption 的代码同样是显示地调用 schedule 函数，但与主动
 			__preempt_schedule(); \  /* 最终会调用 preempt_schedule */
 	} while (0)
 
-### 3.2 preempt_schedule
+#### 3.2.2 preempt_schedule
 
 在 `preempt_schedule` 函数内部，在调用 `schedule` 之前，做如下检查，
 
@@ -201,7 +213,7 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 
 需要注意，`schedule` 调用前，`PREEMPT_ACTIVE` 标志已经被设置好了。
 
-### 3.2 schedule 对 Kernel Preemption 的处理
+#### 3.2.3 schedule 对 Kernel Preemption 的处理
 
 如前所述，进入函数调用前，`PREEMPT_ACTIVE` 标志已经被设置。根据当前的任务的运行状态，我们分别做出如下分析，
 
@@ -245,7 +257,7 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 			}
 		}
 
-### 5. 关联阅读
+### 4. 关联阅读
 
 * [Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/)
 * [Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html) 6.14 和 13.4 章节
