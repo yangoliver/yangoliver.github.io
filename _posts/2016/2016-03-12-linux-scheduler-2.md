@@ -219,15 +219,26 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 
 1. 当前任务是 `TASK_RUNNING`。
 
-   任务不会被从 CPU 所属 Run Queue 移除，上下文切换发生，当前任务被下一个任务取代在 CPU 上运行。
+   任务不会被从其所属 CPU 的 Run Queue 上移除。这时只发生上下文切换，当前任务被下一个任务取代后在 CPU 上运行。
 
 2. 当前任务是其它非运行态。
 
    继续本节开始的例子，当前任务设置好 `TASK_UNINTERRUPTIBLE` 状态，即将调用 `schedule` 之前被 `spin_unlock` 里的 `preempt_enable` 调用 `preempt_schedule`。
 
-   由于是 Kernel Preemption 上下文，`PREEMPT_ACTIVE` 被设置，任务不会被从 CPU 所属 Run Queue 移除，上下文切换发生，当前任务被下一个任务取代在 CPU 上运行。
+   由于是 Kernel Preemption 上下文，`PREEMPT_ACTIVE` 被设置，任务不会被从 CPU 所属 Run Queue 移除而睡眠，这时只发生上下文切换，当前任务被下一个任务取代在 CPU 上运行。
    当 Run Queue 中已经处于 `TASK_UNINTERRUPTIBLE` 状态的任务被调度到 CPU 上时，`PREEMPT_ACTIVE` 标志早被清除，因此，该任务会被 `deactivate_task` 从 Run Queue 上删除，进入到睡眠状态。
-   这样的处理保证了正确的调度的逻辑，当前被打断的任务从 Run Queue 移除的工作，被来就应该由任务自己代码调用的 `schedule` 来完成。
+
+   这样的处理保证了 Kernel Preemption 的正确性，以及后续被 Preempt 任务再度被调度时的正确性，
+
+   * Preemption 的本质是一种打断引起的上下文切换，不应该处理任务的睡眠操作。
+
+     当前被 Preempt 的任务从 Run Queue 移除去睡眠的工作，本来就应该由任务自己代码调用的 `schedule` 来完成。
+     假如没有 `PREEMPT_ACTIVE` 标志的检查，那么当前被 Preempt 任务就在 `preempt_schedule` 调用 `schedule` 时提前被从 Run Queue 移除而睡眠。
+     这样一来，该任务原来代码的语义发生了变化，从任务角度看，Preemption 只是一种任务打断，被 Preempt 任务的睡眠不应该由 `preempt_schedule` 的代码来做。
+
+   * Run Queue 队列移除操作给 Kernel Preemption 的代码路径被增加了不必要的时延。
+
+     不但如此，这个被 Preempt 任务再次被唤醒后，该任务还未执行的 `schedule` 调用还会被执行一次。
 
 下面是 `schedule` 的代码，针对 Kernel Preemption 做了详细注释，
 
