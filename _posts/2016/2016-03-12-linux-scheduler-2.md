@@ -10,15 +10,37 @@ tags: [scheduler, kernel, linux, hardware]
 
 本文主要围绕 Linux 内核调度器 Preemption 的相关实现进行讨论。其中涉及的一般操作系统和 x86 处理器和硬件概念，可能也适用于其它操作系统。
 
-## 1. 一些概念
+## 1. Scheduler Overview
+
+Linux 调度器的实现实际上主要做了两部分事情，
+
+1. 任务上下文切换
+
+   在 [Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/) 里，我们对任务上下文切换做了简单介绍。
+   可以看到，任务上下文切换有两个层次的实现：**公共层**和**处理器架构相关层**。任务运行状态的切换的实现最终与处理器架构密切关联。因此 Linux 做了很好的抽象。
+   在不同的处理器架构上，处理器架构相关的代码和公共层的代码相互配合共同实现了任务上下文切换的功能。这也使得任务上下文切换代码可以很容易的移植到不同的处理器架构上。
+
+2. 任务调度策略
+
+   同样的，为了满足不同类型应用场景的调度需求，Linux 调度器也做了模块化处理。调度策略的代码也可被定义两层 **Scheduler Core (调度核心)** 和 **Scheduling Class (调度类)**。
+   调度核心的代码实现了调度器任务调度的基本操作，所有具体的调度策略都被封装在具体调度类的实现中。这样，Linux 内核的调度策略就支持了模块化的扩展能力。
+   Linux v3.19 支持以下调度类和调度策略，
+
+   * Real Time (实时)调度类 - 支持 SCHED_FIFO 和 SCHED_RR 调度策略。
+   * CFS (完全公平)调度类 - 支持 SCHED_NORMAL(SCHED_OTHER)，SCHED_BATCH 和 SCHED_IDLE 调度策略。(注：SCHED_IDLE 是一种调度策略，与 CPU IDLE 进程无关)。
+   * Deadline (最后期限)调度类 - 支持 SCHED_DEADLINE 调度策略。
+
+   Linux 调度策略设置的系统调用 [SCHED_SETATTR(2)](http://man7.org/linux/man-pages/man2/sched_setattr.2.html) 的手册有对内核支持的各种调度策略的详细说明。
+
+### 1.1 Scheduler Core
 
 TBD
 
-### 1.1 核心调度和调度类
+### 1.2 Scheduling Class
 
 TBD
 
-### 1.2 preempt_count
+### 1.3 preempt_count
 
 TBD
 
@@ -275,3 +297,4 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 * [x86 系统调用入门](http://blog.csdn.net/yayong/article/details/416477)
 * [Linux Kernel Stack](https://github.com/torvalds/linux/blob/v3.19/Documentation/x86/x86_64/kernel-stacks)
 * [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt)
+* [Modular Scheduler Core and Completely Fair Scheduler](http://lwn.net/Articles/230501/)
