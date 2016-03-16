@@ -27,10 +27,13 @@ Linux 调度器的实现实际上主要做了两部分事情，
    Linux v3.19 支持以下调度类和调度策略，
 
    * Real Time (实时)调度类 - 支持 SCHED_FIFO 和 SCHED_RR 调度策略。
-   * CFS (完全公平)调度类 - 支持 SCHED_NORMAL(SCHED_OTHER)，SCHED_BATCH 和 SCHED_IDLE 调度策略。(注：SCHED_IDLE 是一种调度策略，与 CPU IDLE 进程无关)。
+   * CFS (完全公平)调度类 - 支持 SCHED_OTHER(SCHED_NORMAL)，SCHED_BATCH 和 SCHED_IDLE 调度策略。(注：SCHED_IDLE 是一种调度策略，与 CPU IDLE 进程无关)。
    * Deadline (最后期限)调度类 - 支持 SCHED_DEADLINE 调度策略。
 
    Linux 调度策略设置的系统调用 [SCHED_SETATTR(2)](http://man7.org/linux/man-pages/man2/sched_setattr.2.html) 的手册有对内核支持的各种调度策略的详细说明。
+   内核的调度类和 `sched_setattr` 支持的调度策略命名上不一致但是存在对应关系，而且调度策略的命名更一般化。这样做的一个好处是，同一种调度策略未来可能有不同的内核调度算法来实现。
+   新的调度算法必然引入新的调度类。内核引入新调度类的时候，使用这个系统调用的应用不需要去为之修改。调度策略本身也是 POSIX 结构规范的一部分。
+   上述调度策略中，SCHED_DEADLINE 是 Linux 独有的，POSIX 规范中并无此调度策略。[SCHED(7)](http://man7.org/linux/man-pages/man7/sched.7.html) 对 Linux 调度 API 和历史发展提供了概览，值得参考。
 
 ### 1.1 Scheduler Core
 
@@ -83,6 +86,9 @@ TBD
 
   这里不再分析 `yield` 的实现。但需要注意的是，内核中的循环代码应该尽量使用 `cond_resched` 来让出 CPU，而不是使用 `yield`。
   [详见 `yield` 的注释](https://github.com/torvalds/linux/blob/v3.19/kernel/sched/core.c#L4287)。
+  POSIX 规范里规定了 [`sched_yield(2)`](http://man7.org/linux/man-pages/man2/sched_yield.2.html) 调用，一些实时调度类的应用可以使用 `sched_yield` 让出 CPU。
+  内核 API `yield` 使用了 `sched_yield` 的实现。与 `cond_resched` 最大的不同是，`yield` 会使用具体调度类的 `yield_task` 方法。不同调度类对 `yield_task` 可以有很大不同。
+  例如，`SCHED_DEADLINE` 调度策略里，`yield_task` 方法会让任务睡眠，这时的 `sched_yield` 已经不再属于 Preemption 的范畴。
 
 #### 3.1.1 schedule 对 User Preemption 的处理
 
@@ -298,3 +304,4 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 * [Linux Kernel Stack](https://github.com/torvalds/linux/blob/v3.19/Documentation/x86/x86_64/kernel-stacks)
 * [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt)
 * [Modular Scheduler Core and Completely Fair Scheduler](http://lwn.net/Articles/230501/)
+* [Deadline scheduling for Linux](http://lwn.net/Articles/356576/)
