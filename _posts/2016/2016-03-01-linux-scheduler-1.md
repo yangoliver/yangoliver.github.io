@@ -158,8 +158,8 @@ User Preemption 发生在如下两种典型的状况，
   举个间接调用的例子：内核态的代码在循环体内调用 cond_resched()，yield() 等内核 API，给其它任务得到调度的机会，防止独占滥用 CPU。
 
   在内核态写逻辑上造成长时间循环的代码，有可能造成内核死锁或者造成超长调度延迟，尤其是当 Kernel Preemption 没有打开时。
-  这时可以在循环体内调用 cond_resched()，yield() 等内核 API，有条件的让出 CPU。这里说的有条件是因为 cond_resched 要检查 `TIF_NEED_RESCHED` 标志。
-  而 yield 在所在 CPU Run Queue 没有任务的情况下，也不会发生真正的任务切换。
+  这时可以在循环体内调用 cond_resched() 内核 API，有条件的让出 CPU。这里说的有条件是因为 cond_resched 要检查 `TIF_NEED_RESCHED` 标志，看是否有新的 Preemption 的请求。
+  而 `yield` 内核 API，不检查 `TIF_NEED_RESCHED` 标志，则无条件触发任务切换，但在所在 CPU Run Queue 没有其它任务的情况下，不会发生真正的任务切换。
 
 #### 2.3.2.2 Kernel Preemption
 
