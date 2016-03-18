@@ -51,7 +51,62 @@ Linux 调度器的实现实际上主要做了两部分事情，
 
 ### 1.2 Scheduling Class
 
-TBD
+在 Linux 内核引入一种新调度算法，基本上就是实现一个新的 Scheduling Class (调度类)。调度类需要实现的所有借口定义在 `struct sched_class` 里。
+例如，Linux 内核的 CFS 调度算法就是通过实现该调度类结构来实现完全公平调度算法的，其主要实现代码在 sched/fair.c 源文件。
+
+	const struct sched_class fair_sched_class = {
+
+			[...snipped...]
+
+		.enqueue_task		= enqueue_task_fair,
+		.dequeue_task		= dequeue_task_fair,
+		.yield_task		= yield_task_fair,
+
+			[...snipped...]
+
+		.check_preempt_curr	= check_preempt_wakeup,
+
+			[...snipped...]
+
+		.pick_next_task		= pick_next_task_fair,
+
+			[...snipped...]
+
+		.set_curr_task          = set_curr_task_fair,
+
+			[...snipped...]
+
+		.task_tick		= task_tick_fair,
+
+			[...snipped...]
+	};
+
+这里，对其中重要的调度类接口做简单的介绍，
+
+* enqueue_task
+
+  将待运行的任务插入到 Per-CPU Run Queue。典型的场景就是内核里的唤醒函数，将被唤醒的任务插入 Run Queue 然后设置任务运行态为 `TASK_RUNNING`。
+
+  对 CFS 调度器来说，则是将任务插入红黑树，给 `nr_running` 增加计数。
+
+* dequeue_task
+
+  将非运行态任务移除出 Per-CPU Run Queue。典型的场景就是任务调度引起阻塞的内核函数，把任务运行态设置成 `TASK_INTERRUPTIBLE` 或 `TASK_UNINTERRUPTIBLE`，然后调用 `schedule` 函数，最终触发本操作。
+
+  对 CFS 调度器来说，则是将不在处于运行态的任务从红黑树中移除，给 `nr_running` 减少计数。
+
+* yield_task
+
+  处于运行态的任务申请主动让出 CPU。典型的场景就是处于运行态的应用调用 [`sched_yield(2)`](http://man7.org/linux/man-pages/man2/sched_yield.2.html) 系统调用，直接让出 CPU。
+  此时系统调用 `sched_yield` 系统调用先调用 `yield_task` 申请让出 CPU，然后调用 `schedule` 去做上下文切换。
+
+  对 CFS 调度器来说，如果 `nr_running` 是 1，则直接返回，最终 `schedule` 函数也不产生上下文切换。否则，任务被标记为 skip 状态。调度器在红黑树上选择待运行任务时肯定会跳过该任务。
+  之后，因为 `schedule`  函数被调用，`pick_next_task` 最终会被调用。其代码会从红黑树中最左侧选择一个任务，然后把要放弃运行的任务放回红黑树，然后调用上下文切换函数做任务上下文切换。
+
+* check_preempt_curr
+* pick_next_task
+* set_curr_task
+* task_tick
 
 ### 1.3 preempt_count
 
