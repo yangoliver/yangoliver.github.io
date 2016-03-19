@@ -79,6 +79,7 @@ Linux 调度器的实现实际上主要做了两部分事情，
   用于在待运行任务插入 Run Queue 后，检查是否应该 Preempt 正在 CPU 运行的当前任务。Wakeup Preemption 的实现逻辑主要在这里。
 
   对 CFS 调度器而言，主要是在是否能满足调度时延和是否能保证足够任务运行时间之间来取舍。CFS 调度器也提供了预定义的 Threshold 允许做 Wakeup Preemption 的调优。
+  本文有专门章节对 Wakeup Preemption 做详细分析。
 
 * pick_next_task
 
@@ -105,11 +106,13 @@ Linux 调度器的实现实际上主要做了两部分事情，
 
 * task_tick
 
-  这个函数通常在系统周期性 (Per-tick) 的时钟中断上下文调用，判断是否当前运行任务需要 Preemption 来被强制剥夺运行。Tick Preemption 的实现逻辑主要在这里。
+  这个函数通常在系统周期性 (Per-tick) 的时钟中断上下文调用，调度类可以把 Per-tick 处理的事务交给该方法执行。例如，调度器的统计数据更新，Tick Preemption 的实现逻辑主要在这里。
+  Tick Preemption 主要判断是否当前运行任务需要 Preemption 来被强制剥夺运行。
 
-  对 CFS 调度器而言，主要是在是否能满足调度时延和是否能保证足够任务运行时间之间来取舍。CFS 调度器也提供了预定义的 Threshold 允许做 Tick Preemption 的调优。
+  对 CFS 调度器而言，Tick Preemption 主要是在是否能满足调度时延和是否能保证足够任务运行时间之间来取舍。CFS 调度器也提供了预定义的 Threshold 允许做 Tick Preemption 的调优。
+  需要进一步了解 Tick Preemption，请参考 2.1 章节。
 
-Linux 内核的 CFS 调度算法就是通过实现该调度类结构来实现其主要逻辑的，CFS 的代码主要集中在 sched/fair.c 源文件。
+Linux 内核的 CFS 调度算法就是通过实现该调度类结构来实现其主要逻辑的，CFS 的代码主要集中在 kernel/sched/fair.c 源文件。
 下面的 `sched_class` 结构初始化代码包含了本节介绍的所有方法在 CFS 调度器实现中的入口函数名称，
 
 	const struct sched_class fair_sched_class = {
@@ -148,7 +151,65 @@ TBD
 
 ### 2.1 Tick Preemption
 
-TBD
+[Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/) 里对时钟中断和 Tick Preemption 都有简单的介绍。本节主要关注 Tick Preemption 在 Linux v3.19 里的实现。
+
+Tick Preemption 的主要逻辑都实现在调度类的 `task_tick` 方法里，调度核心代码里并不做处理。
+
+如前所述，Tick Preemption 主要在时钟中断上下文处理。从时钟中断处理函数到 CFS 调度类的 `task_tick` 方法，中间要经历四个层次的处理。
+
+#### 2.1.1 处理器相关的时钟中断处理
+
+以 x86 为例，时钟中断处理是 Per-CPU 的 Local APIC 定时器中断，中断处理函数 `apic_timer_interrupt` 被初始化到中断门 IDT 的 `LOCAL_TIMER_VECTOR` 上。
+当 CPU LAPIC 时钟中断发生时，`apic_timer_interrupt` 中断处理函数会一路调用到处理器无关的通用时钟中断处理函数 `tick_handle_periodic`，
+
+	apic_timer_interrupt->smp_apic_timer_interrupt->local_apic_timer_interrupt->tick_handle_periodic
+
+进一步的细节请参考 arch/x86/kernel/entry_64.S 里的 [`apic_timer_interrupt` 汇编代码](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/entry_64.S#L984)。
+特别注意 `apicinterrupt` 宏展开后 `apic_timer_interrupt` 是如何调用 `smp_apic_timer_interrupt` 的汇编技巧。
+
+#### 2.1.2 处理器无关的时钟中断处理
+
+函数 `tick_handle_periodic` 在时钟中断的处理器平台无关层，经过一路调用，最终会进入到调度核心代码层的 `scheduler_tick` 函数，
+
+	tick_handle_periodic->tick_periodic->update_process_times->scheduler_tick
+
+内核时钟中断处理函数要做很多其它复杂的工作，例如，jiffies 和进程时间的维护，Per-CPU 的定时器的调用，RCU 的处理。
+进一步的细节请参考 kernel/time/tick-common.c 里的 [`tick_handle_periodic` 的实现](https://github.com/torvalds/linux/blob/v3.19/kernel/time/tick-common.c#L95)。
+
+#### 2.1.3 调度器核心层
+
+函数 `scheduler_tick` 属于调度核心层代码，通过调用当前任务调度类的 `task_tick` 方法，进入到具体调度类的入口函数。对 CFS 调度类而言，就是 `task_tick_fair`，
+
+	void scheduler_tick(void)
+	{
+		[...snipped...]
+
+		curr->sched_class->task_tick(rq, curr, 0); /* CFS 调度类时，指向 task_tick_fair */
+
+		[...snipped...]
+	}
+
+除了 Tick Preemption 处理，`scheduler_tick` 函数还做了调度时钟维护和处理器的负载均衡等工作。
+进一步的细节请参考 kernel/sched/core.c 里的 [`scheduler_tick` 的实现](https://github.com/torvalds/linux/blob/v3.19/kernel/sched/core.c#L2514)。
+
+#### 2.1.4 CFS 调度类
+
+CFS 调度器的 `task_tick_fair` 会最终调用到 `check_preempt_tick` 来检查是否需要 Tick Preemption，进而调用 `resched_curr` 申请 Preemption，
+
+	task_tick_fair->entity_tick->check_preempt_tick->resched_curr
+
+进入到 `check_preempt_tick` 之前，`entity_tick` 需要检查本 CPU 所属处于运行状态的任务数是否大于 1，只有一个运行的任务则根本没有必要触发 Preemption。
+在 `check_preempt_tick` 内部，主要做以下几件事情，
+
+1. 调用 `sched_slice` 根据 Run Queue 任务数和调度延迟，任务权重计算任务理想运行时间: `ideal_runtime`
+2. 计算当前 CPU 上运行任务的运行时间 `delta_exec`
+   - 如果 `delta_exec` 已经超过了 `ideal_runtime`，则调用 `resched_curr` 触发 Tick Preemption。
+   - 如果 `delta_exec` 小于 CFS 调度器预设的最小调度粒度，则意味着当前任务运行时间太短，直接返回而不触发 Tick Preemption。
+3. 计算当前任务和红黑树最左节点任务的虚拟运行时间 `vruntime` 的差值 `delta`
+   - 如果 `delta` 小于 0，则意味着没有比当前任务急需调度的任务。
+   - 如果 `delta` 大于 `ideal_runtime`，则意味着红黑树里有更需要调度的任务。例如，唤醒后没能做 Wakeup Preemption 的任务可以通过 Tick Preemption 被今早调度。
+
+进一步的细节请参考 kernel/sched/fair.c 里的 [`check_preempt_tick` 的实现](https://github.com/torvalds/linux/blob/v3.19/kernel/sched/fair.c#L3124)。
 
 ### 2.2 Wakeup Preemption
 
