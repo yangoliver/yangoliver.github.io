@@ -52,36 +52,7 @@ Linux 调度器的实现实际上主要做了两部分事情，
 ### 1.2 Scheduling Class
 
 在 Linux 内核引入一种新调度算法，基本上就是实现一个新的 Scheduling Class (调度类)。调度类需要实现的所有借口定义在 `struct sched_class` 里。
-例如，Linux 内核的 CFS 调度算法就是通过实现该调度类结构来实现完全公平调度算法的，其主要实现代码在 sched/fair.c 源文件。
-
-	const struct sched_class fair_sched_class = {
-
-			[...snipped...]
-
-		.enqueue_task		= enqueue_task_fair,
-		.dequeue_task		= dequeue_task_fair,
-		.yield_task		= yield_task_fair,
-
-			[...snipped...]
-
-		.check_preempt_curr	= check_preempt_wakeup,
-
-			[...snipped...]
-
-		.pick_next_task		= pick_next_task_fair,
-
-			[...snipped...]
-
-		.set_curr_task          = set_curr_task_fair,
-
-			[...snipped...]
-
-		.task_tick		= task_tick_fair,
-
-			[...snipped...]
-	};
-
-这里，对其中重要的调度类接口做简单的介绍，
+下面对其中最重要的一些调度类接口做简单的介绍，
 
 * enqueue_task
 
@@ -104,9 +75,70 @@ Linux 调度器的实现实际上主要做了两部分事情，
   之后，因为 `schedule`  函数被调用，`pick_next_task` 最终会被调用。其代码会从红黑树中最左侧选择一个任务，然后把要放弃运行的任务放回红黑树，然后调用上下文切换函数做任务上下文切换。
 
 * check_preempt_curr
+
+  用于在待运行任务插入 Run Queue 后，检查是否应该 Preempt 正在 CPU 运行的当前任务。Wakeup Preemption 的实现逻辑主要在这里。
+
+  对 CFS 调度器而言，主要是在是否能满足调度时延和是否能保证足够任务运行时间之间来取舍。CFS 调度器也提供了预定义的 Threshold 允许做 Wakeup Preemption 的调优。
+
 * pick_next_task
+
+  选择下一个最适合调度的任务，将其从 Run Queue 移除。并且如果前一个任务还保持在运行态，即没有从 Run Queue 移除，则将当前的任务重新放回到 Run Queue。内核 `schedule` 函数利用它来完成调度时任务的选择。
+
+  对 CFS 调度器而言，大多数情况下，下一个调度任务是从红黑树的最左侧节点选择并移除。
+  如果前一个任务是其它调度类，则调用该调度类的 `put_prev_task` 方法将前一个任务做正确的安置处理。
+  但如果前一个任务如果也属于 CFS 调度类的话，为了效率，跳过调度类标准方法 `put_prev_task`，但核心逻辑仍旧是 `put_prev_task_fair` 的主要部分。
+  关于 `put_prev_task` 的具体功能，请参考随后的说明。
+
+* put_prev_task
+
+  将前一个正在 CPU 上运行的任务做拿下 CPU 的处理。如果任务还在运行态则将任务放回 Run Queue，否则，根据调度类要求做简单处理。此函数通常是 `pick_next_task` 的密切关联操作，是 `schedule` 实现的关键部分。
+
+  如果前一个任务属于 CFS 调度类，则使用 CFS 调度类的具体实现 `put_prev_task_fair`。此时，如果任务还是 `TASK_RUNNING` 状态，则被重新插入到红黑树的最右侧。
+  如果这个任务不是 `TASK_RUNNING` 状态，则已经从红黑树移除过了，只需要修改 CFS 当前任务指针 `cfs_rq->curr` 即可。
+
 * set_curr_task
+
+  当任务改变自己的调度类或者任务组时，该函数被调用。用户进程可以使用 [`sched_setscheduler`](http://man7.org/linux/man-pages/man2/sched_setscheduler.2.html)
+  系统调用，通过设置自己新的调度策略来修改自己的调度类。
+
+  对 CFS 调度器而言，当任务把自己调度类从其它类型修改成 CFS 调度类，此时需要把该任务设置成正当前 CPU 正在运行的任务。例如把任务从红黑树上移除，设置 CFS 当前任务指针 `cfs_rq->curr` 和调度统计数据等。
+
 * task_tick
+
+  这个函数通常在系统周期性 (Per-tick) 的时钟中断上下文调用，判断是否当前运行任务需要 Preemption 来被强制剥夺运行。Tick Preemption 的实现逻辑主要在这里。
+
+  对 CFS 调度器而言，主要是在是否能满足调度时延和是否能保证足够任务运行时间之间来取舍。CFS 调度器也提供了预定义的 Threshold 允许做 Tick Preemption 的调优。
+
+Linux 内核的 CFS 调度算法就是通过实现该调度类结构来实现其主要逻辑的，CFS 的代码主要集中在 sched/fair.c 源文件。
+下面的 `sched_class` 结构初始化代码包含了本节介绍的所有方法在 CFS 调度器实现中的入口函数名称，
+
+	const struct sched_class fair_sched_class = {
+
+			[...snipped...]
+
+		.enqueue_task		= enqueue_task_fair,
+		.dequeue_task		= dequeue_task_fair,
+		.yield_task		= yield_task_fair,
+
+			[...snipped...]
+
+		.check_preempt_curr	= check_preempt_wakeup,
+
+			[...snipped...]
+
+		.pick_next_task		= pick_next_task_fair,
+		.put_prev_task      = put_prev_task_fair,
+
+			[...snipped...]
+
+		.set_curr_task          = set_curr_task_fair,
+
+			[...snipped...]
+
+		.task_tick		= task_tick_fair,
+
+			[...snipped...]
+	};
 
 ### 1.3 preempt_count
 
