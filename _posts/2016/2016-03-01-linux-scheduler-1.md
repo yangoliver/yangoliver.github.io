@@ -128,14 +128,18 @@ User Preemption 或 Kernel Preemption 在很多代码路径上放置了检查当
 任务插入到 Run Queue 后，调度器立即将新唤醒的任务和正在 CPU 上执行的任务交给具体的调度算法去比较，决定是否剥夺当前任务的运行。
 与 Tick Preemption 一样，一旦决定剥夺在 CPU 上执行的任务的运行，则会给当前任务设置一个 `TIF_NEED_RESCHED` 标志。而实际的 schedule 调用并不是在这时完成的。
 但 Wakeup Preemption 在此处真正特殊的地方在于，执行唤醒操作的任务可能把被唤醒的任务插入到**本地 CPU** 的 Run Queue，但还可能插入到**远程 CPU** 的 Run Queue。
-因此，schedule 函数的调用可能有两种情况，
+因此，`try_to_wake_up` 函数的调用根据被唤醒的任务将插入 Run Queue 所属的 CPU 和执行唤醒任务正在运行的 CPU 关系，分为如下两种情况，
 
-* 被唤醒任务在本地 CPU Run Queue
+* 共享缓存
+
+  被唤醒任务的目标 CPU 和当前运行唤醒 CPU 共享缓存。
 
   唤醒函数在返回过程中，只要当前任务运行到任何一处 User Preemption 或 Kernel Preemption 的代码，这些代码就会检查到 `TIF_NEED_RESCHED` 标志，并调用 schedule 的位置，上下文切换才真正发生。
   实际上，如果 Kernel Preemption 是打开的，在唤醒操作结束时的 `spin_unlock` 或者随后的各种可能的中断退出路径都有 Kernel Preemption 调用 schedule 的时机。
 
-* 被唤醒任务在远程 CPU Run Queue
+* 不共享缓存
+
+  被唤醒任务的目标 CPU 和当前运行唤醒 CPU 不共享缓存。
 
   这种情况下，唤醒操作在设置 `TIF_NEED_RESCHED` 标志之后，会立即向被唤醒任务 Run Queue 所属的 CPU 发送一个 IPI (处理器间中断)，然后才返回。
   以 Intel x86 架构为例，那个远程 CPU 的 `RESCHEDULE_VECTOR` 被初始化来响应这个中断，最终中断处理函数 `scheduler_ipi` 在远程 CPU 上执行。
