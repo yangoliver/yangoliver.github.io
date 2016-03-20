@@ -97,6 +97,12 @@ Linux 调度器的实现实际上主要做了两部分事情，
   如果前一个任务属于 CFS 调度类，则使用 CFS 调度类的具体实现 `put_prev_task_fair`。此时，如果任务还是 `TASK_RUNNING` 状态，则被重新插入到红黑树的最右侧。
   如果这个任务不是 `TASK_RUNNING` 状态，则已经从红黑树移除过了，只需要修改 CFS 当前任务指针 `cfs_rq->curr` 即可。
 
+* select_task_rq
+
+  为给定的任务选择一个 Run Queue，返回 Run Queue 所属的 CPU 号。典型的使用场景是唤醒，fork/exec 进程时，给进程选择一个 Run Queue，这也给调度器一个 CPU 负载均衡的机会。
+
+  对 CFS 调度器而言，主要是根据传入的参数要求找到符合亲和性要求的最空闲的 CPU 所属的 Run Queue。
+
 * set_curr_task
 
   当任务改变自己的调度类或者任务组时，该函数被调用。用户进程可以使用 [`sched_setscheduler`](http://man7.org/linux/man-pages/man2/sched_setscheduler.2.html)
@@ -131,6 +137,10 @@ Linux 内核的 CFS 调度算法就是通过实现该调度类结构来实现其
 
 		.pick_next_task		= pick_next_task_fair,
 		.put_prev_task      = put_prev_task_fair,
+
+			[...snipped...]
+
+		.select_task_rq     = select_task_rq_fair,
 
 			[...snipped...]
 
@@ -192,7 +202,9 @@ Tick Preemption 的主要逻辑都实现在调度类的 `task_tick` 方法里，
 除了 Tick Preemption 处理，`scheduler_tick` 函数还做了调度时钟维护和处理器的负载均衡等工作。
 进一步的细节请参考 kernel/sched/core.c 里的 [`scheduler_tick` 的实现](https://github.com/torvalds/linux/blob/v3.19/kernel/sched/core.c#L2514)。
 
-#### 2.1.4 CFS 调度类
+#### 2.1.4 调度类层
+
+如前所述，Linux 支持多种调度类，而且可以通过系统调用设置进程的调度类。不同调度类对 Tick Preemption 的支持可以是不同的，只需要实现 `task_tick` 的方法即可。本小节只关注 CFS 调度类的实现。
 
 CFS 调度器的 `task_tick_fair` 会最终调用到 `check_preempt_tick` 来检查是否需要 Tick Preemption，进而调用 `resched_curr` 申请 Preemption，
 
@@ -213,7 +225,143 @@ CFS 调度器的 `task_tick_fair` 会最终调用到 `check_preempt_tick` 来检
 
 ### 2.2 Wakeup Preemption
 
-TBD
+如 [Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/) 所述，Wakeup Preemption 与 Linux 内核唤醒机制密切相关。
+从唤醒发生到 Wakeup Preemption，涉及到个重要的层次。
+
+#### 2.2.1 同步原语层
+
+Linux 内核里，很多同步原语都会触发进程唤醒，典型的场景如下，
+
+- 锁退出时，唤醒其它等待锁的任务。
+
+  例如，semaphore，mutex，futex 等机制退出时会调用 `wake_up_process` 或 `wake_up_state` 等待该锁的任务列表里的第一个等待任务。
+
+- 等待队列 (wait queue) 或者 completion 机制里，唤醒其它等待在指定等待队列 (wait queue) 或者 completion 上的一个或者多个其它任务。
+
+  Linux 定义了 [wake_up 即其各种变体](https://github.com/torvalds/linux/blob/v3.19/include/linux/wait.h#L165) 主动唤醒等待队列上的任务。
+
+而以上各种机制触发的唤醒任务操作最终都会进入一个共同的入口点 `try_to_wake_up`。
+
+#### 2.2.2 调度器核心层
+
+作为调度核心层代码，[`try_to_wake_up` 定义在 kernel/sched/core.c 原文件里](https://github.com/torvalds/linux/blob/v3.19/kernel/sched/core.c#L1673)。
+首先 `try_to_wake_up` 会使用 `select_task_rq` 方法为要被唤醒的任务选择一个 Run Queue，返回目标 Run Queue 所属的 CPU 号。
+然后，`ttwu_queue` 的代码会判断这个选择的 CPU 与执行 `try_to_wake_up` 任务的当前运行的 CPU 是否 **共享缓存** (即 LLC，最后一级 cache，x86 就是 L3 Cache)。
+在 [Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/) 的相关章节里，针对共享缓存的两个不同情况都做了详细的介绍。因此，这里只给出相关的代码调用路径，作为参考，
+
+- 共享缓存
+
+  这类唤醒是**同步**的，在调用唤醒任务当前的上下文完成。从 `try_to_wake_up` 到调用到触发 Wakeup Preemption 检查的代码路径如下，
+
+		try_to_wake_up->ttwu_queue->ttwu_do_activate->ttwu_do_wakeup->check_preempt_curr
+
+- 不共享缓存
+
+  这类唤醒是**异步**的，调用唤醒任务当前的上文只是将待唤醒的任务加入到目标 CPU Run Queue 的专用唤醒队列里 (`wake_list`)，然后给目标 CPU 触发调度处理器间中断 (IPI) 后，立即返回，
+
+		try_to_wake_up->ttwu_queue->ttwu_queue_remote->smp_send_reschedule
+
+  其中 `smp_send_reschedule` 函数是处理器相关的调度 IPI 触发函数，在不同处理器架构实现时不同的，下个小节会简单介绍。
+
+  调度 IPI 触发后，目标 CPU 会接收到该中断，然后通过处理器相关的中断处理函数调入到调度核心层的中断处理函数 `scheduler_ipi`。
+  在这个 `scheduler_ipi` 处理上下文中，最终的 Wakeup Preemption 检查和触发代码会被调用，
+
+	scheduler_ipi->sched_ttwu_pending->ttwu_do_activate->ttwu_do_wakeup->check_preempt_curr
+
+  总之，不共享缓存的情况下，Linux 内核通过实现异步的唤醒操作，将任务实际唤醒操作的下半部分移到被唤醒任务所在 Run Queue 的 CPU 上的 IPI 中断处理上下文中执行。
+  这样做的好处主要是减少同步唤醒操作的 Run Queue 锁竞争和缓存方面的开销。
+  详情请参考 [sched: Move the second half of ttwu() to the remote cpu](https://github.com/torvalds/linux/commit/317f394160e9beb97d19a84c39b7e5eb3d7815a8)。
+
+此外，在 `try_to_wake_up` 函数一进入时，还有一个特殊情况的检查：当被唤醒任务还在 Run Queue 上没有被删除时 (如睡眠途中)，则代码走如下快速处理路径，此时也不需要有 Run queue 的选择和插入操作，
+
+	try_to_wake_up->ttwu_remote->ttwu_do_activate->ttwu_do_wakeup->check_preempt_curr
+
+
+函数 `check_preempt_curr` 是核心调度器的代码，主要的处理逻辑有三点，
+
+1. 检查目标 Run Queue 所属 CPU 上正在运行的任务和唤醒的任务是否同属一个调度类
+
+   - 如果是相同调度类，则调用具体调度类的 `check_preempt_curr` 方法来处理真正的 Wakeup Preemption。
+   - 如果不是相同的调度类，如果被唤醒任务的调度类优先级比当前 CPU 运行任务高，则直接调用 `resched_curr` 触发 Wakeup Preemption 申请。否则，则直接退出，没有抢占资格
+
+2. 函数退出前检查是否进入 `check_preempt_curr` 之前是否发生过队列插入操作，并且是否  Wakeup Preemption 申请成功。
+
+   如果两个条件都满足，就把 `skip_clock_update` 置 1，这样接下来的 `__schedule` 调用里，`update_rq_clock` 会被调用，但在这个函数里会跳过整个函数的处理，这算是个小小的优化。
+   因为在插入队列操作时，同样的 `update_rq_clock` 已经被调用过了。
+
+下面是 `check_preempt_curr` 的代码，关键行有代码注释，
+
+	void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
+	{
+		const struct sched_class *class;
+
+		if (p->sched_class == rq->curr->sched_class) {
+			rq->curr->sched_class->check_preempt_curr(rq, p, flags); /* 具体调度类方法，CFS 的是 check_preempt_wakeup */
+		} else {
+			for_each_class(class) { /* 调度类的优先级就是链表的顺序: DL > RT > CFS > IDLE */
+				if (class == rq->curr->sched_class)	/* 当前 CPU 运行任务先匹配，意味着新唤醒的调度类优先级低 */
+					break;
+				if (class == p->sched_class) { /* 新唤醒的任务先匹配到，说明当前 CPU 上的优先级低 */
+					resched_curr(rq); /* 触发 Wakeup Preemption */
+					break;
+				}
+			}
+		}
+
+		/*
+		 * A queue event has occurred, and we're going to schedule.  In
+		 * this case, we can save a useless back to back clock update.
+		 */
+		if (task_on_rq_queued(rq->curr) && test_tsk_need_resched(rq->curr))	/* 满足条件即可以跳过一次 update_rq_clock */
+			rq->skip_clock_update = 1;
+	}
+
+#### 2.2.3 处理器相关的调度中断处理
+
+上一小节里，介绍了被唤醒任务的目标运行 CPU 和执行 `try_to_wake_up` 的任务所在 CPU 不共享缓存时，需要利用调度 IPI 执行异步唤醒流程。
+整个过程中，主要分为以下两个阶段，
+
+- 前半部：触发异步唤醒的调度 IPI
+
+  从 `try_to_wake_up` 一直调用到处理器相关实现 `smp_send_reschedule`，
+
+		try_to_wake_up->ttwu_queue->ttwu_queue_remote->smp_send_reschedule
+
+  以 Intel x86 平台为例，[`smp_send_reschedule` 最终调用 `smp_ops` 结构的 `smp_send_reschedule` 方法](https://github.com/torvalds/linux/blob/v3.19/arch/x86/include/asm/smp.h#L137)。
+  而 [`smp_send_reschedule` 方法则早已被初始化成 `native_smp_send_reschedule`](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/smp.c#L350)。
+
+  在 `native_smp_send_reschedule` 函数里，调用 apic 的 `send_IPI_mask` 方法给指定 CPU 的中断向量 `RESCHEDULE_VECTOR` 触发中断，
+
+		apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
+
+  在大于 8  个 CPU 的 x86 平台上，[apic 结构的 send_IPI_mask 成员被初始化成 physflat_send_IPI_mask](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/apic/apic_flat_64.c#L296)，
+
+		physflat_send_IPI_mask->default_send_IPI_mask_sequence_phys->__default_send_IPI_dest_field->__default_send_IPI_dest_field
+
+  而在 [`__default_send_IPI_dest_field` 函数里，代码通过对 `APIC_ICR` 寄存器编程来触发 IPI](https://github.com/torvalds/linux/blob/v3.19/arch/x86/include/asm/ipi.h#L88)。
+
+- 后半部：处理调度 IPI 中断
+
+  IPI 触发后，目标 CPU 的 Local APIC 收到中断，陷入中断门，而
+  [IDT 表的 `RESCHEDULE_VECTOR` 向量的中断处理入口被初始化成了 `reschedule_interrupt`](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/irqinit.c#L109)，
+  因此，从 `reschedule_interrupt` 一直会调用到 `scheduler_ipi`，
+
+	reschedule_interrupt->smp_reschedule_interrupt->__smp_reschedule_interrupt->scheduler_ipi
+
+  其中，[reschedule_interrupt 调用 smp_reschedule_interrupt 的汇编技巧](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/entry_64.S#L1008) 与之前介绍的时钟中断类似。
+
+  上小节中，已经介绍了 `scheduler_ipi` 的代码是通过调用 `sched_ttwu_pending` 来实现异步唤醒的下半部操作，并触发 Wakeup Preemption 的。
+
+至此，通过本节和上节的描述，我们可以清楚的知道处理器相关的调度 IPI 处理代码是如何与调度器核心代码紧密合作，实现异步唤醒并触发 Wakeup Preemption 的。
+此外，调度 IPI 更重要的一个功能就是触发真正的 User Preemption 和 Kernel Preemption，这部分在 [Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/) 已有相关说明，此处不再赘述。
+
+#### 2.2.4 调度类层
+
+本节以 CFS 调度类为例，介绍 `check_preempt_curr` 在 CFS 调度类里的实现。
+
+TBD。
+
+	check_preempt_curr->check_preempt_wakeup->resched_curr
 
 ## 3. 执行 Preemption
 
