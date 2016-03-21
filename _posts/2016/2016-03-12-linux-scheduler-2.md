@@ -253,28 +253,34 @@ Linux 内核里，很多同步原语都会触发进程唤醒，典型的场景�
 
   这类唤醒是**同步**的，在调用唤醒任务当前的上下文完成。从 `try_to_wake_up` 到调用到触发 Wakeup Preemption 检查的代码路径如下，
 
-		try_to_wake_up->ttwu_queue->ttwu_do_activate->ttwu_do_wakeup->check_preempt_curr
+	  try_to_wake_up->ttwu_queue->ttwu_do_activate->ttwu_activate->activate_task->enqueue_task->...
+	                                         |
+	                                         +->ttwu_do_wakeup->check_preempt_curr->...
+
+  唤醒任务被调用具体调度类的 `enqueue_task` 方法插入到目标 CPU Run Queue 之后，再调用 `check_preempt_curr` 来检查是否触发 Wakeup Preemption。
 
 - 不共享缓存
 
   这类唤醒是**异步**的，调用唤醒任务当前的上文只是将待唤醒的任务加入到目标 CPU Run Queue 的专用唤醒队列里 (`wake_list`)，然后给目标 CPU 触发调度处理器间中断 (IPI) 后，立即返回，
 
-		try_to_wake_up->ttwu_queue->ttwu_queue_remote->smp_send_reschedule
+	  try_to_wake_up->ttwu_queue->ttwu_queue_remote->smp_send_reschedule->...
 
   其中 `smp_send_reschedule` 函数是处理器相关的调度 IPI 触发函数，在不同处理器架构实现时不同的，下个小节会简单介绍。
 
   调度 IPI 触发后，目标 CPU 会接收到该中断，然后通过处理器相关的中断处理函数调入到调度核心层的中断处理函数 `scheduler_ipi`。
-  在这个 `scheduler_ipi` 处理上下文中，最终的 Wakeup Preemption 检查和触发代码会被调用，
+  在这个 `scheduler_ipi` 处理上下文中，任务通过 `sched_ttwu_pending` 调用 `ttwu_activate` 被插入目标 CPU Run Queue，然后最终的 Wakeup Preemption 检查和触发代码会被调用，
 
-	scheduler_ipi->sched_ttwu_pending->ttwu_do_activate->ttwu_do_wakeup->check_preempt_curr
+	  scheduler_ipi->sched_ttwu_pending->ttwu_do_activate->ttwu_do_wakeup->check_preempt_curr->...
 
   总之，不共享缓存的情况下，Linux 内核通过实现异步的唤醒操作，将任务实际唤醒操作的下半部分移到被唤醒任务所在 Run Queue 的 CPU 上的 IPI 中断处理上下文中执行。
   这样做的好处主要是减少同步唤醒操作的 Run Queue 锁竞争和缓存方面的开销。
   详情请参考 [sched: Move the second half of ttwu() to the remote cpu](https://github.com/torvalds/linux/commit/317f394160e9beb97d19a84c39b7e5eb3d7815a8)。
 
-此外，在 `try_to_wake_up` 函数一进入时，还有一个特殊情况的检查：当被唤醒任务还在 Run Queue 上没有被删除时 (如睡眠途中)，则代码走如下快速处理路径，此时也不需要有 Run queue 的选择和插入操作，
+此外，在 `try_to_wake_up` 函数一进入时，还有一个特殊情况的检查：当被唤醒任务还在 Run Queue 上没有被删除时 (如睡眠途中)，则代码走如下快速处理路径，
 
-	try_to_wake_up->ttwu_remote->ttwu_do_activate->ttwu_do_wakeup->check_preempt_curr
+	try_to_wake_up->ttwu_remote->ttwu_do_wakeup->check_preempt_curr->...
+
+注意此时不需要有 Run queue 的选择和插入操作，因此不需要调用 `ttwu_do_activate`，而是直接调用 `ttwu_do_wakeup`。
 
 
 函数 `check_preempt_curr` 是核心调度器的代码，主要的处理逻辑有三点，
@@ -325,18 +331,18 @@ Linux 内核里，很多同步原语都会触发进程唤醒，典型的场景�
 
   从 `try_to_wake_up` 一直调用到处理器相关实现 `smp_send_reschedule`，
 
-		try_to_wake_up->ttwu_queue->ttwu_queue_remote->smp_send_reschedule
+	  try_to_wake_up->ttwu_queue->ttwu_queue_remote->smp_send_reschedule->...
 
   以 Intel x86 平台为例，[`smp_send_reschedule` 最终调用 `smp_ops` 结构的 `smp_send_reschedule` 方法](https://github.com/torvalds/linux/blob/v3.19/arch/x86/include/asm/smp.h#L137)。
   而 [`smp_send_reschedule` 方法则早已被初始化成 `native_smp_send_reschedule`](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/smp.c#L350)。
 
   在 `native_smp_send_reschedule` 函数里，调用 apic 的 `send_IPI_mask` 方法给指定 CPU 的中断向量 `RESCHEDULE_VECTOR` 触发中断，
 
-		apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
+	  apic->send_IPI_mask(cpumask_of(cpu), RESCHEDULE_VECTOR);
 
   在大于 8  个 CPU 的 x86 平台上，[apic 结构的 send_IPI_mask 成员被初始化成 physflat_send_IPI_mask](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/apic/apic_flat_64.c#L296)，
 
-		physflat_send_IPI_mask->default_send_IPI_mask_sequence_phys->__default_send_IPI_dest_field->__default_send_IPI_dest_field
+	  physflat_send_IPI_mask->default_send_IPI_mask_sequence_phys->__default_send_IPI_dest_field->__default_send_IPI_dest_field
 
   而在 [`__default_send_IPI_dest_field` 函数里，代码通过对 `APIC_ICR` 寄存器编程来触发 IPI](https://github.com/torvalds/linux/blob/v3.19/arch/x86/include/asm/ipi.h#L88)。
 
@@ -346,7 +352,7 @@ Linux 内核里，很多同步原语都会触发进程唤醒，典型的场景�
   [IDT 表的 `RESCHEDULE_VECTOR` 向量的中断处理入口被初始化成了 `reschedule_interrupt`](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/irqinit.c#L109)，
   因此，从 `reschedule_interrupt` 一直会调用到 `scheduler_ipi`，
 
-	reschedule_interrupt->smp_reschedule_interrupt->__smp_reschedule_interrupt->scheduler_ipi
+	  reschedule_interrupt->smp_reschedule_interrupt->__smp_reschedule_interrupt->scheduler_ipi->...
 
   其中，[reschedule_interrupt 调用 smp_reschedule_interrupt 的汇编技巧](https://github.com/torvalds/linux/blob/v3.19/arch/x86/kernel/entry_64.S#L1008) 与之前介绍的时钟中断类似。
 
@@ -359,9 +365,28 @@ Linux 内核里，很多同步原语都会触发进程唤醒，典型的场景�
 
 本节以 CFS 调度类为例，介绍 `check_preempt_curr` 在 CFS 调度类里的实现。
 
-TBD。
+如前所述，在调度核心层的 `check_preempt_curr` 函数如果发现被唤醒的任务和正在被唤醒任务目标 CPU 上运行的任务共同属于一个调度类，则立即调用具体调度类的 `check_preempt_curr` 方法。
+具体触发 Wakeup Preemption 的代码路径如下，
 
 	check_preempt_curr->check_preempt_wakeup->resched_curr
+
+如上所示，CFS 调度类里，该方法的具体实现为 `check_preempt_wakeup`。这个函数主要做以下工作，
+
+1. 如果被唤醒的任务已经被目标 CPU 调度运行，立即返回。
+2. 如果唤醒的任务处于被 throttled 节流状态 (CFS 带宽控制)，就不做抢占。因为 throttled 的任务已经睡眠。
+3. 如果 NEXT_BUDDY 特性被打开，则调用 `set_next_buddy` 标记任务。该任务会在[下次调度调用 `pick_next_entity` 被优先选择](https://github.com/torvalds/linux/blob/v3.19/kernel/sched/fair.c#L3247)。
+4. 如果 `TIF_NEED_RESCHED` 已经被置位，则已经申请 Preemption 成功，退出。
+5. 如果当前正在运行的 CFS 调度类任务的调度策略是 SCHED_IDLE，而当前被唤醒任务不是这个调度策略，则肯定当前任务有更高优先级，可以触发 Preemption。
+6. 如果被唤醒的 CFS 调度类任务的调度策略是 SCHED_BATCH 或 SCHED_IDLE，或者 Wakeup Preemption 特性没有打开，则退出。
+7. 调用 `wakeup_preempt_entity` 函数，判断当前运行任务和被唤醒任务的 vruntime 的差值是否足够大。
+   - 如果被唤醒任务 `vruntime` 足够落后，差值大于 `sysctl_sched_wakeup_granularity` 则 Wakeup Preemption 条件成立。
+   - 如果被唤醒任务和当前运行任务 `vruntime` 的差值太小，则不满足 Wakeup Preemption 条件。
+   - 满足抢占条件的任务会被调用 `set_next_buddy` 标记该任务，该任务会在[下次调度调用 `pick_next_entity` 被优先选择](https://github.com/torvalds/linux/blob/v3.19/kernel/sched/fair.c#L3247)。
+   - NEXT_BUDDY 特性默认是关闭的，只能手动设置打开。打开后，当新唤醒任务做 Wakeup Preemption 失败时，被设置为调度器偏爱。但是，Wakeup Preemption 成功的任务会覆盖这个标记。
+8. 满足 Wakeup Preemption 条件的情况下，调用 `resched_curr` 触发抢占。
+   - 如果 LAST_BUDDY 特性被打开，则调用 `set_last_buddy` 标记该任务，该任务会在[下次调度调用 `pick_next_entity` 被优先选择](https://github.com/torvalds/linux/blob/v3.19/kernel/sched/fair.c#L3241)。
+   - 缺省条件下，LAST_BUDDY 特性是打开的，表示调度器偏爱调度上次 Wakeup Preemption 成功的任务。
+9. 值得注意的是，在 `pick_next_entity` 的优先选择逻辑里，还要利用 `wakeup_preempt_entity` 保证被标记为偏爱调度的任务和 CFS 红黑树最左侧的任务之间 vruntime 的差值是**足够小**的，否则不公平。
 
 ## 3. 执行 Preemption
 
