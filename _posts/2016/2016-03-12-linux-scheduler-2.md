@@ -402,8 +402,8 @@ Linux 内核里，很多同步原语都会触发进程唤醒，典型的场景�
    - 如果目标 CPU 上正在运行的的任务不是正在轮询 `TIF_NEED_RESCHED` 的 IDLE 线程，则触发一个 cross-CPU call (INtel 叫 IPI) 给目标 CPU
    - 如果想反，目标 CPU 上 真该运行的任务是 IDLE 线程，则不需要 IPI，只需要实现特定的内核 Trace Point。
 4. 成功请求 Preemption 后，随后的 scheduler IPI，Timer Interrupt，外设 Interrupt 都可以触发真正的 User Preemption 或者 Kernel Preemption。
-   －早期 Linux 内核，`scheduler_ipi` 被实现为空函数，User or Kernel Preemption 的触发代码应该在 scheduler IPI 退出中断到用户/内核空间来发展。
-   －新 Linux 内核，`scheduler_ipi` 的代码加入了唤醒任务的功能，被用于不共享缓存的的请况下，任务唤醒的下半部，这样可以减少 Run Queue 锁竞争。
+   - 早期 Linux 内核，`scheduler_ipi` 被实现为空函数，User or Kernel Preemption 的触发代码应该在 scheduler IPI 退出中断到用户/内核空间来发展。
+   - 新 Linux 内核，`scheduler_ipi` 的代码加入了唤醒任务的功能，被用于不共享缓存的的请况下，任务唤醒的下半部，这样可以减少 Run Queue 锁竞争。
 
 下面是相关的代码，
 
