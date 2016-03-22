@@ -388,6 +388,56 @@ Linux 内核里，很多同步原语都会触发进程唤醒，典型的场景�
    - 缺省条件下，LAST_BUDDY 特性是打开的，表示调度器偏爱调度上次 Wakeup Preemption 成功的任务。
 9. 值得注意的是，在 `pick_next_entity` 的优先选择逻辑里，还要利用 `wakeup_preempt_entity` 保证被标记为偏爱调度的任务和 CFS 红黑树最左侧的任务之间 vruntime 的差值是**足够小**的，否则不公平。
 
+### 2.3 Reschedule Request
+
+不论是 Tick Preemption 还是 Wakeup Preemption，一旦满足抢占条件，都会调用 `resched_curr` 来请求抢占。
+这个函数的主要功能如下，
+
+1. 一进入函数，检查是否当前要抢占的 CPU 当前运行的任务已经有人标记了 `TIF_NEED_RESCHED` 标志，如果有，就无需重复请求抢占。
+2. 检查目标抢占的 CPU 是否是当前执行 `resched_curr` 的 CPU，如果是，则请求抢占当前运行任务，然后直接返回。
+   - 早期 Linux 内核，只需要调用 `set_tsk_need_resched` 给当前任务设置 `struct thread_info` 的 `TIF_NEED_RESCHED` 标志。
+   - 新 Linux 内核的实现，除了这一步，还需要调用 `set_preempt_need_resched` 给 Per-CPU `preempt_count` 设置 `PREEMPT_NEED_RESCHED`。
+   - 这一个优化主要是为了[减少频繁访问 `struct thread_info` 成员 `preempt_count` 和 flags 的开销](https://github.com/torvalds/linux/commit/c2daa3bed53a81171cf8c1a36db798e82b91afe8)。
+3. 如果目标抢占的 CPU 和当前执行 `resched_curr` 的 CPU 不是同一个 CPU，则有以下两种情况，
+   - 如果目标 CPU 上正在运行的的任务不是正在轮询 `TIF_NEED_RESCHED` 的 IDLE 线程，则触发一个 cross-CPU call (INtel 叫 IPI) 给目标 CPU
+   - 如果想反，目标 CPU 上 真该运行的任务是 IDLE 线程，则不需要 IPI，只需要实现特定的内核 Trace Point。
+4. 成功请求 Preemption 后，随后的 scheduler IPI，Timer Interrupt，外设 Interrupt 都可以触发真正的 User Preemption 或者 Kernel Preemption。
+   －早期 Linux 内核，`scheduler_ipi` 被实现为空函数，User or Kernel Preemption 的触发代码应该在 scheduler IPI 退出中断到用户/内核空间来发展。
+   －新 Linux 内核，`scheduler_ipi` 的代码加入了唤醒任务的功能，被用于不共享缓存的的请况下，任务唤醒的下半部，这样可以减少 Run Queue 锁竞争。
+
+下面是相关的代码，
+
+	/*
+	 * resched_curr - mark rq's current task 'to be rescheduled now'.
+	 *
+	 * On UP this means the setting of the need_resched flag, on SMP it
+	 * might also involve a cross-CPU call to trigger the scheduler on
+	 * the target CPU.
+	 */
+	void resched_curr(struct rq *rq)
+	{
+		struct task_struct *curr = rq->curr;
+		int cpu;
+
+		lockdep_assert_held(&rq->lock);
+
+		if (test_tsk_need_resched(curr)) /* 是否已经有人申请抢占 */
+			return;
+
+		cpu = cpu_of(rq);
+
+		if (cpu == smp_processor_id()) { /* 目标 CPU 与当前运行 CPU 相同 */
+			set_tsk_need_resched(curr); /* 标记 `TIF_NEED_RESCHED` */
+			set_preempt_need_resched(); /* 标记 `PREEMPT_NEED_RESCHED` */
+			return;
+		}
+
+		if (set_nr_and_not_polling(curr)) /* 是否是 IDLE 线程正在做轮询 */
+			smp_send_reschedule(cpu); /* 在给定 CPU 上触发 IPI，引起 scheduler_ipi 被执行, 间接触发 Preemption. */
+		else
+			trace_sched_wake_idle_without_ipi(cpu);
+	}
+
 ## 3. 执行 Preemption
 
 ### 3.1 User Preemption
