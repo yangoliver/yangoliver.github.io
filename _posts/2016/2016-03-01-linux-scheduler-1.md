@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Preemption Overview
+title: Linux Preemption Overview
 description: Linux 调度器的系列文章。本文主要介绍抢占的基本概念和 Linux 内核的相关实现。 
 categories: [Chinese, Software, Hardware]
 tags: [scheduler, kernel, linux, hardware]
