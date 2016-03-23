@@ -155,7 +155,64 @@ Linux 内核的 CFS 调度算法就是通过实现该调度类结构来实现其
 
 ### 1.3 preempt_count
 
-TBD
+Linux 内核为支持 Kernel Preemption 而引入了 `preempt_count` 计数器。如果 `preempt_count` 为 0，就允许 Kernel Preemption，否则就不允许。
+内核函数 `preempt_disable` 和 `preempt_enable` 用来内核代码的临界区动态关闭和打开 Kernel Preemption。其主要原理就是要通过对这个计数器的加和减来实现关闭和打开。
+
+一般而言，打开 Kernel Preemption 特性的内核，在尽可能的情况下，允许在内核态通过 Tick Preemption 和 Wakeup Preemption 去触发和执行 Kernel Preemption。
+但在以下情形，Kernel Preemption 会有关闭和打开操作，
+
+* 内核显式调用  `preempt_disable` 关闭抢占期间，
+* 进入中断上下文时，`preempt_count` 计数器被加操作置为非零。退出中断时打开 Kernel Preemption。
+* 获取各种内核锁以后，`preempt_disable` 被间接调用。退出内核锁会有 `preempt_enable` 操作。
+
+关于`preempt_disable` 和 `preempt_enable` 的用法，请参考 [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt)。
+
+早期 Linux 内核，`preempt_count` 是每个任务所属的 `struct thread_info` 里的一个成员，是 Per-thread 的。
+
+而在 Linux 新内核，为了优化 Kernel Preemption 带来的频繁检查 `preempt_count` 的开销，[Linus 和调度器的维护者决定对其做更多的优化](https://lwn.net/Articles/563185/)。
+因此，[Per-CPU `preempt_count` 的优化](https://github.com/torvalds/linux/commit/c2daa3bed53a81171cf8c1a36db798e82b91afe8)被集成到 3.13 版内核。
+所以，新内核的的 `preempt_count` 定义如下，
+
+	DECLARE_PER_CPU(int, __preempt_count);
+
+源代码里有对这个计数器不同位意义的详细说明，
+
+	/*
+	 * We put the hardirq and softirq counter into the preemption
+	 * counter. The bitmask has the following meaning:
+	 *
+	 * - bits 0-7 are the preemption count (max preemption depth: 256)
+	 * - bits 8-15 are the softirq count (max # of softirqs: 256)
+	 *
+	 * The hardirq count could in theory be the same as the number of
+	 * interrupts in the system, but we run all interrupt handlers with
+	 * interrupts disabled, so we cannot have nesting interrupts. Though
+	 * there are a few palaeontologic drivers which reenable interrupts in
+	 * the handler, so we need more than one bit here.
+	 *
+	 * PREEMPT_MASK:	0x000000ff
+	 * SOFTIRQ_MASK:	0x0000ff00
+	 * HARDIRQ_MASK:	0x000f0000
+	 *     NMI_MASK:	0x00100000
+	 * PREEMPT_ACTIVE:	0x00200000
+	 */
+
+这里要特别注意的是，如上面的注释中所说，`preempt_count` 的设计时允许嵌套的。例如，
+
+- 内核的锁原语都有 `preempt_disable` 和 `preempt_enable`，而锁是可以嵌套的。
+- 内核在拿锁的同时，被中断打断，锁和中断进入的代码路径里也会有 `preempt_count` 操作。
+
+在有嵌套调用的情况下，调用 `preempt_enable` 时 `preempt_count` 也不会立刻减成零。
+[sched: likely profiling](https://github.com/torvalds/linux/commit/beed33a816204cb402c69266475b6a60a2433ceb) 这个布丁的最后一个 `unlikely` 到 `likely` 的优化很好的说明了一点：
+
+	在内核里，`preempt_enable` 在 `preempt_disable` 和中断关闭情形下的调用比例更高。
+
+另外要特别注意 `PREEMPT_ACTIVE` 位的用法，
+
+- 在内核打开 Kernel Preemption 的时候，`PREEMPT_ACTIVE` 用来指示 `__schedule` 函数正确处理 Kernel Preemption 语义，防止被打断的即将睡眠的任务被从 Run Queue 误删。
+- 在内核关闭 Kernel Preemption 时，虽然只有 User Preemption，`cond_resched` 还是利用这个标志来判断内核调度器是否初始化完成。
+
+以上两点在后续的 User Preemption 和 Kernel Preemption 的相关章节会展开介绍。
 
 ## 2. 触发抢占
 
@@ -581,9 +638,9 @@ User Preemption 的代码同样是显示地调用 schedule 函数，但与主动
 
 1. 检查 `preempt_count` 是否非零和 IRQ 是否处于 disabled 状态，如果是则不允许抢占。
 
-  做这个检查是为防止抢占的嵌套调用。例如，[`preempt_enable` 可以在关中断时被调用](https://github.com/torvalds/linux/commit/beed33a816204cb402c69266475b6a60a2433ceb)。
-  总之，内核并不保证调用 `preempt_enable` 之前，总是可以被抢占的。这是因为，`preempt_enable` 嵌入在很多内核函数里，可以被嵌套间接调用。
-  此外，抢占正在进行时也能让这种嵌套的抢占调用不会再次触发抢占。
+   做这个检查是为防止抢占的嵌套调用。例如，[`preempt_enable` 可以在关中断时被调用](https://github.com/torvalds/linux/commit/beed33a816204cb402c69266475b6a60a2433ceb)。
+   总之，内核并不保证调用 `preempt_enable` 之前，总是可以被抢占的。这是因为，`preempt_enable` 嵌入在很多内核函数里，可以被嵌套间接调用。
+   此外，抢占正在进行时也能让这种嵌套的抢占调用不会再次触发抢占。
 
 2. 设置 `preempt_count` 的 `PREEMPT_ACTIVE`，避免抢占发生途中，再有内核抢占。
 
@@ -680,9 +737,11 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 ### 4. 关联阅读
 
 * [Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/)
-* [Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html) 6.14 和 13.4 章节
+* [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt)
+* [Optimizing preemption](https://lwn.net/Articles/563185/)
+* [Modular Scheduler Core and Completely Fair Scheduler](http://lwn.net/Articles/230501/)
+* [CFS scheduler design](https://github.com/torvalds/linux/blob/v3.19/Documentation/scheduler/sched-design-CFS.txt)
+* [Deadline scheduling for Linux](http://lwn.net/Articles/356576/)
 * [x86 系统调用入门](http://blog.csdn.net/yayong/article/details/416477)
 * [Linux Kernel Stack](https://github.com/torvalds/linux/blob/v3.19/Documentation/x86/x86_64/kernel-stacks)
-* [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt)
-* [Modular Scheduler Core and Completely Fair Scheduler](http://lwn.net/Articles/230501/)
-* [Deadline scheduling for Linux](http://lwn.net/Articles/356576/)
+* [Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html) 6.14 和 13.4 章节
