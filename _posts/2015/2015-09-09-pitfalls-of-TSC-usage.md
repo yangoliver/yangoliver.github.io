@@ -26,6 +26,11 @@ due to vsyscalls [kernel patch](https://github.com/torvalds/linux/commit/2aae950
 by avoiding context switch from user to kernel space. But some other arch still need follow the regular
 system call code path. This is really hardware dependent optimization.
 
+For most use cases of TSC, vsyscalls for gettimeofday() and clock_gettime() could reduce major performance overheads,
+because it avoids to user/kernel context switch and tries to use rdtsc instructions to get the TSC register value directly.
+Especially, the system calls provide better porting and error handling capabilities. For example, on some platforms
+an undetectable TSC sync problem found among multiple CPUs, the
+[gettimeofday() and clock_gettime() vsyscalls try to work around the problem](https://github.com/torvalds/linux/commit/d8bb6f4c1670c8324e4135c61ef07486f7f17379).
 
 ## 2. Why using TSC?
 
@@ -220,9 +225,9 @@ If TSC sync test passed during Linux kernel boot, following sysfs file would exp
 	tsc
 
 
-#### 3.1.3 Non-intel platform
+#### 3.1.3 Non-Intel platform
 
-Non-intel x86 platform has different stories. Current Linux kernel treats all non-intel SMP system as non-sync TSC system.
+Non-Intel x86 platform has different stories. Current Linux kernel treats all non-Intel SMP system as non-sync TSC system.
 See unsynchronized_tsc code in [tsc.c](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/tsc.c).
 LKML also has the [AMD documents](https://lkml.org/lkml/2005/11/4/173).
 
