@@ -54,12 +54,15 @@ My another [crash tool blog](https://oliveryang.net/2015/06/linux-crash-backgrou
 
 As kdb/kgdb are using same back-end, the enable/disable method are same. There are two methods,
 
-Before boot/reboot, in grub.cfg, boot kernel with arguments:
+Before boot/reboot, in grub.cfg, boot kernel with following arguments:
 
-<pre>console=ttyS0,115200 kgdboc=ttyS0,115200</pre>
+<pre>console=tty0 kgdboc=kbd,tty0</pre>
+
+If we want to debug via serial console, in grub.cfg, boot kernel with following arguments:
+
+<pre>console=ttyS0,115200 kgdboc=kbd,ttyS0,115200</pre>
 
 Or, configure kgdb over console under bash prompt, assuming you are using the keyboard and serial port console at same time:
-
 
 <pre># echo kbd,ttyS0 > /sys/module/kgdboc/parameters/kgdboc</pre>
 
@@ -121,11 +124,11 @@ Different terminal server supports different ways to "send break", for examples,
 
   <pre>VBoxManage controlvm [vbox-name] keyboardputscancode 1d 38 54 [request type press/release] d4 b8 9d</pre>
 
-  The request-type press/release hex code is the scancode of the sysrq code letter plus the scancode|0x80 for key release, e.g.
+  The request-type press/release hex code is the scancode of the sysrq code letter plus the scancode\|0x80 for key release, e.g.
 
   <pre>g (kernel debugger): 22 a2</pre>
 
-  22 is the letter g scancode, and a2 is scancode|0x80, so the kdb enter command is,
+  22 is the letter g scancode, and a2 is scancode\|0x80, so the kdb enter command is,
 
   <pre>C:\Program Files\Oracle\VirtualBox>VBoxManage controlvm Ubuntu keyboardputscancode 1d 38 54 22 a2 d4 b8 9d</pre>
 
