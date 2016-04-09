@@ -56,11 +56,14 @@ As kdb/kgdb are using same back-end, the enable/disable method are same. There a
 
 Before boot/reboot, in grub.cfg, boot kernel with following arguments:
 
-<pre>console=tty0 kgdboc=kbd,tty0</pre>
+<pre>console=tty0 kgdboc=kbd,tty0 kgdbwait</pre>
+
+Please note that the `kgdbwait` is optional. This option let kernel drop into kdb/kgdb during early boot time.
+This gives us the opportunities to set break points for kernel boot code debugging.
 
 If we want to debug via serial console, in grub.cfg, boot kernel with following arguments:
 
-<pre>console=ttyS0,115200 kgdboc=kbd,ttyS0,115200</pre>
+<pre>console=ttyS0,115200 kgdboc=kbd,ttyS0,115200 kgdbwait</pre>
 
 Or, configure kgdb over console under bash prompt, assuming you are using the keyboard and serial port console at same time:
 
