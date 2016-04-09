@@ -156,3 +156,8 @@ When you ran into any page cache bugs, the new options may give you powerful aid
 
 It is time to enjoy hacking Linux kernel by the new version (7.1.2) [Linux crash tool](https://github.com/crash-utility/).
 Good luck!
+
+### 4. Related Reading
+
+* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash Utility - my patches](http://oliveryang.net/2015/06/linux-crash-my-patches/)

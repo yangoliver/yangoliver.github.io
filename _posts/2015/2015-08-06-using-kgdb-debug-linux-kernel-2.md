@@ -136,3 +136,9 @@ There are two big problems for kdb debugging,
 		#19 0x0000000000000000 in ?? ()
 
 	Now you can debug Linux kernel by gdb remotely. Enjoy it!
+
+## 3. Related Reading
+
+* [Using kdb/kgdb debug Linux kernel - 1](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-1/)
+* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash Utility - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)

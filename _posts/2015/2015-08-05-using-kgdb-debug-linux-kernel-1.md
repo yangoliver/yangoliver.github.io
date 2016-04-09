@@ -137,3 +137,8 @@ Different terminal server supports different ways to "send break", for examples,
 
   See <http://www.win.tue.nl/~aeb/linux/kbd/scancodes-1.html> section 1.4 for complete list of scancodes.
   Caveat: The scancode depends on your keyboard layout, the codes here correspond to a standard layout.
+
+## 3. Related Reading
+
+* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash Utility - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)

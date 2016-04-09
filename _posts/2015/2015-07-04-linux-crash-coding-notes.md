@@ -17,7 +17,7 @@ See [crash whitepaper](http://people.redhat.com/anderson/crash_whitepaper), **Co
 This document also has crash command usages and a case study for kernel debugging.
 Please study it carefully before working on crash.
 
-###2. Public APIs defined in defs.h
+### 2. Public APIs defined in defs.h
 
 Crash public APIs are defined in defs.h. 
 
@@ -26,7 +26,7 @@ Crash public APIs are defined in defs.h.
 * If changes can be put into private files, don not change in defs.h
 * Make code changes in defs.h as simple as possible.
 
-###3. Other coding and testing guidelines
+### 3. Other coding and testing guidelines
 
 * Run "make warn" to fix all warnings.
 
@@ -42,7 +42,7 @@ Crash public APIs are defined in defs.h.
 
 * Before sending out the patch, please make sure your changes is on top of latest upstream patch
 
-###4. Build and test environment setup
+### 4. Build and test environment setup
 
 Make sure you had installed following packages. I used Fedora CLIs as examples.
 
@@ -76,3 +76,9 @@ Make sure you had installed following packages. I used Fedora CLIs as examples.
   for 32 bit x86 kernel,
 
       debuginfo-install kernel-PAE
+
+### 5. Related Reading
+
+* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash Utility - my patches](http://oliveryang.net/2015/06/linux-crash-my-patches/)
+* [Linux Crash Utility - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
