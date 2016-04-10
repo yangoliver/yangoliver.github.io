@@ -176,9 +176,9 @@ As the e1000 driver is actively running, the e1000_intr is called immediately. K
 
 #### 2.3 Checking data structure
 
-In general, we can use gdb commands to check any globle and local variables by a symbol name if the `add-symbol-file` command is invoked correctly.
+In general, we can use gdb commands to check any global and local variables by a symbol name if the `add-symbol-file` command is invoked correctly.
 
-To dump `struct e1000_adapter`, it requires to get address of `struct net_device`, which is acutally casted from second inputs of `e1000_intr`: `void *data`.
+To dump `struct e1000_adapter`, it requires to get address of `struct net_device`, which is actually casted from second inputs of `e1000_intr`: `void *data`.
 Because the stack framework is not fully created at the entry point of e1000_intr, the address of `data` is not showed correctly at that time.
 And the `struct e1000_adapter` will be initialized at line 3755.
 
@@ -306,6 +306,25 @@ Below command dumped the `struct e1000_adapter` contents based on `0x8c0(%rsi)`,
     [...snipped...]
 
 ### 3. Boot time debugging
+
+This debug scenario assumes that the kernel module need to be debugged before the sysfs interfaces ready.
+There are two typical cases here,
+
+- Debug module while module is loading.
+
+  For example, debug module init function. At that time, the sysfs entry for this module has not created yet.
+
+- Debug module while system is booting.
+
+  Even module is already loading, but before user can login, the sysfs entry couldn't be accessed.
+
+Here we still use e1000 as example to show how to load e1000 driver symbols during system boot.
+
+#### 3.1 Module load data structure
+
+TBD
+
+#### 3.2 Load e1000 symbol at boot time
 
 TBD
 
