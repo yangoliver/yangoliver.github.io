@@ -8,8 +8,6 @@ tags: [kgdb, kernel, linux, network]
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
->The article is still not finished yet. It will be actively updated in recent days.
-
 ## Debug kernel modules/drivers by kgdb
 
 In [Using kdb/kgdb debug Linux kernel - 2](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-2/), we knew how to use gdb as client to debug remote Linux kernel via kgdb server.
@@ -320,19 +318,223 @@ There are two typical cases here,
 
 Here we still use e1000 as example to show how to load e1000 driver symbols during system boot.
 
-#### 3.1 Module load data structure
+#### 3.1 Key data structure for module load
 
-TBD
+In fact, all module ELF section information could be found via `struct module` which is the key data structure for each kernel module.
+In the structure, the `sect_attrs` member points to data struct `struct module_sect_attrs`, which is used to decribe key attributes for each ELF sections.
 
-#### 3.2 Load e1000 symbol at boot time
+	struct module {
+		enum module_state state;
 
-TBD
+		/* Member of list of modules */
+		struct list_head list;
+
+		/* Unique handle for this module */
+		char name[MODULE_NAME_LEN];
+
+		[...snipped...]
+
+		/* Startup function. */
+		int (*init)(void);
+
+		/* If this is non-NULL, vfree after init() returns */
+		void *module_init;
+
+		/* Here is the actual code + data, vfree'd on unload. */
+		void *module_core;
+
+		/* Here are the sizes of the init and core sections */
+		unsigned int init_size, core_size;
+
+		[...snipped...]
+
+		/* Section attributes */
+		struct module_sect_attrs *sect_attrs;
+
+		[...snipped...]
+	}
+
+In `struct module_sect_attrs`, the member `nsections` indicates how many ELF sections in the module.
+The member `attrs` is the array of `struct module_sect_attr`, which defined the section name and base address for each section.
+
+	struct module_sect_attr {	/* array element of struct module_sect_attrs */
+		struct module_attribute mattr;
+		char *name; /* ELF section name */
+		unsigned long address; /* ELF section base address */
+	};
+
+	struct module_sect_attrs {
+		struct attribute_group grp;
+		unsigned int nsections; /* number of section in the array */
+		struct module_sect_attr attrs[0]; /* array of struct module_sect_attr */
+	};
+
+Anyway, we already could get module's ELF section name and address per a `struct module` address.
+
+Then the next question is, how could we get a valid `struct module` address **before kernel module is initialized**?
+
+In order to get the address before module load, we must to learn the code path to call into module init routine,
+
+	SyS_finit_module->load_module->do_init_module->[module init routine]
+
+Below is the code of do_init_module calling into the module init routine,
+
+	static int do_init_module(struct module *mod)
+	{
+
+		[...snipped...]
+
+		/* Start the module */
+		if (mod->init != NULL)
+			ret = do_one_initcall(mod->init); /* calls into module init routine */
+		if (ret < 0) {
+			goto fail_free_freeinit;
+		}
+
+Per above code path and do_init_module code, we know that the break point at do_init_module will meet below two conditions at same time,
+
+- Can access `struct module` address under this context
+- Can stop before the module init routine gets called
+
+#### 3.2 Setting break points for e1000 module load
+
+In order to debug module during boot time, the debug target machine must use `kgdboc` and `kgdbwait` kernel boot options in grub.
+Below is the example used on my debug target machine,
+
+	console=ttyS0,9600 kgdboc=kbd,ttyS0 kgdbwait
+
+After target machine got booted from grub, the kernel dropped into the `kdb` prompt immediately. It waited the debug instructions before boot.
+
+On gdb client, we tried to connect to debug target by specifying remote IP and port,
+
+	(gdb) target remote 127.0.0.1:2222
+	Remote debugging using 127.0.0.1:2222
+	kgdb_breakpoint () at kernel/debug/debug_core.c:1043
+	1043 wmb(); /* Sync point after breakpoint */
+
+After gdb got connected with target machine, used `break` to set the break point at `do_init_module`,
+
+	(gdb) break do_init_module
+	Breakpoint 1 at 0xffffffff810ed48d: file /usr/src/debug/kernel-3.10.0-327.el7/linux-3.10.0-327.el7.x86_64/arch/x86/include/asm/current.h, line 14.
+
+The break point number for `do_init_module` is `1`, used `command` to specify the gdb commands sequences while hitting the break point,
+
+	(gdb) command 1
+	Type commands for breakpoint(s) 1, one per line.
+	End with a line saying just "end".
+	>py if str(gdb.parse_and_eval("mod->name")).find("e1000") != 1: gdb.execute("continue", False, False)
+	>end
+
+	(gdb) c
+	Continuing.
+In fact, gdb supports invoke `strstr` function call at debug target, but it seemed kgdb couldn't support this feature as the gdb debug target.
+For this reason, we had to use **GBD Python Exntension**, that could make sure the when module name in current context matches "e1000", it could stop to wait for manually debugging.
+Otherwise, it would continue until the "e1000" got loaded.
+
+When kernel got stopped again, it was under the context of `do_init_module` for e1000 module,
+
+	Breakpoint 1, load_module (info=info@entry=0xffff880036c83ef0, uargs=uargs@entry=0x7f430fc9ab99 "", flags=flags@entry=0) at kernel/module.c:3435
+	3435 return do_init_module(mod);
+	(gdb) p mod->name
+	$4 = "e1000", '\000' <repeats 50 times>
+
+#### 3.3 Load e1000 symbols manually
+
+As we said in previous section, under this context, we should be able to get all ELF section name and address via `struct module` of e1000 module,
+
+	(gdb) p mod
+	$5 = (struct module *) 0xffffffffa00b9640
+	(gdb) p mod->sect_attrs
+	$7 = (struct module_sect_attrs *) 0xffff880036652800
+	(gdb) p (struct module_sect_attrs *)mod->sect_attrs
+	$8 = (struct module_sect_attrs *) 0xffff880036652800
+	(gdb) p *(struct module_sect_attrs *)mod->sect_attrs
+	$9 = {grp = {name = 0xffffffff8186ff16 "sections", is_visible = 0x0 <irq_stack_union>, attrs = 0xffff880036652dc8, bin_attrs = 0x0 <irq_stack_union>}, nsections = 20, attrs = 0xffff880036652828}
+
+Per above output, we knew e1000 had 20 sections and the address of `struct module_sect_attr` array is `0xffff880036652828`.
+Then we could dump all 20 elements in the array to get the section `name` and `address` by below command,
+
+	(gdb) p (*(struct module_sect_attr *)0xffff880036652828)@20
+
+	[...snipped...]
+
+After we got .text, .bss and .data section address, the `add-symbol-file` command could be used to load the e1000 module symbols,
+
+	(gdb) add-symbol-file /usr/lib/debug/lib/modules/3.10.0-327.el7.x86_64/kernel/drivers/net/ethernet/intel/e1000/e1000.ko.debug 0xffffffffa009b000 -s .bss 0xffffffffa00b9878 -s .data 0xffffffffa00b7000
+	add symbol table from file "/usr/lib/debug/lib/modules/3.10.0-327.el7.x86_64/kernel/drivers/net/ethernet/intel/e1000/e1000.ko.debug" at
+	.text_addr = 0xffffffffa009b000
+	.bss_addr = 0xffffffffa00b9878
+	.data_addr = 0xffffffffa00b7000
+	(y or n) y
+	Reading symbols from /usr/lib/debug/usr/lib/modules/3.10.0-327.el7.x86_64/kernel/drivers/net/ethernet/intel/e1000/e1000.ko.debug...done.
+
+Then we should be able to do e1000 module debug by using e1000 symble directly. For exmaple, setting the break points in `e1000_intr`.
+
+Overall, the whole debug steps are quite complex and low efficiecy. Do we have a better way to load e1000 symbol?
+
+#### 3.4 Load e1000 symbols by gdb scripts
+
+The efficient and easy way to load module symbols is using gdb scripts.
+
+After kernel got stopped under the context of e1000 module load, we can invoke the gdb scripts to automate the module symbol load process.
+
+	Breakpoint 1, load_module (info=info@entry=0xffff880036c83ef0, uargs=uargs@entry=0x7f430fc9ab99 "", flags=flags@entry=0) at kernel/module.c:3435
+	3435 return do_init_module(mod);
+	(gdb) p mod->name
+	$4 = "e1000", '\000' <repeats 50 times>
+
+The [getmod.py](https://github.com/teawater/kgtp/blob/master/getmod.py) is a light weight gdb python script to do the such kind of thing.
+After invoked the tool, e1000 modules symbols got loaded automatically,
+
+	(gdb) so ~/kgtp/getmod.py
+	Use GDB command "set $mod_search_dir=dir" to set an directory for search the modules.
+	0. /usr/lib/debug/usr/lib/modules/3.10.0-327.el7.x86_64
+	1. /lib/modules/3.10.0-327.el7.x86_64
+	Select a directory for search the modules [0]:
+	add symbol table from file "/usr/lib/debug/usr/lib/modules/3.10.0-327.el7.x86_64/kernel/drivers/net/ethernet/intel/e1000/e1000.ko.debug" at
+	.text_addr = 0xffffffffa009b000
+	.note.gnu.build-id_addr = 0xffffffffa00b1000
+	.text_addr = 0xffffffffa009b000
+	.text.unlikely_addr = 0xffffffffa00afaec
+	.init.text_addr = 0xffffffffa00c1000
+	.exit.text_addr = 0xffffffffa00b0183
+	.rodata_addr = 0xffffffffa00b1040
+	.rodata.str1.1_addr = 0xffffffffa00b3400
+	.rodata.str1.8_addr = 0xffffffffa00b4458
+	.smp_locks_addr = 0xffffffffa00b6454
+	__bug_table_addr = 0xffffffffa00b64f8
+	.parainstructions_addr = 0xffffffffa00b6580
+	__param_addr = 0xffffffffa00b6640
+	__mcount_loc_addr = 0xffffffffa00b6820
+	.data_addr = 0xffffffffa00b7000
+	__verbose_addr = 0xffffffffa00b7988
+	.data..read_mostly_addr = 0xffffffffa00b9620
+	.gnu.linkonce.this_module_addr = 0xffffffffa00b9640
+	.bss_addr = 0xffffffffa00b9878
+	.symtab_addr = 0xffffffffa00c2000
+	.strtab_addr = 0xffffffffa00c6740
+
+The getmod.py is from [KGTP](https://github.com/teawater/kgtp) project, which provides kernel dynamic tracing functionalities for Linux kernel.
+The script could be used individually without building and installing KGTP kernel modules.
+
+In fact, in Linux v4.0, [the gdb scripts for kernel debugging got integrated](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt).
+All gdb scripts are available under kernel mainline source tree: [scripts/gdb](https://github.com/torvalds/linux/tree/master/scripts/gdb).
+Please follow the Linux Documentation here to understand how to use the scripts for kernel debugging.
+
+Overall, gdb scripts are powerful and efficient for kernel debugging. However, it is tightly coupled with kernel, gdb implementations.
+I won't be surprised that one gdb script got broken on certain Linux kernel version or distribution.
+For example, [getmod.py got some minor troubles on RHEL/CentOS kernel debugging](https://github.com/teawater/kgtp/commit/725bca2d473aaf991c48cf80a592bb85066ee252)
+We have to fix this kind of scripts issue per kernel or Linux distributions differences.
 
 ### 4. Related Readings
 
 * [Using kdb/kgdb debug Linux kernel - 1](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-1/)
 * [Using kdb/kgdb debug Linux kernel - 2](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-2/)
+* [Debugging kernel and modules via gdb](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt)
+* [My KGTP getmod.py patch for RHEL/CentOS/Fedora](https://github.com/teawater/kgtp/commit/725bca2d473aaf991c48cf80a592bb85066ee252)
+* [8 gdb tricks you should know](https://blogs.oracle.com/ksplice/entry/8_gdb_tricks_you_should)
 * [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
 * [Linux Crash Utility - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
 * [Debugger flow control: Hardware breakpoints vs software breakpoints - 1](http://www.nynaeve.net/?p=80)
 * [Debugger flow control: Hardware breakpoints vs software breakpoints - 2](http://www.nynaeve.net/?p=81)
+* [GDB Python API](https://sourceware.org/gdb/onlinedocs/gdb/Python-API.html)
