@@ -131,9 +131,25 @@ As gdb already have the e1000 symbols, we can use the symbols directly in debug 
 For setting break points, gdb provides two ways,
 
 - Software break points
+
+  Debugger will modify the .text or .data section of ELF image, and trigger the debug exceptions(INT 3 on x86) for debugger.
+
 - Hardware break points
 
-In this case, the software breakpoints couldn't work, so we have to use hardware break points,
+  Leverage hardware debug registers(Dr registers on x86) to setup the break points. Usually has better performance but break points number is limited by register numbers (x86 limitation is 4).
+
+If below two Kconfig options are turned on, the software break points could not be setted due to read only protections.
+
+- CONFIG_DEBUG_RODATA
+
+  Write protect kernel read-only data structures to catch potential kernel bugs.
+
+- CONFIG_DEBUG_SET_MODULE_RONX
+
+  Set loadable kernel module data as NX and text as read-only to catch potential kernel bugs.
+
+If you could control kernel build, please turn off them for kgdb debugging. On CentOS 7.2, the first option is off, whereas the second option is on.
+For this reason, my software break point could work for kernel, but not work for module. So I have to use hardware break points for module debug,
 
 	(gdb) hbr e1000_intr
 	Hardware assisted breakpoint 1 at 0xffffffffa00614a0: file drivers/net/ethernet/intel/e1000/e1000_main.c, line 3753.
@@ -516,6 +532,7 @@ After invoked the tool, e1000 modules symbols got loaded automatically,
 
 The getmod.py is from [KGTP](https://github.com/teawater/kgtp) project, which provides kernel dynamic tracing functionalities for Linux kernel.
 The script could be used individually without building and installing KGTP kernel modules.
+Note that this tool is not only used for this early boot scenario, but also could be used for the module symbol loading after system boot.
 
 In fact, in Linux v4.0, [the gdb scripts for kernel debugging got integrated](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt).
 All gdb scripts are available under kernel mainline source tree: [scripts/gdb](https://github.com/torvalds/linux/tree/master/scripts/gdb).
