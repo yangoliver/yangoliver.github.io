@@ -328,7 +328,7 @@ Below command dumped the `struct e1000_adapter` contents based on `0x8c0(%rsi)`,
 
 ### 3. Boot time debugging
 
-This debug scenario assumes that the kernel module need to be debugged before the sysfs interfaces ready.
+This debug scenario assumes that the kernel module needs to be debugged before the sysfs interfaces ready.
 There are two typical cases here,
 
 - Debug module while module is loading.
@@ -343,7 +343,7 @@ Here we still use e1000 as example to show how to load e1000 driver symbols duri
 
 #### 3.1 Key data structure for module load
 
-In fact, all module ELF section information could be found via `struct module` which is the key data structure for each kernel module.
+In fact, all module ELF sections information could be found via `struct module` which is the key data structure for each kernel module.
 In the structure, the `sect_attrs` member points to data struct `struct module_sect_attrs`, which is used to decribe key attributes for each ELF sections.
 
 	struct module {
@@ -416,8 +416,8 @@ Below is the code of do_init_module calling into the module init routine,
 
 Per above code path and do_init_module code, we know that the break point at do_init_module will meet below two conditions at same time,
 
-- Can access `struct module` address under this context
-- Can stop before the module init routine gets called
+- Can access a valid `struct module` address under this context
+- Can stop and invoked proper debug instructions before the module init routine gets called
 
 #### 3.2 Setting break points for e1000 module load
 
@@ -440,7 +440,7 @@ After gdb got connected with target machine, used `break` to set the break point
 	(gdb) break do_init_module
 	Breakpoint 1 at 0xffffffff810ed48d: file /usr/src/debug/kernel-3.10.0-327.el7/linux-3.10.0-327.el7.x86_64/arch/x86/include/asm/current.h, line 14.
 
-The break point number for `do_init_module` is `1`, used `command` to specify the gdb commands sequences while hitting the break point,
+The break point number for `do_init_module` is `1`, we used `command` to specify the gdb commands sequences while hitting the break point,
 
 	(gdb) command 1
 	Type commands for breakpoint(s) 1, one per line.
@@ -450,9 +450,15 @@ The break point number for `do_init_module` is `1`, used `command` to specify th
 
 	(gdb) c
 	Continuing.
-In fact, gdb supports invoke `strstr` function call at debug target, but it seemed kgdb couldn't support this feature as the gdb debug target.
-For this reason, we had to use **GBD Python Exntension**, that could make sure the when module name in current context matches "e1000", it could stop to wait for manually debugging.
-Otherwise, it would continue until the "e1000" got loaded.
+
+You may note that we didn't use the `strstr` to filter the module name.
+In fact, gdb supports invoking a `strstr` function call at debug target, but it seemed kgdb couldn't support this feature as the gdb debug target.
+I got below error messages while using `strstr` or `strlen` for kgdb debugging,
+
+	Could not fetch register "st0"; remote failure reply 'E22'
+
+For this reason, I had to use **GBD Python Exntension**, that could make sure the when module name in current context matches "e1000", it could stop to wait for manually debugging.
+Otherwise, it would continue until the "e1000" got loaded. This trick really saves us lots of manually interaction works in gdb,
 
 When kernel got stopped again, it was under the context of `do_init_module` for e1000 module,
 
@@ -475,7 +481,7 @@ As we said in previous section, under this context, we should be able to get all
 	$9 = {grp = {name = 0xffffffff8186ff16 "sections", is_visible = 0x0 <irq_stack_union>, attrs = 0xffff880036652dc8, bin_attrs = 0x0 <irq_stack_union>}, nsections = 20, attrs = 0xffff880036652828}
 
 Per above output, we knew e1000 had 20 sections and the address of `struct module_sect_attr` array is `0xffff880036652828`.
-Then we could dump all 20 elements in the array to get the section `name` and `address` by below command,
+Then we could dump all 20 elements in the array to get the section `name` and `address` by below command. Because the output is quite a lot, I didn't include them here,
 
 	(gdb) p (*(struct module_sect_attr *)0xffff880036652828)@20
 
@@ -491,9 +497,9 @@ After we got .text, .bss and .data section address, the `add-symbol-file` comman
 	(y or n) y
 	Reading symbols from /usr/lib/debug/usr/lib/modules/3.10.0-327.el7.x86_64/kernel/drivers/net/ethernet/intel/e1000/e1000.ko.debug...done.
 
-Then we should be able to do e1000 module debug by using e1000 symble directly. For exmaple, setting the break points in `e1000_intr`.
+Then we should be able to do e1000 module debug by using e1000 symbols directly. For example, setting the break points in `e1000_intr`.
 
-Overall, the whole debug steps are quite complex and low efficiecy. Do we have a better way to load e1000 symbol?
+Overall, the whole debug steps are quite complex and low efficiency. Do we have a better way to load e1000 symbol?
 
 #### 3.4 Load e1000 symbols by gdb scripts
 
@@ -540,15 +546,16 @@ After invoked the tool, e1000 modules symbols got loaded automatically,
 The getmod.py is from [KGTP](https://github.com/teawater/kgtp) project, which provides kernel dynamic tracing functionalities for Linux kernel.
 The script could be used individually without building and installing KGTP kernel modules.
 Note that this tool is not only used for this early boot scenario, but also could be used for the module symbol loading after system boot.
+Inside the scripts, it actually uses the similar approaches with our manually way in previous section to get module ELF section addresses.
 
 In fact, in Linux v4.0, [the gdb scripts for kernel debugging got integrated](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt).
 All gdb scripts are available under kernel mainline source tree: [scripts/gdb](https://github.com/torvalds/linux/tree/master/scripts/gdb).
 Please follow the Linux Documentation here to understand how to use the scripts for kernel debugging.
 
-Overall, gdb scripts are powerful and efficient for kernel debugging. However, it is tightly coupled with kernel, gdb implementations.
-I won't be surprised that one gdb script got broken on certain Linux kernel version or distribution.
-For example, [getmod.py got some minor troubles on RHEL/CentOS kernel debugging](https://github.com/teawater/kgtp/commit/725bca2d473aaf991c48cf80a592bb85066ee252)
-We have to fix this kind of scripts issue per kernel or Linux distributions differences.
+Overall, gdb scripts are powerful and efficient for kernel debugging. However, they are tightly coupled with kernel, gdb implementations.
+I won't be surprised that one gdb script got broken on a certain Linux kernel version or distribution.
+For example, [getmod.py got some minor troubles on RHEL/CentOS kernel debugging](https://github.com/teawater/kgtp/commit/725bca2d473aaf991c48cf80a592bb85066ee252).
+Some times, we have to fix this kind of scripts issue per kernel or Linux distributions differences by ourselves.
 
 ### 4. Related Readings
 
