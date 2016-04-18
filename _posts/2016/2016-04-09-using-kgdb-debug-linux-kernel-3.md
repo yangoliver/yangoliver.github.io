@@ -548,9 +548,16 @@ The script could be used individually without building and installing KGTP kerne
 Note that this tool is not only used for this early boot scenario, but also could be used for the module symbol loading after system boot.
 Inside the scripts, it actually uses the similar approaches with our manually way in previous section to get module ELF section addresses.
 
-In fact, in Linux v4.0, [the gdb scripts for kernel debugging got integrated](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt).
+In fact, in Linux v4.0, the gdb scripts for kernel debugging support got integrated.
 All gdb scripts are available under kernel mainline source tree: [scripts/gdb](https://github.com/torvalds/linux/tree/master/scripts/gdb).
-Please follow the Linux Documentation here to understand how to use the scripts for kernel debugging.
+On RHEL 7.2, following the steps in [Documentation/gdb-kernel-debugging.txt](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt)
+to rebuild the target kernel with proper Kconfig. Adding following lines in `~/.gdbinit`, all new gdb commands should be able to work,
+
+	$ cat ~/.gdbinit
+	python gdb.COMPLETE_EXPRESSION = gdb.COMPLETE_SYMBOL
+	add-auto-load-safe-path /lib/modules/4.6.0-rc3+/build/vmlinux-gdb.py
+
+Note: the first line is the workaround for some old gdb versions. After gdb 7.7, only second line is required.
 
 Overall, gdb scripts are powerful and efficient for kernel debugging. However, they are tightly coupled with kernel, gdb implementations.
 I won't be surprised that one gdb script got broken on a certain Linux kernel version or distribution.
