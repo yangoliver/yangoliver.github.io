@@ -50,6 +50,10 @@ Make sure you had installed following packages. I used Fedora CLIs as examples.
 
       sudo yum -y groupinstall "Development Tools"
 
+* wget
+
+	  sudo yum -y install wget
+
 * patch
 
       sudo yum install -y patch
@@ -76,6 +80,14 @@ Make sure you had installed following packages. I used Fedora CLIs as examples.
   for 32 bit x86 kernel,
 
       debuginfo-install kernel-PAE
+
+* Get source code
+
+	  git clone https://github.com/crash-utility/crash.git
+
+* Start to build
+
+	  cd crash; make all
 
 ### 5. Related Reading
 
