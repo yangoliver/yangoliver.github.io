@@ -14,13 +14,31 @@ tags: [driver, kgdb, crash, kernel, linux, storage]
 
 ### 1. 背景
 
-### 2. 模块初始化
+Sampleblk 是一个用于学习目的的 Linux 块设备驱动项目。其中 [day1](https://github.com/yangoliver/lktm/tree/master/drivers/block/sampleblk/day1) 的源代码实现了一个最简的块设备驱动，源代码只有 200 多行。
+本文主要围绕这些源代码，讨论 Linux 块设备驱动开发的基本知识。
 
-#### 2.1 块设备注册
+开发 Linux 驱动需要做一系列的开发环境准备工作。Sampleblk 驱动是在 Linux 4.6.0 下开发和调试的。由于在不同 Linux 内核版本的通用 block 层的 API 有很大变化，这个驱动在其它内核版本编译可能会有问题。
+开发，编译，调试内核模块需要先准备内核开发环境，编译内核源代码。这些基础的内容互联网上随处可得，本文不再赘述。
 
-#### 2.2 磁盘创建和初始化
+此外，开发 Linux 设备驱动的经典书籍当属 [Device Drivers, Third Edition](http://lwn.net/Kernel/LDD3) 简称 **LDD3**。该书籍是免费的，可以自由下载并按照其规定的 License 重新分发。
 
-#### 2.3 块设备操作函数表
+### 2. 模块初始化和退出
+
+Linux 驱动模块的开发遵守 Linux 为模块开发者提供的基本框架和 API。LDD3 的 [hello world](https://github.com/martinezjavier/ldd3/blob/master/misc-modules/hello.c) 模块提供了写一个最简内核模块的例子。
+而 Sampleblk 块驱动的模块与之类似，实现了 Linux 内核模块所必需的模块初始化和退出函数，
+
+	module_init(sampleblk_init);
+	module_exit(sampleblk_exit);
+
+#### 2.1 sampleblk_init
+
+##### 2.1.1 块设备注册
+
+##### 2.1.2 磁盘创建和初始化
+
+##### 2.1.3 块设备操作函数表
+
+#### 2.2 sampleblk_exit
 
 #### 3. 策略函数实现
 
