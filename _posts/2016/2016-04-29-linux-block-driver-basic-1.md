@@ -120,14 +120,40 @@ Sampleblk 驱动通过指定 `major` 为 0，让内核为其分配和注册一�
    * `blk_init_queue` 指定的自旋锁指针会赋值给 `struct request_queue` 的 `queue_lock` 成员。
    * 与这个`request_queue` 关联的 IO 调度器的初始化。
 
-Linux 内核提供了不同的 blk 层的 API 分配和初始化 Request Queue。
-可是，**如果块设备驱动需要使用标准的 IO 调度器对 IO 请求进行合并或者排序时，必需使用 `blk_init_queue` 来分配和初始化 Request Queue**.
+Linux 内核提供了多种分配和初始化 Request Queue 的方法，
 
-##### 2.1.4 磁盘创建和初始化
+* `blk_mq_init_queue` 主要用于使用多队列技术的块设备驱动
+* `blk_alloc_queue` 和 `blk_queue_make_request` 主要用于绕开内核支持的 IO 调度器的合并和排序，使用自定义的实现。
+* `blk_init_queue` 则使用内核支持的 IO 调度器，驱动只专注于策略函数的实现。
 
+Sampleblk 驱动属于第三种情况。这里再次强调一下：**如果块设备驱动需要使用标准的 IO 调度器对 IO 请求进行合并或者排序时，必需使用 `blk_init_queue` 来分配和初始化 Request Queue**.
 
-##### 2.1.5 块设备操作函数表初始化
+##### 2.1.4 块设备操作函数表初始化
 
+##### 2.1.5 磁盘创建和初始化
+
+Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是说，块设备驱动要支持正常的块设备操作，必需分配和初始化一个 `struct gendisk`。
+
+首先，使用 `alloc_disk` 分配一个 `struct gendisk`，
+
+    disk = alloc_disk(minor);
+    if (!disk) {
+        rv = -ENOMEM;
+        goto fail_queue;
+    }
+    sampleblk_dev->disk = disk;
+    pr_info("gendisk address %p\n", disk);
+
+然后，初始化 `struct gendisk` 的重要成员，尤其是块设备操作函数表，Rquest Queue，和容量设置。最终调用 `add_disk` 来让磁盘在系统内可见，触发磁盘热插拔的 uevent。
+
+    disk->major = sampleblk_major;
+    disk->first_minor = minor;
+    disk->fops = &sampleblk_fops;
+    disk->private_data = sampleblk_dev;
+    disk->queue = sampleblk_dev->queue;
+    sprintf(disk->disk_name, "sampleblk%d", minor);
+    set_capacity(disk, sampleblk_nsects);
+    add_disk(disk);
 
 #### 2.2 sampleblk_exit
 
