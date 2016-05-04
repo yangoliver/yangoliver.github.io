@@ -130,6 +130,18 @@ Sampleblk 驱动属于第三种情况。这里再次强调一下：**如果块�
 
 ##### 2.1.4 块设备操作函数表初始化
 
+Linux 的块设备操作函数表 `block_device_operations` 定义在 `include/linux/blkdev.h` 文件中。块设备驱动可以通过定义这个操作函数表来实现对标准块设备驱动操作函数的定制。
+如果驱动没有实现这个操作表定义的方法，Linux 块设备层的代码也会按照块设备公共层的代码缺省的行为工作。
+
+Sampleblk 驱动虽然声明了自己的 `open`, `release`, `ioctl` 方法，但这些方法对应的驱动函数内都没有做实质工作。因此实际的块设备操作时的行为是由块设备公共层来实现的，
+
+	static const struct block_device_operations sampleblk_fops = {
+	    .owner = THIS_MODULE,
+	    .open = sampleblk_open,
+	    .release = sampleblk_release,
+	    .ioctl = sampleblk_ioctl,
+	};
+
 ##### 2.1.5 磁盘创建和初始化
 
 Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是说，块设备驱动要支持正常的块设备操作，必需分配和初始化一个 `struct gendisk`。
