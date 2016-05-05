@@ -169,6 +169,47 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
 #### 2.2 sampleblk_exit
 
+这是个 `sampleblk_init` 的逆过程，
+
+* 删除磁盘
+
+  `del_gendisk` 是 `add_disk` 的逆过程，让磁盘在系统中不再可见，触发热插拔 uevent。
+
+       del_gendisk(sampleblk_dev->disk);
+
+* 停止并释放块设备 IO 请求队列
+
+  `blk_cleanup_queue` 是 `blk_init_queue` 的逆过程，但其在释放 `struct request_queue` 之前，要把待处理的 IO 请求都处理掉。
+  当 `blk_cleanup_queue` 把所有 IO 请求全部处理完时，会标记这个队列马上要被释放，这样可以阻止 `blk_run_queue` 继续调用块驱动的策略函数，继续执行 IO 请求。
+  Linux 3.8 之前，内核在这里的处理是有[严重 bug](https://github.com/torvalds/linux/commit/c246e80d86736312933646896c4157daf511dadc)。
+  频繁热插拔正在做 IO 的磁盘可以触发这个 bug。
+
+       blk_cleanup_queue(sampleblk_dev->queue);
+
+* 释放磁盘
+
+  `put_disk` 是 `alloc_disk` 的逆过程。这里 `gendisk` 对应的 `kobject` 引用计数变为零，彻底释放掉 `gendisk`。
+
+       put_disk(sampleblk_dev->disk);
+
+* 释放数据区
+
+  `vfree` 是 `vmalloc` 的逆过程。
+
+       vfree(sampleblk_dev->data);
+
+* 释放驱动全局数据结构。
+
+  `free` 是 `kzalloc` 的逆过程。
+
+       kfree(sampleblk_dev);
+
+* 注销块设备。
+
+  `unregister_blkdev` 是 `register_blkdev` 的逆过程。
+
+       unregister_blkdev(sampleblk_major, "sampleblk");
+
 #### 3. 策略函数实现
 
 ##### 3.1 IO Requeust Queue
