@@ -180,11 +180,12 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 * 停止并释放块设备 IO 请求队列
 
   `blk_cleanup_queue` 是 `blk_init_queue` 的逆过程，但其在释放 `struct request_queue` 之前，要把待处理的 IO 请求都处理掉。
-  当 `blk_cleanup_queue` 把所有 IO 请求全部处理完时，会标记这个队列马上要被释放，这样可以阻止 `blk_run_queue` 继续调用块驱动的策略函数，继续执行 IO 请求。
-  Linux 3.8 之前，内核在这里的处理是有[严重 bug](https://github.com/torvalds/linux/commit/c246e80d86736312933646896c4157daf511dadc)。
-  频繁热插拔正在做 IO 的磁盘可以触发这个 bug。
 
        blk_cleanup_queue(sampleblk_dev->queue);
+
+  当 `blk_cleanup_queue` 把所有 IO 请求全部处理完时，会标记这个队列马上要被释放，这样可以阻止 `blk_run_queue` 继续调用块驱动的策略函数，继续执行 IO 请求。
+  Linux 3.8 之前，内核在 `blk_run_queue` 和 `blk_cleanup_queue` 同时执行时有[严重 bug](https://github.com/torvalds/linux/commit/c246e80d86736312933646896c4157daf511dadc)。
+  最近在一个有磁盘 IO 时的 Surprise Remove 的压力测试中发现了这个 bug （老实说，有些惊讶，这个 bug 存在这么久一直没人发现)。
 
 * 释放磁盘
 
@@ -212,11 +213,23 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
 #### 3. 策略函数实现
 
-##### 3.1 IO Requeust Queue
+理解块设备驱动的策略函数实现，必需先对 Linux IO 栈的关键数据结构有所了解。
 
-##### 3.2 IO Request
+##### 3.1 `struct request_queue`
 
-##### 3.3 BIO 结构
+块设备驱动待处理的 IO 请求队列结构。如果该队列是利用 `blk_init_queue` 分配和初始化的，则该队里内的 IO 请求已经经过 IO 调度器的处理(排序或合并)。
+
+##### 3.2 `struct request`
+
+块设备驱动要处理的 IO 申请。当块设备策略驱动函数被调用时，IO 申请是通过其 `queuelist` 成员链接在 `struct request_queue` 的 `queue_head` 链表里的。
+一个 IO 申请队列上会有很多个 IO 申请。
+
+内核函数 `blk_fetch_request` 可以返回 `struct request_queue` 的 `queue_head` 队列的第一个 IO 申请的指针。请注意，这个函数并不把 IO 申请从队列头部摘除出来。
+
+##### 3.3 `struct bio`
+
+
+##### 3.4 策略函数 `request_fn`
 
 ### 4. 试验
 
