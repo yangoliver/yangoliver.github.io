@@ -217,17 +217,56 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
 ##### 3.1 `struct request_queue`
 
-块设备驱动待处理的 IO 请求队列结构。如果该队列是利用 `blk_init_queue` 分配和初始化的，则该队里内的 IO 请求已经经过 IO 调度器的处理(排序或合并)。
+块设备驱动待处理的 IO 请求队列结构。如果该队列是利用 `blk_init_queue` 分配和初始化的，则该队里内的 IO 请求需要经过 IO 调度器的处理(排序或合并)，由 `blk_queue_bio` 触发。
 
-##### 3.2 `struct request`
-
-块设备驱动要处理的 IO 申请。当块设备策略驱动函数被调用时，IO 申请是通过其 `queuelist` 成员链接在 `struct request_queue` 的 `queue_head` 链表里的。
+当块设备策略驱动函数被调用时，IO 申请是通过其 `queuelist` 成员链接在 `struct request_queue` 的 `queue_head` 链表里的。
 一个 IO 申请队列上会有很多个 IO 申请。
 
 内核函数 `blk_fetch_request` 可以返回 `struct request_queue` 的 `queue_head` 队列的第一个 IO 申请的指针。请注意，这个函数并不把 IO 申请从队列头部摘除出来。
 
-##### 3.3 `struct bio`
+##### 3.2 `struct bio`
 
+一个 `bio` 逻辑上代表了上层某个任务对**通用块设备层**发起的 IO 请求。来自不同应用，不同上下文的，不同线程的 IO 请求在块设备驱动层被封装成不同的 `bio` 数据结构。
+
+同一个 `bio` 结构的数据是由块设备上**从起始扇区开始的物理连续扇区**组成的。由于在块设备上连续的物理扇区在内存中无法保证是物理内存连续的，因此才有了**段 (Segment)**的概念。
+在 Segment 内部的块设备的扇区是**物理内存连续**的，但 Segment 之间却不能保证物理内存的连续性。Segment 长度不会超过内存页大小，而且总是扇区大小的整数倍。
+因此，一个 Segment 可以用 [page, offset, len] 来唯一确定。而一个 `bio` 结构可以包含多个 Segment，可以由指向 Segment 的指针数组来表示。
+
+在 `struct bio` 中，成员 `bi_io_vec` 就是前文所述的“指向 Segment 的指针数组” 的基地址，而每个数组的元素就是指向 `struct bio_vec` 的指针。
+而 `struct bio_vec` 就是描述一个 Segment 的数据结构，
+
+	struct bio_vec {
+	    struct page *bv_page;       /* Segment 所在的物理页的 struct page 结构指针 */
+	    unsigned int    bv_len;     /* Segment 长度，扇区整数倍 */
+	    unsigned int    bv_offset;  /* Segment 在物理页内起始的偏移地址 */
+	};
+
+在 `struct bio` 中的另一个成员 `bi_vcnt` 用来描述这个 `bio` 里有多少个 Segment，即指针数组的元素个数。一个 `bio` 最多包含的 Segment/Page 数是由如下内核宏定义决定的，
+
+	#define BIO_MAX_PAGES       256
+
+多个 `bio` 结构可以通过成员 `bi_next` 链接成一个链表。`bio` 链表可以是某个做 IO 的任务 `task_struct` 成员 `bio_list` 所维护的一个链表。也可以是某个 `struct request` 所属的一个链表(下节内容)。
+
+##### 3.3 `struct request`
+
+一个 `request` 逻辑上代表了**块设备驱动层**收到的 IO 请求。该 IO 请求的数据在块设备上是**从起始扇区开始的物理连续扇区**组成的。
+
+在 `struct request` 里可以包含很多个 `struct bio`，主要是通过 `bio` 结构的 `bi_next` 链接成一个链表。这个链表的第一个 `bio` 结构，则由 `struct request` 的 `bio` 成员指向。
+而链表的尾部则由 `biotail` 成员指向。
+
+通用块设备层接收到的来自不同线程的 `bio` 后，通常根据情况选择如下两种方案之一，
+
+* 将 `bio` 合并入已有的 `request`
+
+  `blk_queue_bio` 会调用 IO 调度器做 IO 的**合并 (merge)**。多个 `bio` 可能因此被合并到同一个 `request` 结构里，组成一个 `request` 结构内部的 `bio` 结构链表。
+  由于每个 `bio` 结构都来自不同的任务，因此 IO 请求合并只能在 `request` 结构层面通过链表插入排序完成，原有的 `bio` 结构内部不会被修改。
+
+* 分配新的 `request`
+
+  如果 `bio` 不能被合并到已有的 `request` 里，通用块设备层就会为这个 `bio` 构造一个新 `request` 然后插入到 IO 调度器内部的队列里。
+  待上层任务通过 `blk_finish_plug` 来触发 `blk_run_queue` 动作，块设备驱动的策略函数 `request_fn` 会触发 IO 调度器的排序操作，将 `request` 排序插入块设备驱动的 IO 请求队列。
+
+不论以上哪种情况，驱动的 `request_fn` 最终会将合并或者排序后的 `request` 交由驱动的底层函数来做 IO 操作。
 
 ##### 3.4 策略函数 `request_fn`
 
