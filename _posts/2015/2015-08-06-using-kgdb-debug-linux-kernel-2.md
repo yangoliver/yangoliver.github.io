@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Using kdb/kgdb debug Linux kernel - 2
+title: Linux kdb, kgdb, gdb - 2
 description: Linux kernel could be debugged by kgdb via serial console. For console server, that need some sepcial settings.
 categories: [English, Software]
 tags:
@@ -8,6 +8,9 @@ tags:
 ---
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+
+* content
+{:toc}
 
 ## 1. Background
 
@@ -139,6 +142,6 @@ There are two big problems for kdb debugging,
 
 ## 3. Related Reading
 
-* [Using kdb/kgdb debug Linux kernel - 1](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-1/)
-* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
-* [Linux Crash Utility - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
+* [Linux kdb, kgdb, gdb - 1](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-1/)
+* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)

@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Using kdb/kgdb debug Linux kernel - 3
+title: Linux kdb, kgdb, gdb - 3
 description: Linux modules and drivers could be debugged by kgdb. However, there are lots of tricks here. Using gdb scripts could help on debug efficiency.
 categories: [English, Software]
 tags: [kgdb, kernel, linux, network]
@@ -8,13 +8,14 @@ tags: [kgdb, kernel, linux, network]
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
-## Debug kernel modules/drivers by kgdb
+* content
+{:toc}
 
-In [Using kdb/kgdb debug Linux kernel - 2](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-2/), we knew how to use gdb as client to debug remote Linux kernel via kgdb.
+### 1. Debug kernel modules by kgdb
+
+In [Linux kdb, kgdb, gdb - 2](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-2/), we knew how to use gdb as client to debug remote Linux kernel via kgdb.
 It would be no problems, if our debug target is kernel. Setting break points in kernel for live control is quite straightforward.
 However, if the debug target is existing in a separate kernel module or driver, it may need additional tricks. This article covers the major tricks to debug a kernel module by kgdb.
-
-### 1. Background
 
 Using kgdb has two major problems on kernel module debug,
 
@@ -566,13 +567,13 @@ Some times, we have to fix this kind of scripts issue per kernel or Linux distri
 
 ### 4. Related Readings
 
-* [Using kdb/kgdb debug Linux kernel - 1](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-1/)
-* [Using kdb/kgdb debug Linux kernel - 2](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-2/)
+* [Linux kdb, kgdb, gdb - 1](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-1/)
+* [Linux kdb, kgdb, gdb - 2](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-2/)
 * [Debugging kernel and modules via gdb](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt)
 * [My KGTP getmod.py patch for RHEL/CentOS/Fedora](https://github.com/teawater/kgtp/commit/725bca2d473aaf991c48cf80a592bb85066ee252)
 * [8 gdb tricks you should know](https://blogs.oracle.com/ksplice/entry/8_gdb_tricks_you_should)
-* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
-* [Linux Crash Utility - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
+* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
 * [Debugger flow control: Hardware breakpoints vs software breakpoints - 1](http://www.nynaeve.net/?p=80)
 * [Debugger flow control: Hardware breakpoints vs software breakpoints - 2](http://www.nynaeve.net/?p=81)
 * [GDB Python API](https://sourceware.org/gdb/onlinedocs/gdb/Python-API.html)

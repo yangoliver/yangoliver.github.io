@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux Crash Utility - page cache debug
+title: Linux Crash - page cache debug
 description: Oliver's new page cache debug command is available in crash. The artile shows how to use it for kernel debug.
 categories: [English, Software]
 tags:
@@ -9,7 +9,8 @@ tags:
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
-## Page cache debug
+* content
+{:toc}
 
 ### 1. New page cache debug options
 
@@ -101,7 +102,7 @@ Another interesting example is using files command to dump file content in memor
       $ head -n12 2015-07-03-linux-crash-file-page-cache.md
       ---
       layout: post
-      title: Linux Crash Utility - file page cache
+      title: Linux Crash - file page cache
       categories:
       - English
       tags:
@@ -147,7 +148,7 @@ Another interesting example is using files command to dump file content in memor
                d087fa6:  tags:
                d087fac:  - English
                d087fb6:  categories:
-               d087fc2:  title: Linux Crash Utility - file page cache
+               d087fc2:  title: Linux Crash - file page cache
                d087fef:  layout: post
                d087ffc:  ---
 
@@ -159,5 +160,5 @@ Good luck!
 
 ### 4. Related Reading
 
-* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
-* [Linux Crash Utility - my patches](http://oliveryang.net/2015/06/linux-crash-my-patches/)
+* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash - my patches](http://oliveryang.net/2015/06/linux-crash-my-patches/)

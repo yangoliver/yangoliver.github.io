@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux Preemption Implementation
+title: Linux Preemption - 2
 description: Linux 调度器的系列文章。本文主要介绍抢占的基本概念和 Linux 内核的相关实现。 
 categories: [Chinese, Software, Hardware]
 tags: [scheduler, kernel, linux, hardware]
@@ -8,9 +8,12 @@ tags: [scheduler, kernel, linux, hardware]
 
 >本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
-本文主要围绕 Linux 内核调度器 Preemption 的相关实现进行讨论。其中涉及的一般操作系统和 x86 处理器和硬件概念，可能也适用于其它操作系统。
+* content
+{:toc}
 
 ## 1. Scheduler Overview
+
+本文主要围绕 Linux 内核调度器 Preemption 的相关实现进行讨论。其中涉及的一般操作系统和 x86 处理器和硬件概念，可能也适用于其它操作系统。
 
 Linux 调度器的实现实际上主要做了两部分事情，
 
@@ -734,9 +737,9 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 			}
 		}
 
-### 4. 关联阅读
+## 4. 关联阅读
 
-* [Preemption Overview](http://oliveryang.net/2016/03/linux-scheduler-1/)
+* [Linux Preemption - 1](http://oliveryang.net/2016/03/linux-scheduler-1/)
 * [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt)
 * [Optimizing preemption](https://lwn.net/Articles/563185/)
 * [Modular Scheduler Core and Completely Fair Scheduler](http://lwn.net/Articles/230501/)
@@ -744,4 +747,4 @@ Linux v3.19 `preempt_schedule` 的代码如下，
 * [Deadline scheduling for Linux](http://lwn.net/Articles/356576/)
 * [x86 系统调用入门](http://blog.csdn.net/yayong/article/details/416477)
 * [Linux Kernel Stack](https://github.com/torvalds/linux/blob/v3.19/Documentation/x86/x86_64/kernel-stacks)
-* [Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html) 6.14 和 13.4 章节
+* [Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html) 6.14 和 13.4 章节

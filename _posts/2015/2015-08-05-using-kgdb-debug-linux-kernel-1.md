@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Using kdb/kgdb debug Linux kernel - 1
+title: Linux kdb, kgdb, gdb - 1
 description: The kgdb is a kernel debugger. This article introduces how to use kdb and kgdb to debug Linux kernel issue.
 categories: [English, Software]
 tags:
@@ -8,6 +8,9 @@ tags:
 ---
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+
+* content
+{:toc}
 
 ## 1. Background
 
@@ -140,5 +143,5 @@ Different terminal server supports different ways to "send break", for examples,
 
 ## 3. Related Reading
 
-* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
-* [Linux Crash Utility - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
+* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)

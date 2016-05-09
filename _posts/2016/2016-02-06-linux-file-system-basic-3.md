@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux File System Basic - 3
+title: Linux File System - 3
 description: Linux file system(文件系统)模块的实现和基本数据结构。关键字：文件系统，内核，samplefs，VFS，存储。
 categories: [Chinese, Software]
 tags:
@@ -9,13 +9,14 @@ tags:
 
 >本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
-## 文件系统 mount 和 Super Block
+* content
+{:toc}
+
+### 1. 文件系统装载和超级块
 
 Samplefs day2 的代码涉及到了文件系统 mount 和 Super Block (超级块)的实现。
 本文将以 [day2 的代码](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day2)
 为例，讲解相关概念。
-
-### 1. Samplefs day2
 
 #### 1.1 源代码
 
@@ -100,7 +101,7 @@ Samplefs day2 的代码涉及到了文件系统 mount 和 Super Block (超级块
 #### 1.2 编译和加载
 
 编译 day2 模块需要先编译 Linux 内核源代码。请参考
-[Linux File System Basic - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2/)。
+[Linux File System - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2/)。
 
 Samplefs 的编译可以在 Linux 内核编译成功后，运行下面的命令单独编译，
 
@@ -123,7 +124,7 @@ Samplefs 的编译可以在 Linux 内核编译成功后，运行下面的命令�
 
 VFS 核心层维护一个全局链表，可以查找系统中目前注册的所有文件系统类型，
 并且调用该数据结构里提供的 mount 和 kill_sb 方法在 文件系统的 mount/umount 操作时做相应的处理。
-[Linux file system basic - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2/)
+[Linux file system - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2/)
 中已经有过详细介绍，这里就不再展开详述。
 
 #### 2.2 struct super_block: 超级块
@@ -458,8 +459,8 @@ inode，dentry，vfsmount 等，在本文只做初步介绍。后续的文章中
 
 ### 5. 关联阅读
 
-* [Linux File System Basic - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1/)
-* [Linux File System Basic - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2/)
+* [Linux File System - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1/)
+* [Linux File System - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2/)
 * [Toward a safer fput()](https://lwn.net/Articles/494158/)
 * [NAMESPACES(7)](http://man7.org/linux/man-pages/man7/namespaces.7.html)
 * [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)

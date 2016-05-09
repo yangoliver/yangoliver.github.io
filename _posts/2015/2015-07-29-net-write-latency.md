@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Network write system call latency
+title: Network write latency
 description: An issue related to 2ms latency in 10G network. Using ftrace to diagnosis network latency problems.
 categories: [English, Software]
 tags:
@@ -29,7 +29,7 @@ by NIC driver RX interrupts, and run into packets receive loop. Especially, when
 it disabled interrupts in that period. That means, after interrupt got enabled, it would cause the interrupts got fired
 immediately if any IRQs were bound to this CPU.
 
-If the system is under heavy network traffic, the ```net_rx_action``` code actually allows polling loop for more than
+If the system is under heavy network traffic, the `net_rx_action` code actually allows polling loop for more than
 2 jiffies, which is actually 2ms.
 
 	static void net_rx_action(struct softirq_action *h)
@@ -72,8 +72,8 @@ If the system is under heavy network traffic, the ```net_rx_action``` code actua
 	}
 
 
-In fact, in latest kernel ```__do_softirq``` has the similar logic to limit the soft_irq loop by both
-```MAX_SOFTIRQ_RESTART``` and 2 jiffies time limitations.
+In fact, in latest kernel `__do_softirq` has the similar logic to limit the soft_irq loop by both
+`MAX_SOFTIRQ_RESTART` and 2 jiffies time limitations.
 
 Anyway, today's Linux interrupt context, the latency could be many milliseconds.
 
@@ -95,7 +95,7 @@ In this case, I used [funcgraph](https://github.com/brendangregg/perf-tools/blob
 which is a shell scripts based on Linux Ftrace tool.
 
 From the output, we can see in do_sync_write code path, after the packets got sent, it started to receive packet. 
-At the end of rx code path, it calls into ```ep_poll_callback``` to notify the data is ready.
+At the end of rx code path, it calls into `ep_poll_callback` to notify the data is ready.
 
 This is a not a very busy system, but the do_sync_write took more than 82us to return.
 

@@ -9,9 +9,10 @@ tags:
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
-## SCHEDSTATS Perf Counters - Overview
+* content
+{:toc}
 
-### 1. What is the SCHEDSTATS?
+## 1. What is the SCHEDSTATS?
 
 SCHEDSTATS is a kernel debug feature which allows scheduler exports its pre-defined performance counters to user space.
 We can do following things by collecting and analyzing these perf counters,
@@ -19,7 +20,7 @@ We can do following things by collecting and analyzing these perf counters,
   * Debug or tune scheduler
   * Debug or tune specific application or benchmark from scheduling perspective
 
-### 2. How could we access SCHEDSTATS counters?
+## 2. How could we access SCHEDSTATS counters?
 
 When SCHEDSTATS is enabled, scheduler statistics could be accessed by following ways,
 
@@ -58,9 +59,9 @@ When SCHEDSTATS is enabled, scheduler statistics could be accessed by following 
 	 # perf record -e sched:sched_stat_blocked -a -g sleep 5
      # perf script></pre>
 
-### 3. SCHEDSTATS proc files use cases
+## 3. SCHEDSTATS proc files use cases
 
-#### 3.1 System wide statistic
+### 3.1 System wide statistic
 
 This includes per-cpu(run queue) or per-sched-domain statistics.
 
@@ -68,7 +69,7 @@ This includes per-cpu(run queue) or per-sched-domain statistics.
 
 Implements in scheduler core, which is the common layer for all scheduling classes.
 
-The CPU statistics in /proc/schedstat file is defined as members of ```struct rq``` in kernel/sched.c,
+The CPU statistics in /proc/schedstat file is defined as members of `struct rq` in kernel/sched.c,
 
 	struct rq {
 		[...snipped...]
@@ -95,7 +96,7 @@ The CPU statistics in /proc/schedstat file is defined as members of ```struct rq
 		[...snipped...]
 	};
 
-The Domain statistics in /proc/schedstat file is defined as members of ```struct sched_domain```
+The Domain statistics in /proc/schedstat file is defined as members of `struct sched_domain`
 in include/linux/sched.h,
 
 	struct sched_domain {
@@ -136,13 +137,13 @@ in include/linux/sched.h,
 		[...snipped...]
 	};
 
-#### 3.2 Per task statistic
+### 3.2 Per task statistic
 
 **/proc/<pid\>/schedstat**
 
 Common for all scheduling classes.
 
-The statistics for /proc/<pid\>/schedstat is defined as member of ```struct task_struct``` in include/linux/sched.h,
+The statistics for /proc/<pid\>/schedstat is defined as member of `struct task_struct` in include/linux/sched.h,
 
 	#if defined(CONFIG_SCHEDSTATS) || defined(CONFIG_TASK_DELAY_ACCT)
 	struct sched_info {
@@ -171,7 +172,7 @@ The statistics for /proc/<pid\>/schedstat is defined as member of ```struct task
 
 Only available for CFS tasks. Need enable SCHED_DEBUG as well.
 
-The se statistics for /proc/<pid\>/sched is defined as member of ```struct task_struct``` in include/linux/sched.h,
+The se statistics for /proc/<pid\>/sched is defined as member of `struct task_struct` in include/linux/sched.h,
 
 
 	#ifdef CONFIG_SCHEDSTATS
@@ -231,13 +232,13 @@ The se statistics for /proc/<pid\>/sched is defined as member of ```struct task_
 	};
 
 
-###4. SCHEDSTATS source files
+## 4. SCHEDSTATS source files
 
-To use SCHEDSTATS, need to enable kernel config ```SCHEDSTATS```. All related code is protected by CONFIG_SCHEDSTATS.
+To use SCHEDSTATS, need to enable kernel config `SCHEDSTATS`. All related code is protected by CONFIG_SCHEDSTATS.
 
 As far as we know, Linux kernel scheduler defined two layers,
 
-#### 4.1 The upper layer - scheduler core 
+### 4.1 The upper layer - scheduler core 
 
 This is a common layer for all scheduling class.
 
@@ -270,7 +271,7 @@ The legacy code, profiling code for /proc/profile support, readprofile(1) could 
 SCHEDSTATS in /proc/sched_debug and /proc/<pid\>/sched proc files implementation.
 Need enable SCHED_DEBUG at same time.
 
-#### 4.2 The underlying layer - per scheduling class
+### 4.2 The underlying layer - per scheduling class
 
 In Linux 3.2.x, only the CFS scheduling class code has the SCHEDSTATS implementation.
 
@@ -281,3 +282,7 @@ SCHEDSTATS in /proc/<pid\>/sched. Need enable SCHED_DEBUG at same time.
 /proc/schedstat counters for load balance.
 
 Kernel Trace points for wait, sleep, iowait, blocked(not in 3.2.x) events. See section 3 in this blog.
+
+## 5. Related Readings
+
+* [Linux scheduler profiling - 1](http://oliveryang.net/2015/07/linux-scheduler-profiling-1/)

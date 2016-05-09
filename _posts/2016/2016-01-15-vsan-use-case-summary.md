@@ -9,7 +9,10 @@ tags:
 
 >本文首发于<http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
-##1. 关于VSAN的一些概念
+* content
+{:toc}
+
+## 1. 关于VSAN的一些概念
 
 这里的VSAN是指**VMWare Virtual SAN**。它是VMWare公司的分布式存储产品。通过内置于VMWare vSphere Hypervisor内核中实现了基于服务
 器和**DAS(Direct Attach Storage)**的分布式存储。
@@ -59,7 +62,7 @@ VMWare Virtual SAN就是典型的HCI架构的软件定义存储产品。Nutanix�
 HCI架构的集群里，每个集群节点都可以部署主机VM，或者承担存储，网络业务，极大的简化了数据中心的管理。在私有云里，VMWare把HCI
 作为SDDC(软件定义数据中心)的基础架构。
 
-##2. VSAN的Use Case
+## 2. VSAN的Use Case
 
 从产品形态上看，VSAN的解决方案很灵活，主要有以下两种形态，
 
@@ -107,7 +110,7 @@ HCI架构的集群里，每个集群节点都可以部署主机VM，或者承担
 而第9和第10的Use Case不但对性能和稳定性有很高要求，而且需要一个Data Center级别的完整解决方案。要真正渗透到全部用户场景，
 VSAN还有很长的路要走。
 
-##3. 进一步了解
+## 3. 进一步了解
 
 作为VMWare的SDS解决方案，VSAN的应用会变得越来越广泛。随着VSAN的技术和市场越来越成熟，有理由相信，在企业私有云数据中心里，
 VSAN会变成VMWare虚拟化技术的主流存储平台。

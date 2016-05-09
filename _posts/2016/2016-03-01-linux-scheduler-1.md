@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux Preemption Overview
+title: Linux Preemption - 1
 description: Linux 调度器的系列文章。本文主要介绍抢占的基本概念和 Linux 内核的相关实现。 
 categories: [Chinese, Software, Hardware]
 tags: [scheduler, kernel, linux, hardware]
@@ -8,10 +8,12 @@ tags: [scheduler, kernel, linux, hardware]
 
 >本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
-本文主要围绕 Linux 内核调度器 Preemption 的相关实现进行讨论。其中涉及的一般操作系统和 x86 处理器和硬件概念，可能也适用于其它操作系统。
+* content
+{:toc}
 
 ## 1. 背景知识
 
+本文主要围绕 Linux 内核调度器 Preemption 的相关实现进行讨论。其中涉及的一般操作系统和 x86 处理器和硬件概念，可能也适用于其它操作系统。
 要深入理解 Preemption 必须对操作系统的 Context Switch 做一个全面的梳理。最终可以了解 Preemption 和 Context Switch 概念上的区别与联系。
 
 ### 1.1 Context Switch
@@ -151,7 +153,7 @@ User Preemption 或 Kernel Preemption 在很多代码路径上放置了检查当
 
 #### 2.3.2 执行 Preemption
 
-#### 2.3.2.1 User Preemption
+##### 2.3.2.1 User Preemption
 
 User Preemption 发生在如下两种典型的状况，
 
@@ -165,7 +167,7 @@ User Preemption 发生在如下两种典型的状况，
   这时可以在循环体内调用 cond_resched() 内核 API，有条件的让出 CPU。这里说的有条件是因为 cond_resched 要检查 `TIF_NEED_RESCHED` 标志，看是否有新的 Preemption 的请求。
   而 `yield` 内核 API，不检查 `TIF_NEED_RESCHED` 标志，则无条件触发任务切换，但在所在 CPU Run Queue 没有其它任务的情况下，不会发生真正的任务切换。
 
-#### 2.3.2.2 Kernel Preemption
+##### 2.3.2.2 Kernel Preemption
 
 早期 Linux 内核只支持 User Preemption。2.6内核 Kernel Preemption 支持被引入。
 
@@ -305,7 +307,7 @@ User 和 Kernel Preemption 的代码是实现在 Linux 内核所有中断和异�
 与中断处理类似，具体系统调用函数退出后，公共系统调用代码返回用户空间时，可能会触发 User Preemption，即检查 `TIF_NEED_RESCHED` 标志，决定是否调用 `schedule`。
 系统调用不会触发 Kernel Preemption，因为系统调用返回时，总是返回到用户空间，这一点与中断和异常有很大的不同。
 
-### 5. 调度触发时机总结
+## 5. 调度触发时机总结
 
 Linux 内核源码 `schedule` 的注释写的非常精炼，所以就不啰嗦了，直接上源码，
 
@@ -347,12 +349,12 @@ Linux 内核源码 `schedule` 的注释写的非常精炼，所以就不啰嗦�
 	 *          - return from interrupt-handler to user-space
 	 */
 
-### 6. 关联阅读
+## 6. 关联阅读
 
 本文主要介绍了解 Preemption 所需的基本概念，以及 Linux 内核是如何实现 User Preemption 和 Kernel Preemption 的。由于 Context Switch 与 Preemption 密切相关，所以也结合 Intel x86 处理器做了详细分析。
 这些内容在很多 Linux 内核书籍也都有覆盖，但要深入理解，还是需要结合某种处理器架构相关的知识来一起学习，否则很难深入理解。因此了解些硬件相关的知识是必要的。
 
-* [Intel Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html) 6.14 和 13.4 章节
+* [Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3](http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html) 6.14 和 13.4 章节
 * [x86 系统调用入门](http://blog.csdn.net/yayong/article/details/416477)
 * [Proper Locking Under a Preemptible Kernel](https://github.com/torvalds/linux/blob/v3.19/Documentation/preempt-locking.txt)
 * [Linux Kernel Stack](https://github.com/torvalds/linux/blob/v3.19/Documentation/x86/x86_64/kernel-stacks)

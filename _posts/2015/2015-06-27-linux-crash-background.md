@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux Crash Utility - background
+title: Linux Crash - background
 description: Linux kernel debug tool - crash introduction. 用crash来调试Linux内核错误是内核程序员的基本技能。
 categories: [English, Software]
 tags:
@@ -9,9 +9,10 @@ tags:
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
-##Background
+* content
+{:toc}
 
-###1. What is the crash tool?
+### 1. What is the crash tool?
 
 The quotes from crash [README](https://github.com/crash-utility/crash/blob/master/README),
 
@@ -25,7 +26,7 @@ Solaris developer, hacking kernel by mdb was an exciting experiment in my work. 
 
 Today, I extended my kernel hacking experiences to Linux. Crash has replaced mdb in my kernel hacking life now.
 
-###2. What is the major use case? How about other debug tools?
+### 2. What is the major use case? How about other debug tools?
 
 The major use case is kernel **post-mortem debugging**, as known as, **core dump analysis**.
 
@@ -44,14 +45,14 @@ However, debugging at assembly language level is still a **must to have** knowle
 Anyway, on Linux crash is the only tool for kernel post-mortem debugging. For in situ kernel debugger, you could use
 triditional tools like kdb/kgdb, or new kernel trace tools like perf, systemtap, ftrace, dtrace, and so on.
 
-###3. Where can I found the documents?
+### 3. Where can I found the documents?
 
 Please refer to [README](https://github.com/crash-utility/crash/blob/master/README). A whitepaper with complete documentation
 concerning the use of this utility can be found in this README as well.
 
 In practice, you can get all command usages by help under **crash>** prompt.
 
-###4. Where can I found the source code? How can I contribute the code?
+### 4. Where can I found the source code? How can I contribute the code?
 
 It is hosted from [Github](https://github.com/crash-utility). The project does not accept the regular Github pull
 requests for code contribution. People have to mail patches to the crash utility mailing list:

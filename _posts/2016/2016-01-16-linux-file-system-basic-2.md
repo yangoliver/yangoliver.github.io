@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux File System Basic - 2
+title: Linux File System - 2
 description: Linux file system(文件系统)模块的实现和基本数据结构。关键字：文件系统，内核，samplefs，VFS，存储。
 categories: [Chinese, Software]
 tags:
@@ -9,19 +9,18 @@ tags:
 
 >本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
-## 文件系统注册
+* content
+{:toc}
 
-本文将以Samplefs Day1为例来说明文件系统注册的相关概念。
+### 1. 文件系统注册
+
+本文将以Samplefs [day1的源代码](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day1)为例来说明文件系统注册的相关概念。
 
 简单文件系统(samplefs)是Steve French写的用于教学目的的文件系统。它的设计初衷是帮助初学者理解如何实现一个文件系统，并且在Linux环境下对文件系统
 如何debug和tunning。
 
-Samplefs的源代码可以到[samba.org](http://svn.samba.org/samba/ftp/cifs-cvs/samplefs.tar.gz)
+Samplefs的源代码可以到 [samba.org](http://svn.samba.org/samba/ftp/cifs-cvs/samplefs.tar.gz)
 的SVN服务器上去下载。
-
-### 1. Samplefs Day1
-
-本文的内容将基于[day1的源代码](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day1)展开。
 
 #### 1.1 源代码
 
@@ -251,7 +250,7 @@ mount_nodev总会分配一个新的samplefs在VFS层面上的Super Block。但�
 ### 3. 实验和调试
 
 如果利用crash，我们可以遍历文件系统的全局链表，并且找到samplefs的对应节点。若需要了解Linux Crash，可查看
-[Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background)这篇文章。
+[Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background)这篇文章。
 
 * 首先，crash默认并不加载模块调式信息，因此在实验之前，需要手动加载samplefs模块，
 
@@ -270,7 +269,7 @@ mount_nodev总会分配一个新的samplefs在VFS层面上的Super Block。但�
 		file_systems = $9 = (struct file_system_type *) 0xffffffff81c87660 <sysfs_fs_type>
 
   没想到我的Fedora 20的VM上竟然有28个文件系统类型，不过大部分注册的文件系统是**特殊目的文件系统**。关于什么是特殊目的文件系统，请参考
-  [Linux File System Basic 1](http://oliveryang.net/2016/01/linux-file-system-basic-1)。
+  [Linux File System - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1)。
 
 		crash> list file_system_type.next -s file_system_type.name 0xffffffff81c87660 | grep name | wc -l
 		28
@@ -381,7 +380,7 @@ ramfs只有不到600行c代码，分析和学习ramfs代码也可以加深对Lin
 
 ### 5. 关联阅读
 
-* [Linux File System Basic - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1/)
+* [Linux File System - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1/)
 * [在Fedora 20环境下安装系统内核源代码](http://www.cnblogs.com/kuliuheng/p/3976780.html)
-* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background)
+* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background)
 * [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)

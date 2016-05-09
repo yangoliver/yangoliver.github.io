@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux Crash Utility - coding notes
+title: Linux Crash - coding notes
 description: Linux crash introduction. Coding notes and guidelines for contribute crash patch to community.
 categories: [English, Software]
 tags:
@@ -9,7 +9,8 @@ tags:
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
-## Crash coding notes
+* content
+{:toc}
 
 ### 1. Where could I found coding examples?
 
@@ -91,6 +92,6 @@ Make sure you had installed following packages. I used Fedora CLIs as examples.
 
 ### 5. Related Reading
 
-* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
-* [Linux Crash Utility - my patches](http://oliveryang.net/2015/06/linux-crash-my-patches/)
-* [Linux Crash Utility - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
+* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash - my patches](http://oliveryang.net/2015/06/linux-crash-my-patches/)
+* [Linux Crash - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)

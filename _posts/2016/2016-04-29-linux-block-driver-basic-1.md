@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Linux Block Driver Basic - 1
+title: Linux Block Driver - 1
 description: Linux 块设备驱动系列文章。通过开发简单的块设备驱动，掌握 Linux 块设备层的基本概念。
 categories: [Chinese, Software, Hardware]
 tags: [driver, kgdb, crash, kernel, linux, storage]
@@ -279,8 +279,8 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
 ### 5. 延伸阅读
 
-* [Using kdb/kgdb debug Linux kernel - 1](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-1/)
-* [Using kdb/kgdb debug Linux kernel - 2](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-2/)
+* [Linux kdb, kgdb, gdb - 1](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-1/)
+* [Linux kdb, kgdb, gdb - 2](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-2/)
 * [Debugging kernel and modules via gdb](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt)
-* [Linux Crash Utility - background](http://oliveryang.net/2015/06/linux-crash-background/)
-* [Linux Crash Utility - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
+* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)

@@ -9,7 +9,10 @@ tags:
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
-###1. Scheduling perf profiling goals
+* content
+{:toc}
+
+### 1. Scheduling perf profiling goals
 
 For an OS scheduler implementation, there are 3 key features,
 
@@ -29,7 +32,7 @@ If system ran into any CPU scheduling perf problems, we would see one of above f
 Our scheduling perf profiling goal is to understand how scheduler behaves from these 3 perspectives, under a certain
 workload or benchmark.
 
-###2. The major symptoms of scheduling perf issues
+### 2. The major symptoms of scheduling perf issues
 
 The symptoms of scheduling perf issues could be also classified by above 3 perspectives,
 
@@ -43,7 +46,7 @@ Please note that above symptoms might not always be caused by a kernel scheduler
 For this reason, the **most important thing** is, we must define the performance problem with a clear baseline.
 With a clear baseline, we could have better efficiency to rule out different possibilities which have the similar symptoms.
 
-###3. The scheduling perf issues triage process
+### 3. The scheduling perf issues triage process
 
 Different issues from hardware, kernel, or application level could cause the similar symptoms.
 

@@ -9,6 +9,9 @@ tags:
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
+* content
+{:toc}
+
 ## 1. Latency measurement in user space
 
 While user application developers are working on performance sensitive code, one common requirement is do latency/time
@@ -520,7 +523,7 @@ Here are the suggestions,
 2. If you have to use it, please make your application "TSC-resilient".
 
    Use it for debugging, but never use rdtsc in functional area.
-   
+ 
    As we mentioned above, Linux kernel also had hard time to handle it until today. If possible, learn from Linux code first.
    Perf measurement and debug facility might be only usable cases, but be prepare for handling various conner cases
    and software porting problems.
