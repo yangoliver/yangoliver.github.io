@@ -54,7 +54,7 @@ blockquote {
 }
 
 table {
-	font-family: sans-serif;
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
 	font-size:11px;
 	color:#333333;
 	margin: 0px 0px 20px 30px;
@@ -81,12 +81,13 @@ body{
     font-size:16px;word-spacing:1px;
     margin-left:auto;
     margin-right:auto;
-    font-family:MuseoSans,Trebuchet,"Trebuchet MS",Tahoma,"Lucida Grande","Lucida Sans Unicode","Hiragino Sans GB","Hiragino Sans GB W3","Microsoft YaHei",Verdana,sans-serif;
+	font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
     color:#000000;
     background-color:#ffffff;
 }
 
 body>div {
+	font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
     width: 70%;
     min-width: 32em;
     max-width: 50em;
@@ -98,7 +99,9 @@ body>div {
     box-shadow: 0 0 10px 0 #cfcfcf;
     border-top: 6px solid #EE0000;
 }
+
 h1 {
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
     font-size: 30px;
     line-height: 44px;
     margin: 0 0 28px 0;
@@ -108,6 +111,7 @@ h1 {
 	padding: 8px;
 }
 h2 {
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
     font-size: 26px;
     line-height: 42px;
     margin: 0 0 24px 0;
@@ -116,11 +120,13 @@ h2 {
 	padding: 0 0 0 5px;
 }
 h2 i {
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
 	font-size: 18px;
 	background-color: #64a050;
 	color: #fff;
 }
 h3 {
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
     font-size: 22px;
     line-height: 40px;
     margin: 0 0 20px 0;
@@ -129,6 +135,7 @@ h3 {
 	padding: 0 0 0 5px;
 }
 h4 {
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
     font-size: 18px;
     line-height: 38px;
     margin: 0 0 16px 0;
@@ -137,6 +144,7 @@ h4 {
 	padding: 0 0 0 5px;
 }
 h5 {
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
     font-size: 16px;
     line-height: 34px;
     margin: 0 0 12px 0;
@@ -145,6 +153,7 @@ h5 {
 	padding: 0 0 0 5px;
 }
 section>h5 {
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
     line-height: 30px;
     margin: 0 0 24px 0;
 }
@@ -157,14 +166,17 @@ p.intro {
 	line-height: 32px;
 }
 ul, ol{
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
 	line-height: 24px;
 	margin:1em 0 1em 2em;
 }
 ul {
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
     list-style-type: disc;
     padding-left: 12px;
 }
 ol {
+	font-family: Consolas,'Microsoft YaHei', 'SimHei', sans-serif;
     list-style-type: decimal;
     padding-left: 12px;
 }
