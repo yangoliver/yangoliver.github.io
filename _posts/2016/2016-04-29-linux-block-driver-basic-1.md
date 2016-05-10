@@ -267,9 +267,19 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
   如果 `bio` 不能被合并到已有的 `request` 里，通用块设备层就会为这个 `bio` 构造一个新 `request` 然后插入到 IO 调度器内部的队列里。
   待上层任务通过 `blk_finish_plug` 来触发 `blk_run_queue` 动作，块设备驱动的策略函数 `request_fn` 会触发 IO 调度器的排序操作，将 `request` 排序插入块设备驱动的 IO 请求队列。
 
-不论以上哪种情况，驱动的 `request_fn` 最终会将合并或者排序后的 `request` 交由驱动的底层函数来做 IO 操作。
+不论以上哪种情况，通用块设备的代码将会调用块驱动程序注册在 `request_queue` 的 `request_fn` 回调，这个回调里最终会将合并或者排序后的 `request` 交由驱动的底层函数来做 IO 操作。
 
 ##### 3.4 策略函数 `request_fn`
+
+如前所述，当块设备驱动使用 `blk_run_queue` 来分配和初始化 `request_queue` 时，这个函数也需要驱动指定自定义的策略函数 `request_fn` 和所需的自旋锁 `queue_lock`。
+驱动实现自己的 `request_fn` 时，需要了解如下特点，
+
+* 当通用块层代码调用 `request_fn` 时，内核已经拿了这个 `request_queue` 的 `queue_lock`。
+  因此，此时的上下文是 atomic 上下文，需要遵守内核在 atomic 上下文的约束条件。
+
+* 为了减少在 `request_queue` 的 `queue_lock` 上的锁竞争, 块驱动策略函数应该尽早退出 `queue_lock`，然后在策略函数返回前重新拿到锁。
+
+* 策略函数是异步执行的，不处在用户态进程所对应的内核上下文。因此实现时不能假设策略函数运行在用户进程的内核上下文中。
 
 ### 4. 试验
 
