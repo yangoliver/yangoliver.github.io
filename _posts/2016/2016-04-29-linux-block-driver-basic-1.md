@@ -218,12 +218,10 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
 ##### 3.1 `struct request_queue`
 
-块设备驱动待处理的 IO 请求队列结构。如果该队列是利用 `blk_init_queue` 分配和初始化的，则该队里内的 IO 请求需要经过 IO 调度器的处理(排序或合并)，由 `blk_queue_bio` 触发。
+块设备驱动待处理的 IO 请求队列结构。如果该队列是利用 `blk_init_queue` 分配和初始化的，则该队里内的 IO 请求( `struct request` ）需要经过 IO 调度器的处理(排序或合并)，由 `blk_queue_bio` 触发。
 
-当块设备策略驱动函数被调用时，IO 申请是通过其 `queuelist` 成员链接在 `struct request_queue` 的 `queue_head` 链表里的。
-一个 IO 申请队列上会有很多个 IO 申请。
-
-内核函数 `blk_fetch_request` 可以返回 `struct request_queue` 的 `queue_head` 队列的第一个 IO 申请的指针。请注意，这个函数并不把 IO 申请从队列头部摘除出来。
+当块设备策略驱动函数被调用时，`request` 是通过其 `queuelist` 成员链接在 `struct request_queue` 的 `queue_head` 链表里的。
+一个 IO 申请队列上会有很多个 `request` 结构。
 
 ##### 3.2 `struct bio`
 
@@ -275,11 +273,92 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 驱动实现自己的 `request_fn` 时，需要了解如下特点，
 
 * 当通用块层代码调用 `request_fn` 时，内核已经拿了这个 `request_queue` 的 `queue_lock`。
-  因此，此时的上下文是 atomic 上下文，需要遵守内核在 atomic 上下文的约束条件。
+  因此，此时的上下文是 atomic 上下文。在驱动的策略函数退出 `queue_lock` 之前，需要遵守内核在 atomic 上下文的约束条件。
 
-* 为了减少在 `request_queue` 的 `queue_lock` 上的锁竞争, 块驱动策略函数应该尽早退出 `queue_lock`，然后在策略函数返回前重新拿到锁。
+* 进入驱动策略函数时，通用块设备层代码可能会同时访问 `request_queue`。为了减少在 `request_queue` 的 `queue_lock` 上的锁竞争, 块驱动策略函数应该尽早退出 `queue_lock`，然后在策略函数返回前重新拿到锁。
 
 * 策略函数是异步执行的，不处在用户态进程所对应的内核上下文。因此实现时不能假设策略函数运行在用户进程的内核上下文中。
+
+Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册到了 `request_queue` 的 `request_fn` 成员上。
+
+	static void sampleblk_request(struct request_queue *q)
+	{
+		struct request *rq = NULL;
+		int rv = 0;
+		uint64_t pos = 0;
+		ssize_t size = 0;
+		struct bio_vec bvec;
+		struct req_iterator iter;
+		void *kaddr = NULL;
+
+		while ((rq = blk_fetch_request(q)) != NULL) {
+			spin_unlock_irq(q->queue_lock);
+
+			if (rq->cmd_type != REQ_TYPE_FS) {
+				rv = -EIO;
+				goto skip;
+			}
+
+			BUG_ON(sampleblk_dev != rq->rq_disk->private_data);
+
+			pos = blk_rq_pos(rq) * sampleblk_sect_size;
+			size = blk_rq_bytes(rq);
+			if ((pos + size > sampleblk_dev->size)) {
+				pr_crit("sampleblk: Beyond-end write (%llu %zx)\n", pos, size);
+				rv = -EIO;
+				goto skip;
+			}
+
+			rq_for_each_segment(bvec, rq, iter) {
+				kaddr = kmap(bvec.bv_page);
+
+				rv = sampleblk_handle_io(sampleblk_dev,
+					pos, bvec.bv_len, kaddr + bvec.bv_offset, rq_data_dir(rq));
+				if (rv < 0)
+					goto skip;
+
+				pos += bvec.bv_len;
+				kunmap(bvec.bv_page);
+			}
+	skip:
+
+			blk_end_request_all(rq, rv);
+
+			spin_lock_irq(q->queue_lock);
+		}
+	}
+
+策略函数 `sampleblk_request` 的实现逻辑如下，
+
+1. 使用 `blk_fetch_request` 循环获取队列中每一个待处理 `request`。
+   内核函数 `blk_fetch_request` 可以返回 `struct request_queue` 的 `queue_head` 队列的第一个 `request` 的指针。然后再调用 `blk_dequeue_request` 从队列里摘除这个 `request`。
+2. 每拿到一个 `request`，立即退出锁 `queue_lock`，但处理完每个 `request`，需要再次获得 `queue_lock`。
+3. `REQ_TYPE_FS` 用来检查是否是一个来自文件系统的 `request`。本驱动不支持非文件系统 `request`。
+4. `blk_rq_pos` 可以返回 `request` 的起始扇区号，而 `blk_rq_bytes` 返回整个 `request` 的字节数，应该是扇区的整数倍。
+5. `rq_for_each_segment` 这个宏定义用来迭代遍历一个 `request` 里的每一个 Segment: 即 `struct bio_vec`。
+   注意，每个 Segment 即 `bio_vec` 都是以 `blk_rq_pos` 为起始扇区，物理扇区连续的的。Segment 之间只是物理内存不保证连续而已。
+6. 每一个 `struct bio_vec` 都可以利用 kmap 来获得这个 Segment 所在页的虚拟地址。利用 `bv_offset` 和 `bv_len` 可以进一步知道这个 segment 的确切页内偏移和具体长度。
+7. `rq_data_dir` 可以获知这个 `request` 的请求是 read 还是 write。
+8. 处理完毕该 `request` 之后，必需调用 `blk_end_request_all` 让块通用层代码做后续处理。
+
+
+驱动函数 `sampleblk_handle_io` 把一个 `request`的每个 segment 都做一次驱动层面的 IO 操作。
+调用该驱动函数前，**起始扇区地址 `pos`**，**长度 `bv_len`**, **起始扇区虚拟内存地址 `kaddr + bvec.bv_offset`**，和 **read/write** 都做为参数准备好。
+由于 Sampleblk 驱动只是一个 ramdisk 驱动，因此，每个 segment 的 IO 操作都是 memcpy 来实现的，
+
+	/*
+	 * Do an I/O operation for each segment
+	 */
+	static int sampleblk_handle_io(struct sampleblk_dev *sampleblk_dev,
+			uint64_t pos, ssize_t size, void *buffer, int write)
+	{
+		if (write)
+			memcpy(sampleblk_dev->data + pos, buffer, size);
+		else
+			memcpy(buffer, sampleblk_dev->data + pos, size);
+
+		return 0;
+	}
 
 ### 4. 试验
 
