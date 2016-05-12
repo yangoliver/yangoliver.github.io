@@ -362,9 +362,116 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 
 ### 4. 试验
 
-#### 4.1 模块引用问题解决
+#### 4.1 编译和加载
 
-#### 4.2 创建文件系统
+* 首先，需要下载内核源代码，编译和安装内核，用新内核启动。
+
+  由于本驱动是在 Linux 4.6.0 上开发和调试的，而且块设备驱动内核函数不同内核版本变动很大，最好去下载 Linux mainline 源代码，然后 git checkout 到版本 4.6.0 上编译内核。
+  编译和安装内核的具体步骤网上有很多介绍，这里请读者自行解决。
+
+* 编译好内核后，在内核目录，编译驱动模块。
+
+	  $ make M=/ws/lktm/drivers/block/sampleblk/day1
+
+* 驱动编译成功，加载内核模块
+
+	  $ sudo insmod /ws/lktm/drivers/block/sampleblk/day1/sampleblk.ko
+
+* 驱动加载成功后，使用 crash 工具，可以查看 `struct smapleblk_dev` 的内容，
+
+	  crash7> mod -s sampleblk /home/yango/ws/lktm/drivers/block/sampleblk/day1/sampleblk.ko
+	       MODULE       NAME                   SIZE  OBJECT FILE
+	  ffffffffa03bb580  sampleblk              2681  /home/yango/ws/lktm/drivers/block/sampleblk/day1/sampleblk.ko
+
+	  crash7> p *sampleblk_dev
+	  $4 = {
+	    minor = 1,
+	    lock = {
+	      {
+	        rlock = {
+	          raw_lock = {
+	            val = {
+	              counter = 0
+	            }
+	          }
+	        }
+	      }
+	    },
+	    queue = 0xffff880034ef9200,
+	    disk = 0xffff880000887000,
+	    size = 524288,
+	    data = 0xffffc90001a5c000
+	  }
+
+注：关于 Linux Crash 的使用，请参考延伸阅读。
+
+#### 4.2 模块引用问题解决
+
+问题：把驱动的 `sampleblk_request` 函数实现全部删除，重新编译和加载内核模块。然后用 rmmod 卸载模块，卸载会失败, 内核报告模块正在被使用。
+
+	$ strace rmmod sampleblk
+	execve("/usr/sbin/rmmod", ["rmmod", "sampleblk"], [/* 26 vars */]) = 0
+
+	................[snipped]..........................
+
+	openat(AT_FDCWD, "/sys/module/sampleblk/holders", O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC) = 3
+	getdents(3, /* 2 entries */, 32768)     = 48
+	getdents(3, /* 0 entries */, 32768)     = 0
+	close(3)                                = 0
+	open("/sys/module/sampleblk/refcnt", O_RDONLY|O_CLOEXEC) = 3	/* 显示引用数为 3 */
+	read(3, "1\n", 31)                      = 2
+	read(3, "", 29)                         = 0
+	close(3)                                = 0
+	write(2, "rmmod: ERROR: Module sampleblk i"..., 41rmmod: ERROR: Module sampleblk is in use
+	) = 41
+	exit_group(1)                           = ?
+	+++ exited with 1 +++
+
+如果用 `lsmod` 命令查看，可以看到模块的引用计数确实是 3，但没有显示引用者的名字。一般情况下，只有内核模块间的相互引用才有引用模块的名字，所以没有引用者的名字，那么引用者来自用户空间的进程。
+
+那么，究竟是谁在使用 sampleblk 这个刚刚加载的驱动呢？利用 `module:module_get` tracepoint，就可以得到答案了。
+重新启动内核，在加载模块前，运行 [tpoint 命令](https://github.com/brendangregg/perf-tools/blob/master/system/tpoint)。然后，再运行 `insmod` 来加载模块。
+
+	$ sudo ./tpoint module:module_get
+	Tracing module:module_get. Ctrl-C to end.
+
+	   systemd-udevd-2986  [000] ....   196.382796: module_get: sampleblk call_site=get_disk refcnt=2
+	   systemd-udevd-2986  [000] ....   196.383071: module_get: sampleblk call_site=get_disk refcnt=3
+
+可以看到，原来是 systemd 的 udevd 进程在使用 sampleblk 设备。如果熟悉 udevd 的人可能就会立即恍然大悟，因为 udevd 负责侦听系统中所有设备的热插拔事件，并负责根据预定义规则来对新设备执行一系列操作。
+而 sampleblk 驱动在调用 `add_disk` 时，`kobject` 层的代码会向用户态的 udevd 发送热插拔的 `uevent`，因此 udevd 会打开块设备，做相关的操作。
+利用 crash 命令，可以很容易找到是哪个进程在打开 sampleblk 设备，
+
+	crash> foreach files -R /dev/sampleblk
+	PID: 4084   TASK: ffff88000684d700  CPU: 0   COMMAND: "systemd-udevd"
+	ROOT: /    CWD: /
+	 FD       FILE            DENTRY           INODE       TYPE PATH
+	  8 ffff88000691ad00 ffff88001ffc0600 ffff8800391ada08 BLK  /dev/sampleblk1
+	  9 ffff880006918e00 ffff88001ffc0600 ffff8800391ada08 BLK  /dev/sampleblk1
+
+由于 `sampleblk_request` 函数实现被删除，则 `udevd` 发送的 IO 操作无法被 sampleblk 设备驱动完成，因此 udevd 陷入到长期的阻塞等待中，直到超时返回错误，释放设备。
+上述分析可以从系统的消息日志中被证实，
+
+	messages:Apr 23 03:11:51 localhost systemd-udevd: worker [2466] /devices/virtual/block/sampleblk1 is taking a long time
+	messages:Apr 23 03:12:02 localhost systemd-udevd: worker [2466] /devices/virtual/block/sampleblk1 timeout; kill it
+	messages:Apr 23 03:12:02 localhost systemd-udevd: seq 4313 '/devices/virtual/block/sampleblk1' killed
+
+注：tpoint 是一个基于 ftrace 的开源的 bash 脚本工具，可以直接下载运行使用。它是 [Brendan Gregg](http://www.brendangregg.com/index.html) 在 github 上的开源项目，前文已经给出了项目的链接。
+
+重新把删除的 `sampleblk_request` 函数源码加回去，则这个问题就不会存在。因为 udevd 可以很快结束对 sampleblk 设备的访问。
+
+#### 4.3 创建文件系统
+
+虽然 Sampleblk 块驱动只有 200 行源码，但已经可以当作 ramdisk 来使用，在其上可以创建文件系统，
+
+	$ sudo mkfs.ext4 /dev/sampleblk1
+
+文件系统创建成功后，`mount` 文件系统，并创建一个空文件 a。可以看到，都可以正常运行。
+
+	$sudo mount /dev/sampleblk1 /mnt
+	$touch a
+
+至此，sampleblk 做为 ramdisk 的最基本功能已经实验完毕。
 
 ### 5. 延伸阅读
 
@@ -373,3 +480,4 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 * [Debugging kernel and modules via gdb](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt)
 * [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
 * [Linux Crash - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
+* [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
