@@ -8,8 +8,6 @@ tags: [driver, kgdb, crash, kernel, linux, storage]
 
 >本文首发于<http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
-> 注意: 本文仍处于构思和写作中。内容随时可能会变动或修改。
-
 * content
 {:toc}
 
@@ -155,7 +153,6 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
         goto fail_queue;
     }
     sampleblk_dev->disk = disk;
-    pr_info("gendisk address %p\n", disk);
 
 然后，初始化 `struct gendisk` 的重要成员，尤其是块设备操作函数表，Rquest Queue，和容量设置。最终调用 `add_disk` 来让磁盘在系统内可见，触发磁盘热插拔的 uevent。
 
@@ -335,7 +332,7 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 2. 每拿到一个 `request`，立即退出锁 `queue_lock`，但处理完每个 `request`，需要再次获得 `queue_lock`。
 3. `REQ_TYPE_FS` 用来检查是否是一个来自文件系统的 `request`。本驱动不支持非文件系统 `request`。
 4. `blk_rq_pos` 可以返回 `request` 的起始扇区号，而 `blk_rq_bytes` 返回整个 `request` 的字节数，应该是扇区的整数倍。
-5. `rq_for_each_segment` 这个宏定义用来迭代遍历一个 `request` 里的每一个 Segment: 即 `struct bio_vec`。
+5. `rq_for_each_segment` 这个宏定义用来**循环迭代**遍历一个 `request` 里的每一个 Segment: 即 `struct bio_vec`。
    注意，每个 Segment 即 `bio_vec` 都是以 `blk_rq_pos` 为起始扇区，物理扇区连续的的。Segment 之间只是物理内存不保证连续而已。
 6. 每一个 `struct bio_vec` 都可以利用 kmap 来获得这个 Segment 所在页的虚拟地址。利用 `bv_offset` 和 `bv_len` 可以进一步知道这个 segment 的确切页内偏移和具体长度。
 7. `rq_data_dir` 可以获知这个 `request` 的请求是 read 还是 write。
@@ -344,7 +341,7 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 
 驱动函数 `sampleblk_handle_io` 把一个 `request`的每个 segment 都做一次驱动层面的 IO 操作。
 调用该驱动函数前，**起始扇区地址 `pos`**，**长度 `bv_len`**, **起始扇区虚拟内存地址 `kaddr + bvec.bv_offset`**，和 **read/write** 都做为参数准备好。
-由于 Sampleblk 驱动只是一个 ramdisk 驱动，因此，每个 segment 的 IO 操作都是 memcpy 来实现的，
+由于 Sampleblk 驱动只是一个 ramdisk 驱动，因此，每个 segment 的 IO 操作都是 `memcpy` 来实现的，
 
 	/*
 	 * Do an I/O operation for each segment
@@ -409,6 +406,8 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 
 问题：把驱动的 `sampleblk_request` 函数实现全部删除，重新编译和加载内核模块。然后用 rmmod 卸载模块，卸载会失败, 内核报告模块正在被使用。
 
+使用 `strace` 可以观察到 `/sys/module/sampleblk/refcnt` 非零，即模块正在被使用。
+
 	$ strace rmmod sampleblk
 	execve("/usr/sbin/rmmod", ["rmmod", "sampleblk"], [/* 26 vars */]) = 0
 
@@ -430,7 +429,7 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 如果用 `lsmod` 命令查看，可以看到模块的引用计数确实是 3，但没有显示引用者的名字。一般情况下，只有内核模块间的相互引用才有引用模块的名字，所以没有引用者的名字，那么引用者来自用户空间的进程。
 
 那么，究竟是谁在使用 sampleblk 这个刚刚加载的驱动呢？利用 `module:module_get` tracepoint，就可以得到答案了。
-重新启动内核，在加载模块前，运行 [tpoint 命令](https://github.com/brendangregg/perf-tools/blob/master/system/tpoint)。然后，再运行 `insmod` 来加载模块。
+重新启动内核，在加载模块前，运行 [`tpoint` 命令](https://github.com/brendangregg/perf-tools/blob/master/system/tpoint)。然后，再运行 `insmod` 来加载模块。
 
 	$ sudo ./tpoint module:module_get
 	Tracing module:module_get. Ctrl-C to end.
@@ -456,7 +455,7 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 	messages:Apr 23 03:12:02 localhost systemd-udevd: worker [2466] /devices/virtual/block/sampleblk1 timeout; kill it
 	messages:Apr 23 03:12:02 localhost systemd-udevd: seq 4313 '/devices/virtual/block/sampleblk1' killed
 
-注：tpoint 是一个基于 ftrace 的开源的 bash 脚本工具，可以直接下载运行使用。它是 [Brendan Gregg](http://www.brendangregg.com/index.html) 在 github 上的开源项目，前文已经给出了项目的链接。
+注：`tpoint` 是一个基于 ftrace 的开源的 bash 脚本工具，可以直接下载运行使用。它是 [Brendan Gregg](http://www.brendangregg.com/index.html) 在 github 上的开源项目，前文已经给出了项目的链接。
 
 重新把删除的 `sampleblk_request` 函数源码加回去，则这个问题就不会存在。因为 udevd 可以很快结束对 sampleblk 设备的访问。
 
