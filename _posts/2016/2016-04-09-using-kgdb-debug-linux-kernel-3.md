@@ -49,7 +49,7 @@ In these examples, two machine got connected via serial cable or serial console.
 And gdb client already can set break points in kernel(vmlinux), and control the kernel execution if we want.
 
 Anyway, at this time point, you couldn't set break points in kernel modules or drivers without running `add-symbol-file` command correctly.
-If you still have the problems on connecting to kgdb via gdb client, please refer to [Using kdb/kgdb debug Linux kernel - 2](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-2/).
+If you still have the problems on connecting to kgdb via gdb client, please refer to [Linux kdb, kgdb, gdb - 2](http://oliveryang.net/2015/08/using-kgdb-debug-linux-kernel-2/).
 
 ### 2. Module debugging after system boot
 
