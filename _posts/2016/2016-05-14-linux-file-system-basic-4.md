@@ -51,6 +51,14 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 
 ## 3. Ext4 磁盘格式
 
+如 [Linux File System - 3](http://oliveryang.net/2016/02/linux-file-system-basic-3) 中所述。很多磁盘文件系统的重要数据结构都存在三个层面上的实现，
+
+1. VFS 内存层面上的实现。
+2. 具体文件系统内存层面上的实现。
+3. 具体文件系统磁盘上的实现。
+
+上述 1 和 2 共同组成了文件系统的内存布局 (memory layout)，而 3 则是文件系统磁盘布局 (disk layout) 的主要部分。
+
 本小节将对 Ext4 的磁盘格式做简单介绍。Ext2/Ext3 文件系统的磁盘格式与之相似，但 Ext4 在原有版本的基础上做了必要的扩展。
 
 如下图所示，一个 Ext4 文件系统的磁盘格式是由一个引导块和很多个 block group 组成的,
