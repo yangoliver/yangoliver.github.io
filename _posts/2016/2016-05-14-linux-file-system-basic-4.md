@@ -57,7 +57,7 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 2. 具体文件系统内存层面上的实现。
 3. 具体文件系统磁盘上的实现。
 
-上述 1 和 2 共同组成了文件系统的内存布局 (memory layout)，而 3 则是文件系统磁盘布局 (disk layout) 的主要部分。
+上述 1 和 2 共同组成了文件系统的内存布局 (memory layout)，而 3 则是文件系统磁盘布局 (disk layout) 的主要部分，即本文主要关注的部分。
 
 本小节将对 Ext4 的磁盘格式做简单介绍。Ext2/Ext3 文件系统的磁盘格式与之相似，但 Ext4 在原有版本的基础上做了必要的扩展。
 
@@ -69,9 +69,39 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 
 ![ext4 layout in one group](/media/images/2016/ext4_disk_layout_2.png)
 
+上图列出的 block group 和 block group 内部每个部分的具体含义将在本文后续实验章节给出。
+
 ## 4. 实验
 
 #### 3.2.1 Block Group
+
+在格式化 Ext4 文件系统时，`mkfs.ext4` 命令已经报告了在块设备 `/dev/sampleblk1` 上创建了 1 个 block group，并且给出这个 block group 里的具体 block，fragment 和 inode 的个数,
+
+	$ sudo mkfs.ext4 /dev/sampleblk1
+	...[snipped]...
+
+	1 block group
+	8192 blocks per group, 8192 fragments per group
+	64 inodes per group
+
+	...[snipped]...
+
+同样的，也可以使用 `debugfs` 的 `show_super_stats` 命令得到相应的信息，
+
+	$ sudo debugfs /dev/sampleblk1 -R show_super_stats | grep block
+	debugfs 1.42.9 (28-Dec-2013)
+	Reserved block count:     25
+	Free blocks:              482
+	First block:              1
+	Reserved GDT blocks:      3
+	Inode blocks per group:   8
+	Flex block group size:    16
+	Reserved blocks uid:      0 (user root)
+	Reserved blocks gid:      0 (group root)
+	 Group  0: block bitmap at 6, inode bitmap at 22, inode table at 38
+	           482 free blocks, 53 free inodes, 2 used directories, 53 unused inodes
+
+从 `debugfs` 的命令输出，我们也可以清楚的知道 block group 0 内部的情况。它的 block bitmap，inode bitmap，inode table 的具体位置。
 
 #### 3.2.2 Super Block
 
