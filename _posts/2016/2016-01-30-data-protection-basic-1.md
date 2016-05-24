@@ -112,7 +112,7 @@ tags:
 ### 4.1 数据一致性
 
 备份时的数据一致性问题，是备份方案必须要解决的问题，因为恢复的最终目的是要恢复中断的业务。
-主机备份时，数据的一致性状态可以是以下三种，
+主机做热备份时，数据的一致性状态可以是以下三种，
 
 1. **Crash Consistency**
    崩溃一致性。备份时系统没有任何静默(Quiesce)。想象一下运行的系统突然掉电或者崩溃时的状态。
@@ -131,8 +131,10 @@ tags:
 [VSS(Volume Shadow Copy)机制](http://dcsblog.burtongroup.com/data_center_strategies/2009/02/linux-wheres-your-vss.html)。
 该机制可以允许OS和应用程序在热拷贝发生时，实现自己的静默操作。VSS在Windows操作系统是被很多关键应用
 [全面支持](https://en.wikipedia.org/wiki/Shadow_Copy)的。
-而Linux操作系统目前还缺乏一个从内核到应用程序统一的框架来实现类似功能。Linux的某些文件系统快照功能可以实现文件系统一致性，
-做快照时静默IO。但是还是缺乏一个通知应用程序执行静默的机制。
+而Linux操作系统目前还缺乏一个从内核到应用程序统一的框架来实现类似功能。Linux的 LVM 和某些支持 COW 的文件系统快照功能可以实现文件系统一致性，
+做快照时静默IO。但是 Linux 还是缺乏一个通知应用程序执行静默的机制, 因此无法保证热备份时的应用一致性。
+
+不支持应用一致性的系统，要避免做热备份。即做备份时，把服务停掉，以免出现应用数据一致性问题。
 
 ### 4.2 数据完整性
 
@@ -282,3 +284,14 @@ tags:
 正因为备份存储的多样性，有了数据的多个拷贝，多个历史版本，还有多个物理分布，
 才使得不同的灾备计划可以抵御不同级别的自然灾害，人为灾害，软硬件故障和误操作。
 备份计划，方法，还有基础设施的选择也和业务的连续性要求以及灾备预算密切相关。
+
+## 7. 关联阅读
+
+* [Business Continuity](https://en.wikipedia.org/wiki/Business_continuity)
+* [Shadow Copy](https://en.wikipedia.org/wiki/Shadow_Copy)
+* [Linux 有 VSS(Volume Shadow Copy) 机制吗?](http://dcsblog.burtongroup.com/data_center_strategies/2009/02/linux-wheres-your-vss.html)
+* [EMC DataDomain 端到端的数据完整性](http://www.emc.com/collateral/software/white-papers/h7219-data-domain-data-invul-arch-wp.pdf)
+* [Facebook mysql 备份](http://cenalulu.github.io/mysql/how-we-do-mysql-backup-in-facebook)
+* [AWS S3 服务](https://aws.amazon.com/s3)
+* [AWS Glacier 服务](https://aws.amazon.com/glacier)
+* [AWS Snowball 服务](http://docs.aws.amazon.com/AWSImportExport/latest/DG/whatissnowball.html)
