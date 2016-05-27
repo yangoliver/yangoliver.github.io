@@ -168,7 +168,7 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 	crash> p /x 0xffffc900017bc000+1024
 	$3 = 0xffffc900017bc400
 
-然后，根据前面得到的 super block 起始地址，直接映射磁盘上的 super block 到 `struct ext4_super_block` 数据结构中，
+然后，根据前面得到的 super block 起始地址，利用 crash 查看 `struct ext4_super_block` 数据结构的命令就可以直接查看 ext4 在磁盘上的 super block 的布局了，
 
 	crash> ext4_super_block 0xffffc900017bc400
 	struct ext4_super_block {
@@ -251,8 +251,12 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 
 ### 4.4 查看 Group Descriptor
 
+根据 block group 的格式，可以知道，磁盘的第三个块就是 Group Descriptor 的起始地址，
+
 	crash> p /x 0xffffc900017bc000+1024+1024
 	$6 = 0xffffc900017bc800
+
+因此用 crash 可以看到这个地址对应的磁盘上的 Group Descriptor 的内容。很容易就找到 block bitmap, inode bitmap, 和 inode table 的所在块编号,
 
 	crash> ext4_group_desc 0xffffc900017bc800
 	struct ext4_group_desc {
@@ -283,8 +287,12 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 
 ### 4.5 查看 inode table
 
-	crash> p /x 0xffffc900017bc000+1024*38
+从 Group Descriptor 得知，块 38 就是 inode table 的起始地址，因此可以得出其地址为，
+
+	crash> p /x 0xffffc900017bc000+1024*38  /* Super block 里显示块长度为 1024 */
 	$8 = 0xffffc900017c5800
+
+而 inode table 就是 `ext4_inode` 为元素的数组，因此其第一个 `ext4_inode` 为，
 
 	crash> struct ext4_inode -x 0xffffc900017c5800
 	struct ext4_inode {
@@ -300,6 +308,8 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 	  i_blocks_lo = 0x0,
 	  i_flags = 0x0,
 
+用 `debugfs` 可以直接查看块号是 38 的对应 `ext4_inode` 的内容。可以看到，两个结果是一致的。
+
 	$ sudo debugfs /dev/sampleblk1 -R 'bd 38'
 	debugfs 1.42.9 (28-Dec-2013)
 	0000  0000 0000 0000 0000 bc1c 4357 bc1c 4357  ..........CW..CW
@@ -307,11 +317,14 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 	0040  0000 0000 0000 0000 0000 0000 0000 0000  ................
 
 
-在 inode table 中定位某个 inode
+如果我们在新创建的文件系统中，创建一个文件。我们可以在 inode table 中定位这个文件的 inode。
+如下命令可以创建一个文件，并且得到磁盘上文件对应的 inode 号,
 
 	$ sudo touch /mnt/a
 	$ ls -i /mnt/a
 	12 /mnt/a
+
+同样的，`debugfs` 也可以得到这个文件对应的 inode 号，
 
 	$ sudo debugfs /dev/sampleblk1 -R 'show_inode_info a'
 	debugfs 1.42.9 (28-Dec-2013)
