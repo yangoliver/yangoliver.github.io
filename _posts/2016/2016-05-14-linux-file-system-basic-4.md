@@ -287,12 +287,25 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 
 ### 4.5 查看 inode table
 
+inode table 就是以 inode record 为元素的数组，不同版本 Ext 文件系统，这里有些差别，
+
+* Ext2/Ext3 时代，磁盘 inode 数据结构和在 inode table 里的 inode record 长度一样，都是 128 字节。一个 record 就是一个磁盘 inode 数据结构。
+* Ext4时，为兼容旧版本文件系统，同时又为扩展新能力，磁盘 inode 结构 `ext4_inode` 和 inode table 里 inode record 长度不一致了。
+  此时，磁盘上的 inode record 长度在 superblock 的 `s_inode_size` 成员记录。
+  因此，如果 superblock 的 `s_inode_size` 超出 128 字节，其磁盘上的 inode record 是分两部分的，第一部分可能还是 128 字节，这样可以兼容原有的 ext2/ext3 文件系统。
+  第二部分的大小在 `ext4_inode` 结构的 `i_extra_isize` 成员记录。
+
+例如，本实验中 `ext4_inode` 长度是 160 字节，但 inode record 的长度是 128 字节，因此，`ext4_inode` 结构超出 128 字节的部分并未被使用。
+
+	crash> ext4_inode | grep SIZE
+	SIZE: 160
+	crash> ext4_super_block.s_inode_size 0xffffc900017bc400
+	  s_inode_size = 128
+
 从 Group Descriptor 得知，块 38 就是 inode table 的起始地址，因此可以得出其地址为，
 
 	crash> p /x 0xffffc900017bc000+1024*38  /* Super block 里显示块长度为 1024 */
 	$8 = 0xffffc900017c5800
-
-而 inode table 就是 `ext4_inode` 为元素的数组，因此其第一个 `ext4_inode` 为，
 
 	crash> struct ext4_inode -x 0xffffc900017c5800
 	struct ext4_inode {
@@ -316,7 +329,6 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 	0020  bc1c 4357 0000 0000 0000 0000 0000 0000  ..CW............
 	0040  0000 0000 0000 0000 0000 0000 0000 0000  ................
 
-
 如果我们在新创建的文件系统中，创建一个文件。我们可以在 inode table 中定位这个文件的 inode。
 如下命令可以创建一个文件，并且得到磁盘上文件对应的 inode 号,
 
@@ -324,7 +336,7 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 	$ ls -i /mnt/a
 	12 /mnt/a
 
-同样的，`debugfs` 也可以得到这个文件对应的 inode 号，
+同样的，`debugfs` 也可以得到这个文件对应的 inode 号是 12，
 
 	$ sudo debugfs /dev/sampleblk1 -R 'show_inode_info a'
 	debugfs 1.42.9 (28-Dec-2013)
@@ -339,10 +351,16 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 	mtime: 0x5745313c -- Tue May 24 21:59:40 2016
 	EXTENTS:
 
-	crash> ext4_inode | grep SIZE
-	SIZE: 160
-	crash> ext4_super_block.s_inode_size 0xffffc900017bc400
-	  s_inode_size = 128
+[Ext4_Disk_Layout](https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout) 给出了通过 inode 号定位 inode table 里的 inode record 的具体方法，
+
+<pre>Each block group contains sb->s_inodes_per_group inodes. Because inode 0
+is defined not to exist, this formula can be used to find the block group
+that an inode lives in: bg = (inode_num - 1) / sb->s_inodes_per_group.
+The particular inode can be found within the block group's inode table at
+index = (inode_num - 1) % sb->s_inodes_per_group. To get the byte address
+within the inode table, use offset = index * sb->s_inode_size.</pre>
+
+因为我们 block group 只有一个，因此略过。只需要算出偏移即可，
 
 	crash> p /x 0xffffc900017bc000+1024*38+128*(12-1)
 	$14 = 0xffffc900017c5d80
@@ -359,6 +377,7 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 	  i_links_count = 0x1,
 	  i_blocks_lo = 0x2,
 	  i_flags = 0x80000,
+	[...snipped...]
 
 ## 5. 延伸阅读
 
