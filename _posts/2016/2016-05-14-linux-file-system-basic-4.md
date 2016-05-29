@@ -65,15 +65,30 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 
 ![ext4 block groups](/media/images/2016/ext4_disk_layout_1.png)
 
-其中每个 block group 又包含如下格式，
+其中，上图的 boot block (引导块) 用于存放系统引导代码，这个区域并不属于文件系统。在 x86 系统，此引导代码会被 BIOS 在系统加电后加载执行。
+
+上图中的每个 block group 又由如下格式构成，
 
 ![ext4 layout in one group](/media/images/2016/ext4_disk_layout_2.png)
 
-上图列出的 block group 和 block group 内部每个部分的具体含义将在本文后续实验章节给出。
+接下来我们对 Ext4 磁盘上的 block group 及其内部的构成做简单介绍。
 
 ### 3.1 Block Group
 
+一个 block group 里的存储的数据就两大类，存放于文件的 data 和用于描述 aata 的 meta data (元数据)。
+而 Ext 文件系统由多个 block group 组成，每个 block group 都有部分重复的元数据，浪费了一些空间，但是却可以带来如下好处，
+
+* 错误恢复。例如，super block 在每个 block group 都有副本，如果发生损坏时这些副本可以用于恢复。
+* 性能。一个文件的存放不会跨越 block group，因此，同一文件的访问都在 block group 内部，使得数据访问具有局部性。这样减少了 HDD 设备磁头移动和寻道时间。
+
 ### 3.2 Super Block
+
+Super block 包含了文件系统的全局配置和信息。是关联其它文件系统元数据的核心数据，即元数据的元数据。
+默认情况下，文件系统使用 block group 0 的 super block。其它每个 block group 里都有一个 super block 的副本。
+为减少空间浪费，Ext 文件系统引入了 [sparse super block](https://github.com/torvalds/linux/blob/master/Documentation/filesystems/ext2.txt#L112)
+的特性，这样，只有 block group 1，和 block group ID 为 2 的 3，5，7 次幂的 block group 会存副本。
+
+为了性能考虑，super block 一般都缓存在内存中。本文只关注磁盘上的 super block 格式。
 
 ### 3.3 Group Descriptor
 
