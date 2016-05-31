@@ -78,27 +78,39 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 一个 block group 里的存储的数据就两大类，存放于文件的 data 和用于描述 aata 的 meta data (元数据)。
 而 Ext 文件系统由多个 block group 组成，每个 block group 都有部分重复的元数据，浪费了一些空间，但是却可以带来如下好处，
 
-* 错误恢复。例如，super block 在每个 block group 都有副本，如果发生损坏时这些副本可以用于恢复。
+* 错误恢复。例如，super block 和 group descriptor 在每个 block group 都有副本，如果发生损坏时这些副本可以用于恢复。
 * 性能。一个文件的存放不会跨越 block group，因此，同一文件的访问都在 block group 内部，使得数据访问具有局部性。这样减少了 HDD 设备磁头移动和寻道时间。
 
 ### 3.2 Super Block
 
 Super block 包含了文件系统的全局配置和信息。是关联其它文件系统元数据的核心数据，即元数据的元数据。
-默认情况下，文件系统使用 block group 0 的 super block。其它每个 block group 里都有一个 super block 的副本。
+默认情况下，文件系统使用 block group 0 的 super block 和 group descriptor 。其它每个 block group 里都有一个 super block 和 group descriptor 的副本。
 为减少空间浪费，Ext 文件系统引入了 [sparse super block](https://github.com/torvalds/linux/blob/master/Documentation/filesystems/ext2.txt#L112)
-的特性，这样，只有 block group 1，和 block group ID 为 2 的 3，5，7 次幂的 block group 会存副本。
+的特性，这样，只有 block group 1，和 block group ID 为 2 的 3，5，7 次幂的 block group 会存副本。这时，没有存放 super block 和 group descriptor 的 block group 起始偏移将从 data block bitmap 开始。
 
-为了性能考虑，super block 一般都缓存在内存中。本文只关注磁盘上的 super block 格式。
+为了性能考虑，super block 一般都缓存在内存中。本文只关注磁盘上的 super block 格式，其对应数据结构为 `struct ext4_super_block`。
 
 ### 3.3 Group Descriptor
 
+Group descriptor 描述文件系统所有的 block group 的信息。文件系统默认使用 block group 0 里的 group descriptor。其它副本存放情况已经在 super block 章节有所描述。
+通过 group descriptor 可以定位 block group 的 data block bitmap，inode bitmap 和 inode table 的所在块号。这就意味着 data block bitmap，inode bitmap 和 inode table 的位置可以不是固定的。
+Ext4 文件系统的 group descriptor 对应数据结构为 `struct ext4_group_desc`。具体信息见后续章节的相关实验。
+
 ### 3.4 Data Block Bitmap
+
+Data block bitmap 跟踪 block group 内的 data block 使用情况，是占一个 block 大小的 bitmap。已分配数据块为 1，空闲块为 0。
 
 ### 3.5 Inode Bitmap
 
+Inode bitmap 跟踪 inode table 内的表项使用情况，是占一个 block 大小的 bitmap。已分配表项为 1，空闲表项为 0。
+
 ### 3.6 Inode Table
 
-### 3.7 Data Blocks
+Inode table 存放 block group 内部的所有文件和目录的 meta data 即 inode 的信息。对 Ext4 文件系统，就是 `struct ext4_inode` 的数组。
+
+### 3.7 Data Block
+
+Data block 存放 block group 的所有文件的实际数据。
 
 ## 4. 实验
 
