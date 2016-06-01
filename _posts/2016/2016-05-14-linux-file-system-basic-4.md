@@ -9,16 +9,14 @@ tags:
 
 >本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
->本文仍处于未完成状态，内容随时可能修改。
-
 * content
 {:toc}
 
 ## 1. 背景
 
-本文将在 Sampleblk 块设备上创建 Ext4 文件系统，以 Ext4 文件系统为例，用 Crash 来查看 Ext4 文件系统的磁盘格式。
+本文将在 Sampleblk 块设备上创建 Ext4 文件系统，以 Ext4 文件系统为例，用 debugfs 和 crash 来查看 Ext4 文件系统的磁盘格式 (File System Disk Layout)。
 
-在 [Linux File System - 3](http://oliveryang.net/2016/02/linux-file-system-basic-3) 中，Samplefs 只有文件系统内存中的数据结构，而并未规定文件系统磁盘数据格式 (File System Disk Layout)。
+在 [Linux File System - 3](http://oliveryang.net/2016/02/linux-file-system-basic-3) 中，Samplefs 只有文件系统内存中的数据结构，而并未规定文件系统磁盘数据格式。
 而 [Linux Block Driver - 1](http://oliveryng.net/2016/04/linux-block-driver-basic-1) 则实现了一个最简的块驱动 Sampleblk。 
 Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/drivers/block/sampleblk/day1)只有 200 多行，但已经可以在它上面创建各种文件系统。
 由于 Sampleblk 是个 ramdisk，磁盘数据实际上都写在了驱动分配的内核内存里，因此可以很方便的使用 Linux Crash 工具来研究任意一种文件系统的磁盘格式。
@@ -84,6 +82,7 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 ### 3.2 Super Block
 
 Super block 包含了文件系统的全局配置和信息。是关联其它文件系统元数据的核心数据，即元数据的元数据。
+
 默认情况下，文件系统使用 block group 0 的 super block 和 group descriptor 。其它每个 block group 里都有一个 super block 和 group descriptor 的副本。
 为减少空间浪费，Ext 文件系统引入了 [sparse super block](https://github.com/torvalds/linux/blob/master/Documentation/filesystems/ext2.txt#L112)
 的特性，这样，只有 block group 1，和 block group ID 为 2 的 3，5，7 次幂的 block group 会存副本。这时，没有存放 super block 和 group descriptor 的 block group 起始偏移将从 data block bitmap 开始。
@@ -93,6 +92,7 @@ Super block 包含了文件系统的全局配置和信息。是关联其它文�
 ### 3.3 Group Descriptor
 
 Group descriptor 描述文件系统所有的 block group 的信息。文件系统默认使用 block group 0 里的 group descriptor。其它副本存放情况已经在 super block 章节有所描述。
+
 通过 group descriptor 可以定位 block group 的 data block bitmap，inode bitmap 和 inode table 的所在块号。这就意味着 data block bitmap，inode bitmap 和 inode table 的位置可以不是固定的。
 Ext4 文件系统的 group descriptor 对应数据结构为 `struct ext4_group_desc`。具体信息见后续章节的相关实验。
 
@@ -110,9 +110,11 @@ Inode table 存放 block group 内部的所有文件和目录的 meta data 即 i
 
 ### 3.7 Data Block
 
-Data block 存放 block group 的所有文件的实际数据。
+Data block 存放 block group 的所有文件的实际数据。文件的磁盘空间使用都是以 block 为单位的。Ext4 super block 会给出文件系统每个 block 的大小。
 
 ## 4. 实验
+
+下面我们会利用 sampleblk 驱动做简单的实验来帮助加深对 Ext4 磁盘格式的认识。
 
 ### 4.1 查看 Block Group
 
@@ -417,3 +419,4 @@ within the inode table, use offset = index * sb->s_inode_size.</pre>
 * [Ext4 Disk Layout](https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout)
 * [在Fedora 20环境下安装系统内核源代码](http://www.cnblogs.com/kuliuheng/p/3976780.html)
 * [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)
+* [Debugfs man page](http://linux.die.net/man/8/debugfs)
