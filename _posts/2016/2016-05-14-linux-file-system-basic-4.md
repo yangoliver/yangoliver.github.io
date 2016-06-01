@@ -77,7 +77,7 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 而 Ext 文件系统由多个 block group 组成，每个 block group 都有部分重复的元数据，浪费了一些空间，但是却可以带来如下好处，
 
 * 错误恢复。例如，super block 和 group descriptor 在每个 block group 都有副本，如果发生损坏时这些副本可以用于恢复。
-* 性能。一个文件的存放不会跨越 block group，因此，同一文件的访问都在 block group 内部，使得数据访问具有局部性。这样减少了 HDD 设备磁头移动和寻道时间。
+* 性能。一个文件的存放会尽可能不跨越 block group，因此，同一文件的访问都在 block group 内部，使得数据访问具有局部性。这样减少了 HDD 设备磁头移动和寻道时间。
 
 ### 3.2 Super Block
 
@@ -110,7 +110,8 @@ Inode table 存放 block group 内部的所有文件和目录的 meta data 即 i
 
 ### 3.7 Data Block
 
-Data block 存放 block group 的所有文件的实际数据。文件的磁盘空间使用都是以 block 为单位的。Ext4 super block 会给出文件系统每个 block 的大小。
+Data block 存放 block group 的所有文件的实际数据。文件的磁盘空间使用都是以 block 为单位的。文件的数据块在磁盘上连续可以减少 fragmentation 从而改善性能。
+Ext4 super block 会给出文件系统每个 block 的大小。
 
 ## 4. 实验
 
