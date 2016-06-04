@@ -457,6 +457,10 @@ struct super_block 的内容。比如，其中三个重要的成员，s_op，s_r
 让我们对 Super Block 的概念有了更近一步的了解。而 day2 涉及到的其它文件系统相关的概念，
 inode，dentry，vfsmount 等，在本文只做初步介绍。后续的文章中会逐步详细说明。
 
+注：最近将 samplefs day2 的代码[移植到了 Linux 4.6.0 上](https://github.com/yangoliver/lktm/commit/68e0a018e88cd8ab9308202bfa89aafef150a661)，
+并通过了 [Linux cstyle 的检查](https://github.com/yangoliver/lktm/commit/1928a162639938293e0ba70307dfb7140a422031)。
+如果需要在老内核版本上运行 day1 代码，请使用 git revert 代码到[之前的版本](https://github.com/yangoliver/lktm/commits/master/fs/samplefs/day2)。
+
 ### 5. 关联阅读
 
 * [Linux File System - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1/)

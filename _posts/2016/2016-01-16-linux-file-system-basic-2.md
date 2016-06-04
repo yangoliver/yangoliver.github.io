@@ -378,6 +378,9 @@ mount_nodev总会分配一个新的samplefs在VFS层面上的Super Block。但�
 ramfs只有不到600行c代码，分析和学习ramfs代码也可以加深对Linux VFS的接口和基本实现的理解。此外，也可以直接下载本文中使用的
 [samplefs day1的全部代码和为新内核所做的修改](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day1)来做进一步的学习和实验。
 
+注：最近将 samplefs day1 的代码[移植到了 Linux 4.6.0 上](https://github.com/yangoliver/lktm/commit/bd523bf3851bebe5ca21e5febcc76da8b0c5d407)，并通过了 Linux cstyle 的检查。
+如果需要在老内核版本上运行 day1 代码，请使用 git revert 代码到[之前的版本](https://github.com/yangoliver/lktm/commits/master/fs/samplefs/day1)。
+
 ### 5. 关联阅读
 
 * [Linux File System - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1/)
