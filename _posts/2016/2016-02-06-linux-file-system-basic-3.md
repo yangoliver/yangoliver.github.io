@@ -255,9 +255,9 @@ vfsmount 代表了文件系统的已装载实例。其中主要由文件系统�
 
 Samplefs 不是磁盘文件系统，因此在加载 samplefs 模块后，要用下面的命令 mount samplefs，
 
-	$ sudo mount -t samplefs nodev /mnt
+	$ sudo mount -t samplefs -o nodev /mnt /dev/zero
 	$ mount | grep -i samplefs
-	nodev on /mnt type samplefs (rw,relatime)
+	/mnt on /dev/zero type samplefs (rw,nodev,relatime)
 
 利用 [funcgraph](https://github.com/brendangregg/perf-tools/blob/master/examples/funcgraph_example.txt)
 工具，可以激活内核的 ftrace 查看 mount 时内核的代码路径。只需要在执行上述 mount 命令之前，
