@@ -16,9 +16,36 @@ tags:
 
 ## 1. 背景
 
-## 2. 准备
+本文继续 Samplefs 的源码介绍。[Day3 的源码](https://github.com/yangoliver/lktm/tree/master/fs/samplefs/day3)主要是在状态和调试方面的改进。
+
+## 2. 代码
+
+### 2.1 模块参数
+
+下面这段代码示意了如何声明模块的参数，
+
+	unsigned int sample_parm = 0;
+	module_param(sample_parm, int, 0);
+	MODULE_PARM_DESC(sample_parm, "An example parm. Default: x Range: y to z");
+
+其中 `module_param` 用来声明模块的变量名，数据类型和许可掩码 (permission masks)。
+
+### 2.2 调试信息
+
+### 2.3 proc 文件系统
 
 ## 4. 实验
+
+
+	$ sudo insmod /home/yango/ws/lktm/fs/samplefs/day3/samplefs.ko sample_parm=9000
+
+	$ modinfo /home/yango/ws/lktm/fs/samplefs/day3/samplefs.ko
+	filename:       /home/yango/ws/lktm/fs/samplefs/day3/samplefs.ko
+	license:        GPL
+	srcversion:     A7EB3525B6F9C78912A2FDE
+	depends:
+	vermagic:       4.6.0-rc3+ SMP mod_unload modversions
+	parm:           sample_parm:An example parm. Default: x Range: y to z (int)
 
 ## 5. 延伸阅读
 
