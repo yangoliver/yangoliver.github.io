@@ -20,6 +20,8 @@ tags:
 
 ## 2. 代码
 
+与 Day1 和 Day2 的代码相比，Day3 的实现是最简单的。下面就其中的知识点做简单介绍。
+
 ### 2.1 模块参数
 
 下面这段代码示意了如何声明模块的参数，
@@ -28,7 +30,7 @@ tags:
 	module_param(sample_parm, int, 0);
 	MODULE_PARM_DESC(sample_parm, "An example parm. Default: x Range: y to z");
 
-其中 `module_param` 用来声明模块的变量名，数据类型和许可掩码 (permission masks)。
+其中 `module_param` 用来声明模块的变量名，数据类型和许可掩码 (permission masks)。由于本驱动的许可掩码是 0，因此模块参数并未在 `/sys/module/` 路径下创建参数文件。
 
 ### 2.2 调试信息
 
@@ -36,8 +38,10 @@ tags:
 
 ## 4. 实验
 
-
 	$ sudo insmod /home/yango/ws/lktm/fs/samplefs/day3/samplefs.ko sample_parm=9000
+
+	[96287.090137] init samplefs
+	[96287.090143] sample_parm 9000 too large, reset to 10
 
 	$ modinfo /home/yango/ws/lktm/fs/samplefs/day3/samplefs.ko
 	filename:       /home/yango/ws/lktm/fs/samplefs/day3/samplefs.ko
