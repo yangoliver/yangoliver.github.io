@@ -24,7 +24,7 @@ tags:
 
 ### 2.1 模块参数
 
-下面这段代码示意了如何声明模块的参数，
+Day3 这段代码示意了如何声明模块的参数，
 
 	unsigned int sample_parm = 0;
 	module_param(sample_parm, int, 0);
@@ -33,6 +33,42 @@ tags:
 其中 `module_param` 用来声明模块的变量名，数据类型和许可掩码 (permission masks)。由于本驱动的许可掩码是 0，因此模块参数并未在 `/sys/module/` 路径下创建参数文件。
 
 ### 2.2 调试信息
+
+在 Day3 代码里使用了 `printk` 的变体 `pr_info`, `pr_warn` 和 `pr_err`，这些函数都是直接包装 `printk`，让代码更简洁一些。
+还有其它类似的函数定义在了 `include/linux/printk.h` 里。
+
+	#define pr_emerg(fmt, ...) \
+	     printk(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
+	#define pr_alert(fmt, ...) \
+	    printk(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
+	#define pr_crit(fmt, ...) \
+	    printk(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
+	#define pr_err(fmt, ...) \
+	    printk(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
+	#define pr_warning(fmt, ...) \
+	    printk(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
+	#define pr_warn pr_warning
+	#define pr_notice(fmt, ...) \
+	    printk(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
+	#define pr_info(fmt, ...) \
+	     printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+
+	/* If you are writing a driver, please use dev_dbg instead */
+	#if defined(CONFIG_DYNAMIC_DEBUG)
+	/* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
+	#define pr_debug(fmt, ...) \
+	    dynamic_pr_debug(fmt, ##__VA_ARGS__)
+	#elif defined(DEBUG)
+	#define pr_debug(fmt, ...) \
+	    printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+	#else
+	#define pr_debug(fmt, ...) \
+	    no_printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__)
+	#endif
+
+这里面，`pr_debug` 是个特例。在 `CONFIG_DYNAMIC_DEBUG` 打开的前提下，`pr_debug` 实现了内核的 [Dynamic debug](https://www.kernel.org/doc/ols/2009/ols2009-pages-39-46.pdf) 特性。
+这个特性使得 `pr_debug` 打印的消息可以在默认情况下不被使能，但通过控制 `/sys/kernel/debug/dynamic_debug/control` 来实现动态的使能。
+详细用法请参考 [Documentation/dynamic-debug-howto.txt](https://github.com/torvalds/linux/blob/master/Documentation/dynamic-debug-howto.txt)。
 
 ### 2.3 proc 文件系统
 
