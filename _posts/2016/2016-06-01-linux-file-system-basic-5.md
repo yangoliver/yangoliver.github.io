@@ -72,6 +72,68 @@ Day3 这段代码示意了如何声明模块的参数，
 
 ### 2.3 proc 文件系统
 
+Linux 驱动和内核模块可以给用户空间提供很多种接口。其中虚拟文件系统是常见的一种方式，例如 proc, sysfs, debugfs 等。
+
+首先 `proc_mkdir` 和 `proc_create` 可以用来创建 proc 文件系统的目录和文件。Day3  代码如下，
+
+	void sfs_proc_init(void)
+	{
+		proc_fs_samplefs = proc_mkdir("fs/samplefs", NULL);
+		if (proc_fs_samplefs == NULL)
+			return;
+
+		proc_create("DebugData", 0, proc_fs_samplefs,
+		    &samplefs_debug_data_proc_fops);
+	}
+
+其中 `proc_mkdir` 返回 `struct proc_dir_entry` 类型的变量，
+
+	static struct proc_dir_entry *proc_fs_samplefs;
+
+而调用 `proc_create` 在 `fs/samplefs` 目录下创建 `DebugData` 时，该调用还须声明 `struct file_operations`，
+
+	static const struct file_operations samplefs_debug_data_proc_fops = {
+		.owner      = THIS_MODULE,
+		.open       = samplefs_debug_data_proc_open,
+		.read       = seq_read,
+		.llseek     = seq_lseek,
+		.release    = single_release,
+	};
+
+`struct file_operations` 的 `.open` 方法如下，
+
+	static int samplefs_debug_data_proc_open(struct inode *inode, struct file *file)
+	{
+		return single_open(file, samplefs_debug_data_proc_show, NULL);
+	}
+
+该函数通过使用 `single_open` 时指定 `show()` 方法来实现了下面的最简函数，
+
+	static int samplefs_debug_data_proc_show(struct seq_file *m, void *v)
+	{
+		seq_puts(m,
+				"Display Debugging Information\n"
+				"-----------------------------\n");
+
+		return 0;
+	}
+
+可以看到，当该 proc 文件每次被打开时，这个 `show()` 方法就会被调用一次。
+
+在模块卸载前，可以调用 `remove_proc_entry` 来删除模块加载时创建的 proc 文件。
+
+	void sfs_proc_clean(void)
+	{
+		if (proc_fs_samplefs == NULL)
+			return;
+
+		remove_proc_entry("DebugData", proc_fs_samplefs);
+		remove_proc_entry("fs/samplefs", NULL);
+	}
+
+[Documentation/filesystems/seq_file.txt](https://github.com/torvalds/linux/blob/master/Documentation/filesystems/seq_file.txt) 里给出了上述相关接口的用法和说明。
+而在其 `The extra-simple version` 这节里，就介绍了用 `single_open` 做最简的 proc 文件显示的实现。
+
 ## 4. 实验
 
 	$ sudo insmod /home/yango/ws/lktm/fs/samplefs/day3/samplefs.ko sample_parm=9000
