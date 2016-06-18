@@ -7,8 +7,6 @@ tags:
 - [file system, driver, crash, kernel, linux, storage]
 ---
 
->本文处于未完成状态，内容可能随时更改。
-
 >本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
 
 * content
@@ -20,7 +18,7 @@ tags:
 
 ## 2. 代码
 
-与 Day1 和 Day2 的代码相比，Day3 的实现是最简单的。下面就其中的知识点做简单介绍。
+与 Day1 和 Day2 的代码相比，Day3 的实现非常简单。下面就其中的知识点做简单介绍。
 
 ### 2.1 模块参数
 
@@ -136,10 +134,15 @@ Linux 驱动和内核模块可以给用户空间提供很多种接口。其中�
 
 ## 4. 实验
 
+
+模块参数可以通过 `insmod` 命令指定，Day3 的源码对模块参数做了检查，超过 `10` 的数值会被设置成 `10`，
+
 	$ sudo insmod /home/yango/ws/lktm/fs/samplefs/day3/samplefs.ko sample_parm=9000
 
 	[96287.090137] init samplefs
 	[96287.090143] sample_parm 9000 too large, reset to 10
+
+另外 `modinfo` 可以给出模块的详细信息，包括源码中描述的模块参数信息，
 
 	$ modinfo /home/yango/ws/lktm/fs/samplefs/day3/samplefs.ko
 	filename:       /home/yango/ws/lktm/fs/samplefs/day3/samplefs.ko
@@ -149,13 +152,52 @@ Linux 驱动和内核模块可以给用户空间提供很多种接口。其中�
 	vermagic:       4.6.0-rc3+ SMP mod_unload modversions
 	parm:           sample_parm:An example parm. Default: x Range: y to z (int)
 
+Day3 的代码演示了在 `/proc/fs/samplefs/DebugData` 打印 debug 信息的方式，
+
+	$ cat /proc/fs/samplefs/DebugData
+	Display Debugging Information
+	-----------------------------
+
+我们利用 [perf-tools 的 kprobe](https://github.com/brendangregg/perf-tools/blob/master/kernel/kprobe) 可以查看该文件的 `open` 的 backtrace，
+
+	$ sudo ./kprobe -s 'p:myprobe single_open'
+	Tracing kprobe myprobe. Ctrl-C to end.
+	             cat-25939 [000] d... 297059.599989: myprobe: (single_open+0x0/0xb0)
+	             cat-25939 [000] d... 297059.600000: <stack trace>
+	 => proc_reg_open
+	 => do_dentry_open
+	 => vfs_open
+	 => path_openat
+	 => do_filp_open
+	 => do_sys_open
+	 => SyS_open
+	 => do_syscall_64
+	 => return_from_SYSCALL_64
+	^C
+	Ending tracing...
+
+也可以查看 `samplefs_debug_data_proc_show` 的 backtrace，
+
+	$ sudo ./kprobe -s 'p:myprobe samplefs_debug_data_proc_show'
+	Tracing kprobe myprobe. Ctrl-C to end.
+	             cat-25930 [000] d... 296975.005899: myprobe: (samplefs_debug_data_proc_show+0x0/0x20 [samplefs])
+	             cat-25930 [000] d... 296975.005915: <stack trace>
+	 => proc_reg_read
+	 => __vfs_read
+	 => vfs_read
+	 => SyS_read
+	 => do_syscall_64
+	 => return_from_SYSCALL_64
+	^C
+	Ending tracing...
+
 ## 5. 延伸阅读
 
 * [Linux File System - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1)
 * [Linux File System - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2)
 * [Linux File System - 3](http://oliveryang.net/2016/02/linux-file-system-basic-3)
 * [Linux File System - 4](http://oliveryang.net/2016/05/linux-file-system-basic-4)
-* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background)
-* [Linux Crash - coding notes](http://oliveryang.net/2015/07/linux-crash-coding-notes/)
 * [在Fedora 20环境下安装系统内核源代码](http://www.cnblogs.com/kuliuheng/p/3976780.html)
-* [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)
+* [Dynamic Debug by Jason Baron](https://www.kernel.org/doc/ols/2009/ols2009-pages-39-46.pdf)
+* [Documentation/dynamic-debug-howto.txt](https://github.com/torvalds/linux/blob/master/Documentation/dynamic-debug-howto.txt)
+* [Documentation/filesystems/seq_file.txt](https://github.com/torvalds/linux/blob/master/Documentation/filesystems/seq_file.txt)
