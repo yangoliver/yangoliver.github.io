@@ -124,3 +124,4 @@ tags:
 ## 4. 延伸阅读
 
 * [谈判的基本概念](http://mp.weixin.qq.com/s?__biz=MzAwODgzMjU4MQ==&mid=406382108&idx=1&sn=f0cd646da75b75c7379a4fd3e0c7c8c0&scene=0#wechat_redirect)
+* [Negotiating with Yourself and Losing: Making Decisions with Competing Internal Preferences](https://www.researchgate.net/publication/272765644_Negotiating_with_Yourself_and_Losing_Making_Decisions_with_Competing_Internal_Preferences?enrichId=rgreq-78cc68e9a0f709c3f6113e6847e2ddf9-XXX&enrichSource=Y292ZXJQYWdlOzI3Mjc2NTY0NDtBUzoyNTg3MjgwNzEwMDQxNjBAMTQzODY5Njk4NzkyMA%3D%3D&el=1_x_3)
