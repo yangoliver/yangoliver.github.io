@@ -209,18 +209,18 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
        unregister_blkdev(sampleblk_major, "sampleblk");
 
-#### 3. 策略函数实现
+### 3. 策略函数实现
 
 理解块设备驱动的策略函数实现，必需先对 Linux IO 栈的关键数据结构有所了解。
 
-##### 3.1 `struct request_queue`
+#### 3.1 `struct request_queue`
 
 块设备驱动待处理的 IO 请求队列结构。如果该队列是利用 `blk_init_queue` 分配和初始化的，则该队里内的 IO 请求( `struct request` ）需要经过 IO 调度器的处理(排序或合并)，由 `blk_queue_bio` 触发。
 
 当块设备策略驱动函数被调用时，`request` 是通过其 `queuelist` 成员链接在 `struct request_queue` 的 `queue_head` 链表里的。
 一个 IO 申请队列上会有很多个 `request` 结构。
 
-##### 3.2 `struct bio`
+#### 3.2 `struct bio`
 
 一个 `bio` 逻辑上代表了上层某个任务对**通用块设备层**发起的 IO 请求。来自不同应用，不同上下文的，不同线程的 IO 请求在块设备驱动层被封装成不同的 `bio` 数据结构。
 
@@ -243,7 +243,7 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
 多个 `bio` 结构可以通过成员 `bi_next` 链接成一个链表。`bio` 链表可以是某个做 IO 的任务 `task_struct` 成员 `bio_list` 所维护的一个链表。也可以是某个 `struct request` 所属的一个链表(下节内容)。
 
-##### 3.3 `struct request`
+#### 3.3 `struct request`
 
 一个 `request` 逻辑上代表了**块设备驱动层**收到的 IO 请求。该 IO 请求的数据在块设备上是**从起始扇区开始的物理连续扇区**组成的。
 
@@ -264,7 +264,7 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
 不论以上哪种情况，通用块设备的代码将会调用块驱动程序注册在 `request_queue` 的 `request_fn` 回调，这个回调里最终会将合并或者排序后的 `request` 交由驱动的底层函数来做 IO 操作。
 
-##### 3.4 策略函数 `request_fn`
+#### 3.4 策略函数 `request_fn`
 
 如前所述，当块设备驱动使用 `blk_run_queue` 来分配和初始化 `request_queue` 时，这个函数也需要驱动指定自定义的策略函数 `request_fn` 和所需的自旋锁 `queue_lock`。
 驱动实现自己的 `request_fn` 时，需要了解如下特点，
