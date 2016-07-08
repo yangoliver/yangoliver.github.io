@@ -17,7 +17,7 @@ tags:
 本文将在 Sampleblk 块设备上创建 Ext4 文件系统，以 Ext4 文件系统为例，用 debugfs 和 crash 来查看 Ext4 文件系统的磁盘格式 (File System Disk Layout)。
 
 在 [Linux File System - 3](http://oliveryang.net/2016/02/linux-file-system-basic-3) 中，Samplefs 只有文件系统内存中的数据结构，而并未规定文件系统磁盘数据格式。
-而 [Linux Block Driver - 1](http://oliveryng.net/2016/04/linux-block-driver-basic-1) 则实现了一个最简的块驱动 Sampleblk。 
+而 [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1) 则实现了一个最简的块驱动 Sampleblk。 
 Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/drivers/block/sampleblk/day1)只有 200 多行，但已经可以在它上面创建各种文件系统。
 由于 Sampleblk 是个 ramdisk，磁盘数据实际上都写在了驱动分配的内核内存里，因此可以很方便的使用 Linux Crash 工具来研究任意一种文件系统的磁盘格式。
 
@@ -32,7 +32,7 @@ Sampleblk [day1 的源码](https://github.com/yangoliver/lktm/tree/master/driver
 * 在 `/dev/sampleblk1` 上创建 Ext4 文件系统。
 * mount 文件系统到 /mnt 上
 
-以上详细过程可以参考 [Linux Block Driver - 1](http://oliveryng.net/2016/04/linux-block-driver-basic-1)。
+以上详细过程可以参考 [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1)。
 
 ### 2.2 调试工具
 
@@ -411,7 +411,7 @@ within the inode table, use offset = index * sb->s_inode_size.</pre>
 
 ## 5. 延伸阅读
 
-* [Linux Block Driver - 1](http://oliveryng.net/2016/04/linux-block-driver-basic-1)
+* [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1)
 * [Linux File System - 1](http://oliveryang.net/2016/01/linux-file-system-basic-1)
 * [Linux File System - 2](http://oliveryang.net/2016/01/linux-file-system-basic-2)
 * [Linux File System - 3](http://oliveryang.net/2016/02/linux-file-system-basic-3)
