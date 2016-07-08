@@ -11,7 +11,7 @@ tags: [driver, crash, kernel, linux, storage]
 * content
 {:toc}
 
-### 1. 背景
+## 1. 背景
 
 Sampleblk 是一个用于学习目的的 Linux 块设备驱动项目。其中 [day1](https://github.com/yangoliver/lktm/tree/master/drivers/block/sampleblk/day1) 的源代码实现了一个最简的块设备驱动，源代码只有 200 多行。
 本文主要围绕这些源代码，讨论 Linux 块设备驱动开发的基本知识。
@@ -21,7 +21,7 @@ Sampleblk 是一个用于学习目的的 Linux 块设备驱动项目。其中 [d
 
 此外，开发 Linux 设备驱动的经典书籍当属 [Device Drivers, Third Edition](http://lwn.net/Kernel/LDD3) 简称 **LDD3**。该书籍是免费的，可以自由下载并按照其规定的 License 重新分发。
 
-### 2. 模块初始化和退出
+## 2. 模块初始化和退出
 
 Linux 驱动模块的开发遵守 Linux 为模块开发者提供的基本框架和 API。LDD3 的 [hello world](https://github.com/martinezjavier/ldd3/blob/master/misc-modules/hello.c) 模块提供了写一个最简内核模块的例子。
 而 Sampleblk 块驱动的模块与之类似，实现了 Linux 内核模块所必需的模块初始化和退出函数，
@@ -31,11 +31,11 @@ Linux 驱动模块的开发遵守 Linux 为模块开发者提供的基本框架�
 
 与 hello world 模块不同的是，Sampleblk 驱动的初始化和退出函数要实现一个块设备驱动程序所必需的基本功能。本节主要针对这部分内容做详细说明。
 
-#### 2.1 sampleblk_init
+### 2.1 sampleblk_init
 
 归纳起来，`sampleblk_init` 函数为完成块设备驱动的初始化，主要做了以下几件事情，
 
-##### 2.1.1 块设备注册
+#### 2.1.1 块设备注册
 
 调用 `register_blkdev` 完成 major number 的分配和注册，函数原型如下，
 
@@ -60,7 +60,7 @@ Sampleblk 驱动通过指定 `major` 为 0，让内核为其分配和注册一�
     if (sampleblk_major < 0)
         return sampleblk_major;
 
-##### 2.1.2 驱动状态数据结构的分配和初始化
+#### 2.1.2 驱动状态数据结构的分配和初始化
 
 通常，所有 Linux 内核驱动都会声明一个数据结构来存储驱动需要频繁访问的状态信息。这里，我们为 Sampleblk 驱动也声明了一个，
 
@@ -93,7 +93,7 @@ Sampleblk 驱动通过指定 `major` 为 0，让内核为其分配和注册一�
 	}
 	sampleblk_dev->minor = minor;
 
-##### 2.1.3 Request Queue 初始化
+#### 2.1.3 Request Queue 初始化
 
 使用 `blk_init_queue` 初始化 Request Queue 需要先声明一个所谓的策略 (Strategy) 回调和保护该 Request Queue 的自旋锁。
 然后将该策略回调的函数指针和自旋锁指针做为参数传递给该函数。
@@ -127,7 +127,7 @@ Linux 内核提供了多种分配和初始化 Request Queue 的方法，
 
 Sampleblk 驱动属于第三种情况。这里再次强调一下：**如果块设备驱动需要使用标准的 IO 调度器对 IO 请求进行合并或者排序时，必需使用 `blk_init_queue` 来分配和初始化 Request Queue**.
 
-##### 2.1.4 块设备操作函数表初始化
+#### 2.1.4 块设备操作函数表初始化
 
 Linux 的块设备操作函数表 `block_device_operations` 定义在 `include/linux/blkdev.h` 文件中。块设备驱动可以通过定义这个操作函数表来实现对标准块设备驱动操作函数的定制。
 如果驱动没有实现这个操作表定义的方法，Linux 块设备层的代码也会按照块设备公共层的代码缺省的行为工作。
@@ -141,7 +141,7 @@ Sampleblk 驱动虽然声明了自己的 `open`, `release`, `ioctl` 方法，但
 	    .ioctl = sampleblk_ioctl,
 	};
 
-##### 2.1.5 磁盘创建和初始化
+#### 2.1.5 磁盘创建和初始化
 
 Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是说，块设备驱动要支持正常的块设备操作，必需分配和初始化一个 `struct gendisk`。
 
@@ -165,7 +165,7 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
     set_capacity(disk, sampleblk_nsects);
     add_disk(disk);
 
-#### 2.2 sampleblk_exit
+### 2.2 sampleblk_exit
 
 这是个 `sampleblk_init` 的逆过程，
 
@@ -209,18 +209,18 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
        unregister_blkdev(sampleblk_major, "sampleblk");
 
-### 3. 策略函数实现
+## 3. 策略函数实现
 
 理解块设备驱动的策略函数实现，必需先对 Linux IO 栈的关键数据结构有所了解。
 
-#### 3.1 `struct request_queue`
+### 3.1 `struct request_queue`
 
 块设备驱动待处理的 IO 请求队列结构。如果该队列是利用 `blk_init_queue` 分配和初始化的，则该队里内的 IO 请求( `struct request` ）需要经过 IO 调度器的处理(排序或合并)，由 `blk_queue_bio` 触发。
 
 当块设备策略驱动函数被调用时，`request` 是通过其 `queuelist` 成员链接在 `struct request_queue` 的 `queue_head` 链表里的。
 一个 IO 申请队列上会有很多个 `request` 结构。
 
-#### 3.2 `struct bio`
+### 3.2 `struct bio`
 
 一个 `bio` 逻辑上代表了上层某个任务对**通用块设备层**发起的 IO 请求。来自不同应用，不同上下文的，不同线程的 IO 请求在块设备驱动层被封装成不同的 `bio` 数据结构。
 
@@ -243,7 +243,7 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
 多个 `bio` 结构可以通过成员 `bi_next` 链接成一个链表。`bio` 链表可以是某个做 IO 的任务 `task_struct` 成员 `bio_list` 所维护的一个链表。也可以是某个 `struct request` 所属的一个链表(下节内容)。
 
-#### 3.3 `struct request`
+### 3.3 `struct request`
 
 一个 `request` 逻辑上代表了**块设备驱动层**收到的 IO 请求。该 IO 请求的数据在块设备上是**从起始扇区开始的物理连续扇区**组成的。
 
@@ -264,7 +264,7 @@ Linux 内核使用 `struct gendisk` 来抽象和表示一个磁盘。也就是�
 
 不论以上哪种情况，通用块设备的代码将会调用块驱动程序注册在 `request_queue` 的 `request_fn` 回调，这个回调里最终会将合并或者排序后的 `request` 交由驱动的底层函数来做 IO 操作。
 
-#### 3.4 策略函数 `request_fn`
+### 3.4 策略函数 `request_fn`
 
 如前所述，当块设备驱动使用 `blk_run_queue` 来分配和初始化 `request_queue` 时，这个函数也需要驱动指定自定义的策略函数 `request_fn` 和所需的自旋锁 `queue_lock`。
 驱动实现自己的 `request_fn` 时，需要了解如下特点，
@@ -357,9 +357,9 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 		return 0;
 	}
 
-### 4. 试验
+## 4. 试验
 
-#### 4.1 编译和加载
+### 4.1 编译和加载
 
 * 首先，需要下载内核源代码，编译和安装内核，用新内核启动。
 
@@ -402,7 +402,7 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 
 注：关于 Linux Crash 的使用，请参考延伸阅读。
 
-#### 4.2 模块引用问题解决
+### 4.2 模块引用问题解决
 
 问题：把驱动的 `sampleblk_request` 函数实现全部删除，重新编译和加载内核模块。然后用 rmmod 卸载模块，卸载会失败, 内核报告模块正在被使用。
 
@@ -459,7 +459,7 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 
 重新把删除的 `sampleblk_request` 函数源码加回去，则这个问题就不会存在。因为 udevd 可以很快结束对 sampleblk 设备的访问。
 
-#### 4.3 创建文件系统
+### 4.3 创建文件系统
 
 虽然 Sampleblk 块驱动只有 200 行源码，但已经可以当作 ramdisk 来使用，在其上可以创建文件系统，
 
@@ -472,7 +472,7 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 
 至此，sampleblk 做为 ramdisk 的最基本功能已经实验完毕。
 
-### 5. 延伸阅读
+## 5. 延伸阅读
 
 * [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
 * [Linux Crash - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
