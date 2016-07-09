@@ -35,20 +35,32 @@ How can I tell perf to find its symbols as well?
 
 Below is the error messages what I got,
 
-	$ sudo perf record -a -g sleep 1
+	$ perf record -a -g sleep 1
 	[ perf record: Woken up 3 times to write data ]
 	[sampleblk] with build id 2584800c6deef34fb775fd4272b52cfe084104f1 not found, continuing without symbols
 	[ perf record: Captured and wrote 0.873 MB perf.data (4170 samples) ]
 
 Here are the steps to fix the problem,
 
-	$ sudo perf buildid-list
-	c7e7169b12d54db66ebe1c7f256e60dc3e9d4ee5 /lib/modules/4.6.0-rc3+/build/vmlinux
-	2584800c6deef34fb775fd4272b52cfe084104f1 [sampleblk] >>> Indicates the module need to be installed?
-	b9d896cbaf62770a01594bd28aeba43d31aa440b /lib/modules/4.6.0-rc3+/kernel/fs/ext4/ext4.ko
+    $ perf buildid-list
+	c7e7169b12d54db66ebe1c7f256e60dc3e9d4ee5 /lib/modules/4.6.0/build/vmlinux
+	2584800c6deef34fb775fd4272b52cfe084104f1 [sampleblk] >>> Problem?
+	b9d896cbaf62770a01594bd28aeba43d31aa440b /lib/modules/4.6.0/kernel/fs/ext4/ext4.ko
 
-	$ sudo cp ~/ws/lktm/drivers/block/sampleblk/day1/sampleblk.ko /lib/modules/4.6.0-rc3+/kernel/drivers/block/
-	$ sudo depmod -a
+	$ cp ./sampleblk.ko /lib/modules/4.6.0/kernel/drivers/block/
+	$ depmod -a
+
+#### 2.1.2 Perf probe external module symbols
+
+List, add a kernel probe for a module, and record, report the profiling the results
+
+    $ perf probe -F -m /lib/modules/4.6.0/kernel/drivers/block/sampleblk.ko
+
+	$ perf probe -m /lib/modules/4.6.0/kernel/drivers/block/sampleblk.ko -a sampleblk_request
+
+	$ perf record -e probe:sampleblk_request -aRg sleep 1
+
+	$ perf report
 
 ## 3. References
 
