@@ -62,6 +62,12 @@ List, add a kernel probe for a module, and record, report the profiling the resu
 
 	$ perf report
 
+#### 2.1.3 Show tracepoints in a kernel subsystem
+
+List all kernel block layer tracepoints,
+
+	$ sudo perf list subsys block:*
+
 ## 3. References
 
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
