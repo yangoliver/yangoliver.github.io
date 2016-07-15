@@ -51,9 +51,51 @@ tags: [driver, crash, kernel, linux, storage]
   [perf-tools 脚本](https://github.com/brendangregg/perf-tools) 是 Brendan Gregg 写的基于 ftrace 和 perf 的工具脚本。全部由 bash 和 awk 写成，无需安装，非常简单易用。
   [Ftrace: The hidden light switch](http://lwn.net/Articles/608497) 这篇文章是 Brendan Gregg 给 LWN 的投稿，推荐阅读。 
 
-## 3. 实验
+## 3. 实验与分析
 
-## 4. 延伸阅读
+### 3.1 文件顺序写测试
+
+如一般 Linux 测试工具支持命令行参数外，fio 也支持 job file 的方式定义测试参数。本次测试将在 /dev/sampleblk1 上 mount 的 Ext4 文件系统上进行顺序 IO 写测试。
+其中 fio 将启动两个测试进程，同时对 /mnt/test 文件进行写操作。
+
+	$ sudo fio ./fs_seq_write_sync_001
+	job1: (g=0): rw=write, bs=4K-4K/4K-4K/4K-4K, ioengine=sync, iodepth=1
+	job2: (g=0): rw=write, bs=4K-4K/4K-4K/4K-4K, ioengine=sync, iodepth=1
+	fio-2.1.10
+	Starting 2 processes
+	Jobs: 2 (f=2): [WW] [0.4% done] [0KB/1376MB/0KB /s] [0/352K/0 iops] [eta 51m:05s]
+	...[snipped]...
+
+上面测试中使用的 [fs_seq_write_sync_001](https://github.com/yangoliver/mytools/blob/master/test/fio/fs_seq_write_sync_001) job file 内容如下，
+
+	; -- start job file --
+	[global]            ; global shared parameters
+	filename=/mnt/test  ; location of file in file system
+	rw=write            ; sequential write only, no read
+	ioengine=sync       ; synchronized, write(2) system call
+	bs=,4k              ; fio iounit size, write=4k, read and trim are default(4k)
+	iodepth=1           ; how many in-flight io unit
+	size=2M             ; total size of file io in one job
+	loops=1000000       ; number of iterations of one job
+
+	[job1]              ; job1 specific parameters
+
+	[job2]              ; job2 specific parameters
+	; -- end job file --
+
+### 3.2 系统调用 IO Pattern
+
+TBD
+
+### 3.3 块设备层 IO Pattern
+
+TBD
+
+## 4. blktrace 详解
+
+TBD
+
+## 5. 延伸阅读
 
 * [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1)
 * [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
