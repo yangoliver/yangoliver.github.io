@@ -42,7 +42,7 @@ Below is the error messages what I got,
 
 Here are the steps to fix the problem,
 
-    $ perf buildid-list
+	$ perf buildid-list
 	c7e7169b12d54db66ebe1c7f256e60dc3e9d4ee5 /lib/modules/4.6.0/build/vmlinux
 	2584800c6deef34fb775fd4272b52cfe084104f1 [sampleblk] >>> Problem?
 	b9d896cbaf62770a01594bd28aeba43d31aa440b /lib/modules/4.6.0/kernel/fs/ext4/ext4.ko
@@ -54,7 +54,7 @@ Here are the steps to fix the problem,
 
 List, add a kernel probe for a module, and record, report the profiling the results
 
-    $ perf probe -F -m /lib/modules/4.6.0/kernel/drivers/block/sampleblk.ko
+	$ perf probe -F -m /lib/modules/4.6.0/kernel/drivers/block/sampleblk.ko
 
 	$ perf probe -m /lib/modules/4.6.0/kernel/drivers/block/sampleblk.ko -a sampleblk_request
 
@@ -76,7 +76,7 @@ List all probe points in kernel,
 
 List all probe points in a module,
 
-    $ perf probe -F -m ext4
+	$ perf probe -F -m ext4
 
 All of above probe points could be also used by ftrace and other kprobe based tools. By default, all kernel and module APIs could be listed as probe points.
 
