@@ -55,18 +55,8 @@ tags: [driver, crash, kernel, linux, storage]
 
 ### 3.1 文件顺序写测试
 
-如一般 Linux 测试工具支持命令行参数外，fio 也支持 job file 的方式定义测试参数。本次测试将在 /dev/sampleblk1 上 mount 的 Ext4 文件系统上进行顺序 IO 写测试。
-其中 fio 将启动两个测试进程，同时对 /mnt/test 文件进行写操作。
-
-	$ sudo fio ./fs_seq_write_sync_001
-	job1: (g=0): rw=write, bs=4K-4K/4K-4K/4K-4K, ioengine=sync, iodepth=1
-	job2: (g=0): rw=write, bs=4K-4K/4K-4K/4K-4K, ioengine=sync, iodepth=1
-	fio-2.1.10
-	Starting 2 processes
-	Jobs: 2 (f=2): [WW] [0.4% done] [0KB/1376MB/0KB /s] [0/352K/0 iops] [eta 51m:05s]
-	...[snipped]...
-
-上面测试中使用的 [fs_seq_write_sync_001](https://github.com/yangoliver/mytools/blob/master/test/fio/fs_seq_write_sync_001) job file 内容如下，
+如一般 Linux 测试工具支持命令行参数外，fio 也支持 job file 的方式定义测试参数。
+本次实验中使用的 [fs_seq_write_sync_001](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab1/fs_seq_write_sync_001) job file 内容如下，
 
 	; -- start job file --
 	[global]            ; global shared parameters
@@ -83,17 +73,76 @@ tags: [driver, crash, kernel, linux, storage]
 	[job2]              ; job2 specific parameters
 	; -- end job file --
 
-### 3.2 系统调用 IO Pattern
+本次实验将在 /dev/sampleblk1 上 mount 的 Ext4 文件系统上进行顺序 IO 写测试。其中 fio 将启动两个测试进程，同时对 /mnt/test 文件进行写操作。
+
+	$ sudo fio ./fs_seq_write_sync_001
+	job1: (g=0): rw=write, bs=4K-4K/4K-4K/4K-4K, ioengine=sync, iodepth=1
+	job2: (g=0): rw=write, bs=4K-4K/4K-4K/4K-4K, ioengine=sync, iodepth=1
+	fio-2.1.10
+	Starting 2 processes
+	Jobs: 2 (f=2): [WW] [0.4% done] [0KB/1376MB/0KB /s] [0/352K/0 iops] [eta 51m:05s]
+	...[snipped]...
+
+从 fio 的输出中可以看到 fio 启动了两个 job，并且按照 job file 规定的设置开始做文件系统写测试。
+
+### 3.2 文件 IO Pattern 分析
+
+#### 3.2.1 使用 strace
+
+首先，我们可以先了解一下 fio 测试在系统调用层面看的 IO pattern 是如何的。Linux 的 `strace` 工具是跟踪应用使用系统调用的常用工具。
+
+在 fio 运行过程中，我们获得 fio 其中一个 job 的 pid 之后，运行了如下的 `strace` 命令，
+
+	$ sudo strace -ttt -T -e trace=desc -C -o ~/strace_fio_fs_seq_write_sync_001.log -p 94302
+
+[`strace` man page](http://linux.die.net/man/1/strace) 给出了命令的详细用法，这里只对本小节里用到的各个选项做简单的说明，
+
+- `-ttt` 打印出每个系统调用发生的起始时间戳。
+- `-T` 则给出了每个系统调用的开销。
+- `-e trace=desc` 只记录文件描述符相关系统调用。这样可过滤掉无关信息，因为本实验是文件顺序写测试。
+- `-C` 则在 `strace` 退出前可以给出被跟踪进程的系统调用在 `strace` 运行期间使用比例和次数的总结。
+- `-o` 则指定把 `strace` 的跟踪结果输出到文件中去。
+
+#### 3.2.2 分析 strace 日志
+
+根据 strace 的跟踪日志，我们可对本次 fio 测试的 IO pattern 做一个简单的分析。
+
+	1466326568.892873 open("/mnt/test", O_RDWR|O_CREAT, 0600) = 3 <0.000013>
+	1466326568.892904 fadvise64(3, 0, 2097152, POSIX_FADV_DONTNEED) = 0 <0.000813>
+	1466326568.893731 fadvise64(3, 0, 2097152, POSIX_FADV_SEQUENTIAL) = 0 <0.000004>
+	1466326568.893744 write(3, "\0\260\35\0\0\0\0\0\0\320\37\0\0\0\0\0\0\300\35\0\0\0\0\0\0\340\37\0\0\0\0\0"..., 4096) = 4096 <0.000020>
+
+	[...snipped...]
+
+	1466326568.901551 write(3, "\0p\27\0\0\0\0\0\0\320\37\0\0\0\0\0\0\300\33\0\0\0\0\0\0\340\37\0\0\0\0\0"..., 4096) = 4096 <0.000006>
+	1466326568.901566 close(3)              = 0 <0.000008>
+
+	[...snipped...]
+
+	% time     seconds  usecs/call     calls    errors syscall
+	------ ----------- ----------- --------- --------- ----------------
+	 72.55    0.192610           2     84992           write
+	 27.04    0.071788         216       332           fadvise64
+	  0.28    0.000732           4       166           open
+	  0.13    0.000355           2       166           close
+	------ ----------- ----------- --------- --------- ----------------
+	100.00    0.265485                 85656           total
+
+### 3.3 深入理解文件 IO
 
 TBD
 
-### 3.3 块设备层 IO Pattern
+#### 3.3.1 使用 ftrace
 
-TBD
+#### 3.3.2 open
 
-## 4. blktrace 详解
+#### 3.3.3 fadvise64
 
-TBD
+#### 3.3.4 write
+
+#### 3.3.5 close
+
+## 4. 小结
 
 ## 5. 延伸阅读
 
