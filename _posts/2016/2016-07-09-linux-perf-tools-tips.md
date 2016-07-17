@@ -68,6 +68,18 @@ List all kernel block layer tracepoints,
 
 	$ sudo perf list subsys block:*
 
+#### 2.1.4 Show kernel & module available probe points
+
+List all probe points in kernel,
+
+	$ perf probe -F
+
+List all probe points in a module,
+
+    $ perf probe -F -m ext4
+
+All of above probe points could be also used by ftrace and other kprobe based tools. By default, all kernel and module APIs could be listed as probe points.
+
 ## 3. References
 
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
