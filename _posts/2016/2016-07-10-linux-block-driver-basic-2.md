@@ -106,18 +106,19 @@ tags: [driver, crash, kernel, linux, storage]
 #### 3.2.2 分析 strace 日志
 
 根据 strace 的跟踪日志，我们可对本次 fio 测试的 IO pattern 做一个简单的分析。
+详细日志信息请访问[这里](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab1/strace_fio_fs_seq_write_sync_001.log)，下面只给出其中的关键部分，
 
 	1466326568.892873 open("/mnt/test", O_RDWR|O_CREAT, 0600) = 3 <0.000013>
 	1466326568.892904 fadvise64(3, 0, 2097152, POSIX_FADV_DONTNEED) = 0 <0.000813>
 	1466326568.893731 fadvise64(3, 0, 2097152, POSIX_FADV_SEQUENTIAL) = 0 <0.000004>
 	1466326568.893744 write(3, "\0\260\35\0\0\0\0\0\0\320\37\0\0\0\0\0\0\300\35\0\0\0\0\0\0\340\37\0\0\0\0\0"..., 4096) = 4096 <0.000020>
 
-	[...snipped...]
+	[...snipped (512 write system calls)...]
 
 	1466326568.901551 write(3, "\0p\27\0\0\0\0\0\0\320\37\0\0\0\0\0\0\300\33\0\0\0\0\0\0\340\37\0\0\0\0\0"..., 4096) = 4096 <0.000006>
 	1466326568.901566 close(3)              = 0 <0.000008>
 
-	[...snipped...]
+	[...snipped (many iterations of open, fadvise64, write, close)...]
 
 	% time     seconds  usecs/call     calls    errors syscall
 	------ ----------- ----------- --------- --------- ----------------
@@ -127,6 +128,26 @@ tags: [driver, crash, kernel, linux, storage]
 	  0.13    0.000355           2       166           close
 	------ ----------- ----------- --------- --------- ----------------
 	100.00    0.265485                 85656           total
+
+根据 `strace` 日志，我们可以对 fio 顺序文件写测试的详细步骤做出如下分析，
+
+1. 调用 `open` 在 Ext4 上以读写方式打开 /mnt/test 文件，若不存在则创建一个。
+
+   因为 fio job file 指定了文件名，filename=/mnt/test
+2. 调用 `fadvise64`，使用 POSIX_FADV_DONTNEED 丢弃 /mnt/test 在 page cache 里的数据。
+
+   fio 做文件 IO 前，清除 /mnt/test 文件的 page cache，可以让测试避免受到 page cache 影响。
+
+3. 调用 `fadvise64`，使用 POSIX_FADV_SEQUENTIAL 提示内核应用要对 /mnt/test 做顺序 IO 操作。
+
+   这是因为 fio job file 定义了 rw=write，因此这是顺序写测试。
+4. 调用 `write` 对 /mnt/test 写入 4K 大小的数据。一共 write 512 次，共 2M 数据。
+
+   这是因为 fio job file 定义了 ioengine=sync，bs=,4k，size=2M。
+
+5. 调用 `close` 完成一次 /mnt/test 顺序写测试。重复上述过程，反复迭代。
+
+   fio job file 定义了 loops=1000000
 
 ### 3.3 深入理解文件 IO
 
