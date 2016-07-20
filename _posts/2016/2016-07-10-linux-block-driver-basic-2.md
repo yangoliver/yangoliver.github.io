@@ -129,31 +129,55 @@ tags: [driver, crash, kernel, linux, storage]
 	------ ----------- ----------- --------- --------- ----------------
 	100.00    0.265485                 85656           total
 
-根据 `strace` 日志，我们可以对 fio 顺序文件写测试的详细步骤做出如下分析，
+根据 `strace` 日志，我们就可以轻松分析这个 fio 测试的 IO Pattern 是如何的了，
 
-1. 调用 `open` 在 Ext4 上以读写方式打开 /mnt/test 文件，若不存在则创建一个。
+1. 首先调用 `open` 在 Ext4 上以读写方式打开 /mnt/test 文件，若不存在则创建一个。
 
    因为 fio job file 指定了文件名，filename=/mnt/test
-2. 调用 `fadvise64`，使用 POSIX_FADV_DONTNEED 丢弃 /mnt/test 在 page cache 里的数据。
+2. 调用 `fadvise64`，使用 `POSIX_FADV_DONTNEED` 把 /mnt/test 在 page cache 里的数据 flush 到磁盘。
 
    fio 做文件 IO 前，清除 /mnt/test 文件的 page cache，可以让测试避免受到 page cache 影响。
 
-3. 调用 `fadvise64`，使用 POSIX_FADV_SEQUENTIAL 提示内核应用要对 /mnt/test 做顺序 IO 操作。
+3. 调用 `fadvise64`，使用 `POSIX_FADV_SEQUENTIAL` 提示内核应用要对 /mnt/test 做顺序 IO 操作。
 
    这是因为 fio job file 定义了 rw=write，因此这是顺序写测试。
 4. 调用 `write` 对 /mnt/test 写入 4K 大小的数据。一共 write 512 次，共 2M 数据。
 
    这是因为 fio job file 定义了 ioengine=sync，bs=,4k，size=2M。
 
-5. 调用 `close` 完成一次 /mnt/test 顺序写测试。重复上述过程，反复迭代。
+5. 最后，调用 `close` 完成一次 /mnt/test 顺序写测试。重复上述过程，反复迭代。
 
    fio job file 定义了 loops=1000000
 
+另外，根据 `strace` 日志的系统调用时间和调用次数的总结，我们可以得出如下结论，
+
+- 测试中 `write` 调用次数最多，虽然单次 `write` 只有几微妙，但积累总时间最高。
+- 测试中 `fadvise64` 调用次数比 `write` 少，但 `POSIX_FADV_DONTNEED` 带来的 flush page cache 的操作可以达到几百微秒。
+
 ### 3.3 深入理解文件 IO
 
-TBD
+为什么 `write` 和 `fadvise64` 调用的执行时间差异如此之大？如果对操作系统 page cache 的工作原理有基本概念的话，这个问题并不难理解，
 
-#### 3.3.1 使用 ftrace
+- Page cache 加速了文件读写操作
+
+  一般而言，`write` 系统调用虽然是同步 IO，但 IO 数据是写入 page cache 就立即返回的，因此实际开销是写内存操作，而且只写入 page cache 里，不会对块设备发起 IO 操作。
+  应用如果需要保证数据写到磁盘上，必需在 `write` 调用之后调用 `fsync` 来保证文件数据在 `fsync` 返回前把数据从 page cache 甚至硬盘的 cache 写入到磁盘介质。
+
+- Flush page cache 会带来额外的开销
+
+  虽然 page cache 加速了文件系统的读写操作，但一旦需要 flush page cache，将集中产生大量的磁盘 IO 操作。磁盘 IO 操作比写 page cache 通畅要慢很多。因此，flush page cache 非常费时而且影响性能。
+
+由于 Linux 内核提供了强大的动态追踪 (Dynamic Trace) 能力，现在我们可以通过内核的 trace 工具来了解 `write` 和 `fadvise64` 调用的执行时间差异。
+
+#### 3.3.1 使用 Ftrace
+
+Linux `strace` 只能追踪系统调用界面这层的信息。要追踪系统调用内部的机制，就需要借助 Linux 内核的 trace 工具了。Ftrace 就是非常简单易用的追踪系统调用内部实现的工具。
+Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt) 就是极好的入门材料。
+
+不过，Ftrace 的 UI 是基于 linux debugfs 的。操作起来有些繁琐。
+因此，我们用 Brendan Gregg 写的 [funcgraph](https://github.com/brendangregg/perf-tools/blob/master/examples/funcgraph_example.txt) 来简化我们对 Ftrace 的使用。
+这个工具是基于 Ftrace 的用 bash 和 awk 写的脚本，非常容易理解和使用。
+关于 Brendan Gregg 的 perf-tools 的使用，请阅读 [Ftrace: The hidden light switch](http://lwn.net/Articles/608497) 这篇文章。
 
 #### 3.3.2 open
 
@@ -168,7 +192,6 @@ TBD
 ## 5. 延伸阅读
 
 * [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1)
-* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
-* [Linux Crash - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
 * [Device Drivers, Third Edition](http://lwn.net/Kernel/LDD3)
+* [Ftrace: Function Tracer](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt)
