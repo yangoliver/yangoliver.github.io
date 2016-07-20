@@ -151,6 +151,7 @@ tags: [driver, crash, kernel, linux, storage]
 
 另外，根据 `strace` 日志的系统调用时间和调用次数的总结，我们可以得出如下结论，
 
+- 系统调用 `open`，`write` 和 `close` 的开销非常小，只有几微秒。
 - 测试中 `write` 调用次数最多，虽然单次 `write` 只有几微妙，但积累总时间最高。
 - 测试中 `fadvise64` 调用次数比 `write` 少，但 `POSIX_FADV_DONTNEED` 带来的 flush page cache 的操作可以达到几百微秒。
 
@@ -180,6 +181,19 @@ Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torval
 关于 Brendan Gregg 的 perf-tools 的使用，请阅读 [Ftrace: The hidden light switch](http://lwn.net/Articles/608497) 这篇文章。
 
 #### 3.3.2 open
+
+运行 fio 测试时，用 `funcgraph` 可以获取 `open` 系统调用的内核函数的函数图 (function graph)，
+
+	$ sudo ./funcgraph -d 1 -p 95069 SyS_open
+
+详细的 `open` 系统调用函数图日志可以查看 [这里](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab1/funcgraph_open_fs_seq_write_sync_001.log)。
+
+仔细察看函数图日志就会发现，`open` 系统调用并没有调用块设备驱动的代码，而只做了如下处理，
+
+- 首先，VFS 层的 `open` 系统调用代码为进程分配 fd，根据文件名查找元数据，为文件分配和初始化 `struct file`。在这一层的元数据查找、读取，以及文件的打开都会调用到底层具体文件系统的回调函数协助完成。
+  最后在系统调用返回前，把 fd，和 `struct file` 装配到进程的 `struct task_struct` 上。
+- Ext4 注册在 VFS 层的入口函数被上层调用，为上层查找元数据 (ext4_lookup)，创建文件 (ext4_create)，打开文件 (ext4_file_open) 提供服务。
+  本例中，由于文件已经被创建，而且元数据已经缓存在内存中，因此，只涉及到 ext4_file_open 的代码。
 
 #### 3.3.3 fadvise64
 
