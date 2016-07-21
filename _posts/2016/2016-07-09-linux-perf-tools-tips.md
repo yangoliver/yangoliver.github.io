@@ -80,7 +80,38 @@ List all probe points in a module,
 
 All of above probe points could be also used by ftrace and other kprobe based tools. By default, all kernel and module APIs could be listed as probe points.
 
+### 2.2 SystemTap
+
+#### 2.1 How to run systemtap with customized kernel
+
+In short, we could rebuild systemtap and kernel to make it work together. Please refer to [This article](https://www.ibm.com/support/knowledgecenter/linuxonibm/liaai.systemTap/liaaisystapcustom.htm).
+
+#### 2.2 Where can I find systemtap example scripts?
+
+For systemtap example scripts, there are two ways,
+
+- Visit [public example index page](https://sourceware.org/systemtap/examples)
+- Get it via local package installation
+
+	  $ sudo yum install -y systemtap
+	  $ cd /usr/share/doc/systemtap-client-2.8/examples
+
+Reading example scripts is the best way to learn systemtap. [SystemTap Beginners Guide](https://www.sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html) is a good reference.
+
+#### 2.3 How to run pre-built systemtap module directly?
+
+First, build the systemtap script by running `stap -k` option,
+
+	$ sudo stap -k iostats.stp
+	...[snipped]...
+	Keeping temporary directory "/tmp/stapKI1aZ3"
+
+Then, find the module from temporary directory, and run it by `staprun`,
+
+	$ sudo staprun /tmp/stapKI1aZ3/stap_13235.ko
+
 ## 3. References
 
+* [SystemTap Beginners Guide](https://www.sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
 * [perf-tools github](https://github.com/brendangregg/perf-tools)
