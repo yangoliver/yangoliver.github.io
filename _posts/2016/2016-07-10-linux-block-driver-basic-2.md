@@ -3,7 +3,7 @@ layout: post
 title: Linux Block Driver - 2
 description: Linux 块设备驱动系列文章。通过开发简单的块设备驱动，掌握 Linux 块设备层的基本概念。
 categories: [Chinese, Software, Hardware]
-tags: [driver, crash, kernel, linux, storage]
+tags: [driver, perf, crash, kernel, linux, storage]
 ---
 
 > 文本处于写作状态，内容随时可能有更改。
@@ -155,6 +155,42 @@ tags: [driver, crash, kernel, linux, storage]
 - 测试中 `write` 调用次数最多，虽然单次 `write` 只有几微妙，但积累总时间最高。
 - 测试中 `fadvise64` 调用次数比 `write` 少，但 `POSIX_FADV_DONTNEED` 带来的 flush page cache 的操作可以达到几百微秒。
 
+#### 3.2.3 使用 SystemTap
+
+使用 `strace` 虽然可以拿到单次系统调用读写的字节数，但对大量的 IO 请求来说，不经过额外的脚本处理，很难得到一个总体的认识和分析。
+但是，我们可以通过编写 SystemTap 脚本来对这个测试的 IO 请求大小做一个宏观的统计，并且使用直方图来直观的呈现这个测试的文件 IO 尺寸分布。
+
+启动 fio 测试后，只需要运行如下命令，即可收集到指定 PID 的文件 IO 的统计信息，
+
+	$ sudo ./fiohist.stp 94302
+	starting probe
+	^C
+	IO Summary:
+
+	                                       read     read             write    write
+	            name     open     read   KB tot    B avg    write   KB tot    B avg
+	             fio     7917        0        0        0  3698312 14793248     4096
+
+	Write I/O size (bytes):
+
+	process name: fio
+	value |-------------------------------------------------- count
+	 1024 |                                                         0
+	 2048 |                                                         0
+	 4096 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  3698312
+	 8192 |                                                         0
+	16384 |                                                         0
+
+可以看到，直方图和统计数据显示，整个跟踪数据收集期间都是 4K 字节的 write 写操作，而没有任何读操作。而且，在此期间，没有任何 `read` IO 操作。
+同时，由于 `write` 系统调用参数并不提供文件内的偏移量，所以我们无法得知文件的写操作是否是随机还是顺序的。
+
+但是，如果是文件的随机读写 IO，应该可以在 `strace` 时观测到 `lseek` + `read` 或 `write` 调用。这也从侧面可以推测测试是顺序写 IO。
+此外，`pread` 和 `pwrite` 系统调用提供了文件内的偏移量，有这个偏移量的数据，即可根据时间轴画出 IO 文件内偏移的 [Heatmap](https://en.wikipedia.org/wiki/Heat_map)。
+通过该图，即可直观地判断是否是随机还是顺序 IO 了。
+
+本例中的 SystemTap 脚本 [fiohist.stp](https://github.com/yangoliver/mytools/blob/master/debug/systemtap/fiohist.stp) 是作者个人为分析本测试所编写。
+详细代码请参考文中给出的源码链接。此外，在 [Linux Perf Tools Tips](http://oliveryang.net/2016/07/linux-perf-tools-tips/) 这篇文章里收录了关于在自编译内核上运行 SystemTap 脚本的一些常见问题。
+
 ### 3.3 深入理解文件 IO
 
 为什么 `write` 和 `fadvise64` 调用的执行时间差异如此之大？如果对操作系统 page cache 的工作原理有基本概念的话，这个问题并不难理解，
@@ -206,6 +242,7 @@ Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torval
 ## 5. 延伸阅读
 
 * [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1)
+* [Linux Perf Tools Tips](http://oliveryang.net/2016/07/linux-perf-tools-tips/)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
 * [Device Drivers, Third Edition](http://lwn.net/Kernel/LDD3)
 * [Ftrace: Function Tracer](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt)
