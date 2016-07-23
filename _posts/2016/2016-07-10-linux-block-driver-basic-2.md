@@ -202,7 +202,7 @@ tags: [driver, perf, crash, kernel, linux, storage]
 
 - Flush page cache 会带来额外的开销
 
-  虽然 page cache 加速了文件系统的读写操作，但一旦需要 flush page cache，将集中产生大量的磁盘 IO 操作。磁盘 IO 操作比写 page cache 通畅要慢很多。因此，flush page cache 非常费时而且影响性能。
+  虽然 page cache 加速了文件系统的读写操作，但一旦需要 flush page cache，将集中产生大量的磁盘 IO 操作。磁盘 IO 操作比写 page cache 要慢很多。因此，flush page cache 非常费时而且影响性能。
 
 由于 Linux 内核提供了强大的动态追踪 (Dynamic Trace) 能力，现在我们可以通过内核的 trace 工具来了解 `write` 和 `fadvise64` 调用的执行时间差异。
 
