@@ -233,11 +233,31 @@ Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torval
 
 #### 3.3.3 fadvise64
 
+用 `funcgraph` 也可以获取 `fadvise64` 系统调用的内核函数的函数图 (function graph)，
+
+	$ sudo ./funcgraph -d 1 -p 95069 SyS_fadvise64
+
+详细的 `fadvise64` 系统调用的跟踪日志请查看[这里](https://raw.githubusercontent.com/yangoliver/lktm/master/drivers/block/sampleblk/labs/lab1/funcgraph_fadvise_fs_seq_write_sync_001.log)。
+
 #### 3.3.4 write
+
+用 `funcgraph` 也可以获取 `write` 系统调用的内核函数的函数图 (function graph)，
+
+	$ sudo ./funcgraph -d 1 -p 95069 SyS_write
+
+详细的 `write` 系统调用的跟踪日志请查看[这里](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab1/funcgraph_write_fs_seq_write_sync_001.log)。
 
 #### 3.3.5 close
 
+用 `funcgraph` 也可以获取 `close` 系统调用的内核函数的函数图 (function graph)，
+
+	$ sudo ./funcgraph -d 1 -p 95069 SyS_close
+
+详细的 `close` 系统调用的跟踪日志请查看[这里](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab1/funcgraph_close_fs_seq_write_sync_001.log)。
+
 ## 4. 小结
+
+TBD
 
 ## 5. 延伸阅读
 
