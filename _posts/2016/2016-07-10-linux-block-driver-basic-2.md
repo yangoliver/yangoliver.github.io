@@ -80,10 +80,50 @@ tags: [driver, perf, crash, kernel, linux, storage]
 	job2: (g=0): rw=write, bs=4K-4K/4K-4K/4K-4K, ioengine=sync, iodepth=1
 	fio-2.1.10
 	Starting 2 processes
-	Jobs: 2 (f=2): [WW] [0.4% done] [0KB/1376MB/0KB /s] [0/352K/0 iops] [eta 51m:05s]
+	^Cbs: 2 (f=2): [WW] [58.1% done] [0KB/2208MB/0KB /s] [0/565K/0 iops] [eta 13m:27s]
+	...[snipped]...
+	fio: terminating on signal 2
+
+	job1: (groupid=0, jobs=1): err= 0: pid=22977: Thu Jul 21 22:10:28 2016
+	  write: io=1134.8GB, bw=1038.2MB/s, iops=265983, runt=1118309msec
+	    clat (usec): min=0, max=66777, avg= 1.63, stdev=21.57
+	     lat (usec): min=0, max=66777, avg= 1.68, stdev=21.89
+	    clat percentiles (usec):
+	     |  1.00th=[    0],  5.00th=[    1], 10.00th=[    1], 20.00th=[    1],
+	     | 30.00th=[    1], 40.00th=[    1], 50.00th=[    2], 60.00th=[    2],
+	     | 70.00th=[    2], 80.00th=[    2], 90.00th=[    2], 95.00th=[    3],
+	     | 99.00th=[    4], 99.50th=[    7], 99.90th=[   18], 99.95th=[   25],
+	     | 99.99th=[  111]
+	    lat (usec) : 2=49.79%, 4=49.08%, 10=0.71%, 20=0.34%, 50=0.06%
+	    lat (usec) : 100=0.01%, 250=0.01%, 500=0.01%, 750=0.01%, 1000=0.01%
+	    lat (msec) : 2=0.01%, 4=0.01%, 10=0.01%, 20=0.01%, 50=0.01%
+	    lat (msec) : 100=0.01%
+	  cpu          : usr=8.44%, sys=69.65%, ctx=1935732, majf=0, minf=9
+	  IO depths    : 1=100.0%, 2=0.0%, 4=0.0%, 8=0.0%, 16=0.0%, 32=0.0%, >=64=0.0%
+	     submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+	     complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, >=64=0.0%
+	     issued    : total=r=0/w=297451591/d=0, short=r=0/w=0/d=0
+	     latency   : target=0, window=0, percentile=100.00%, depth=1
+	job2: (groupid=0, jobs=1): err= 0: pid=22978: Thu Jul 21 22:10:28 2016
+	  write: io=1137.4GB, bw=1041.5MB/s, iops=266597, runt=1118309msec
+	    clat (usec): min=0, max=62132, avg= 1.63, stdev=21.35
+	     lat (usec): min=0, max=62132, avg= 1.68, stdev=21.82
+
 	...[snipped]...
 
+	Run status group 0 (all jobs):
+	  WRITE: io=2271.2GB, aggrb=2080.5MB/s, minb=1038.2MB/s, maxb=1041.5MB/s, mint=1118309msec, maxt=1118309msec
+
+	Disk stats (read/write):
+	  sda: ios=0/4243062, merge=0/88, ticks=0/1233576, in_queue=1232723, util=37.65%
+
 从 fio 的输出中可以看到 fio 启动了两个 job，并且按照 job file 规定的设置开始做文件系统写测试。
+在测试进行到 58.1%  的时候，我们中断程序，得到了上述的输出。从输出中我们得出如下结论，
+
+- 两个线程总共的写的吞吐量为 2080.5MB/s，在磁盘上的 IPOS 是 4243062。
+- 每个线程的平局延迟为 1.68us，方差是 21.8 左右。
+- 磁盘 IO merge 很少，磁盘的利用率也只有 37.65%。
+- 线程所在处理器的时间大部分在内核态：69.65%，用户态时间只有 8.44% 。
 
 ### 3.2 文件 IO Pattern 分析
 
