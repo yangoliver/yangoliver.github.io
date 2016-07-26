@@ -80,13 +80,23 @@ List all probe points in a module,
 
 All of above probe points could be also used by ftrace and other kprobe based tools. By default, all kernel and module APIs could be listed as probe points.
 
+#### 2.1.5 How to use kprobe event via perf CLI?
+
+Below example showed that how to use kprobe to get the 2nd arguments of `do_unlinkat`,
+
+	$ sudo perf probe --add 'do_unlinkat pathname=+0(%si):string'
+	$ sudo perf record -e probe:do_unlinkat –aR sleep 3600
+	$ sudo perf script
+
+The syntax of kprobe event could be found from [Documentation/trace/kprobetrace.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/kprobetrace.txt).
+
 ### 2.2 SystemTap
 
-#### 2.1 How to run systemtap with customized kernel
+#### 2.2.1 How to run systemtap with customized kernel
 
 In short, we could rebuild systemtap and kernel to make it work together. Please refer to [This article](https://www.ibm.com/support/knowledgecenter/linuxonibm/liaai.systemTap/liaaisystapcustom.htm).
 
-#### 2.2 Where can I find systemtap example scripts?
+#### 2.2.2 Where can I find systemtap example scripts?
 
 For systemtap example scripts, there are two ways,
 
@@ -98,7 +108,7 @@ For systemtap example scripts, there are two ways,
 
 Reading example scripts is the best way to learn systemtap. [SystemTap Beginners Guide](https://www.sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html) is a good reference.
 
-#### 2.3 How to run pre-built systemtap module directly?
+#### 2.2.3 How to run pre-built systemtap module directly?
 
 First, build the systemtap script by running `stap -k` option,
 
@@ -109,6 +119,49 @@ First, build the systemtap script by running `stap -k` option,
 Then, find the module from temporary directory, and run it by `staprun`,
 
 	$ sudo staprun /tmp/stapKI1aZ3/stap_13235.ko
+
+#### 2.2.4 How to get input arguments and local variables?
+
+The `-L` option showed the source code information, input arguments, and local variables,
+
+$ sudo stap -L 'kernel.function("do_unlinkat")'
+kernel.function("do_unlinkat@fs/namei.c:3857") $dfd:int $pathname:char const* $path:struct path $last:struct qstr $type:int $delegated_inode:struct inode*
+
+The `-e` option could be used in one liner command, and we could print 2nd argument of `do_unlinkat` by following way,
+
+$ sudo stap -e 'probe kernel.function("do_unlinkat") { printf("%s \n", kernel_string($pathname))} '
+
+#### 2.2.5 Address unwind data issue for a module
+
+Got following warning messages while running below SystemTap one line command,
+
+	$ sudo stap -e 'probe kernel.function("generic_make_request") { print_backtrace() }'
+	 0xffffffff81317350 : generic_make_request+0x0/0x1d0 [kernel]
+	 0xffffffff81317597 : submit_bio+0x77/0x150 [kernel]
+	 0xffffffffa02b5d6a [xfs]
+	 0xffffffffa02b7913 [xfs] (inexact)
+	 0xffffffffa02b7664 [xfs] (inexact)
+	 0xffffffffa02b7913 [xfs] (inexact)
+	 0xffffffffa02b86df [xfs] (inexact)
+	 0xffffffffa02b86df [xfs] (inexact)
+	 0xffffffffa02e4325 [xfs] (inexact)
+	 0xffffffffa02e40a0 [xfs] (inexact)
+	 0xffffffffa02e40a0 [xfs] (inexact)
+	 0xffffffff810a8cd8 : kthread+0xd8/0xf0 [kernel] (inexact)
+	 0xffffffff816bb882 : ret_from_fork+0x22/0x40 [kernel] (inexact)
+	 0xffffffff810a8c00 : kthread+0x0/0xf0 [kernel] (inexact)
+	...[snipped...]
+	WARNING: Missing unwind data for a module, rerun with 'stap -d xfs'
+
+We could see there is no symbol for xfs module. The issue could be fixed by re-running below command,
+
+	$ sudo stap -d xfs -e 'probe kernel.function("generic_make_request") { print_backtrace() }'
+
+Or using `--all-modules` option to add unwind/symbol data for all loaded kernel objects,
+
+	$ sudo stap --all-modules -e 'probe kernel.function("generic_make_request") { print_backtrace() }'
+
+The `--all-modules` could increase the module size built by stap, `-d` should be better way to address the issue.
 
 ## 3. References
 
