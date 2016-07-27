@@ -80,15 +80,78 @@ List all probe points in a module,
 
 All of above probe points could be also used by ftrace and other kprobe based tools. By default, all kernel and module APIs could be listed as probe points.
 
-#### 2.1.5 How to use kprobe event via perf CLI?
+#### 2.1.5 How to add a dynamic kernel probe event via perf CLI?
 
-Below example showed that how to use kprobe to get the 2nd arguments of `do_unlinkat`,
+In Linux kernel, dynamic kernel probe event is supported by kprobe. Perf CLI could be its front-end.
+First, get the what lines could be probed by perf,
 
-	$ sudo perf probe --add 'do_unlinkat pathname=+0(%si):string'
+	$ sudo perf probe -L do_unlinkat | head -n2
+	<do_unlinkat@/lib/modules/4.6.0-rc3+/build/fs/namei.c:0>
+    0  static long do_unlinkat(int dfd, const char __user *pathname)
+
+Second, query probeable input arguments and local variable,
+
+	$ sudo perf probe -V do_unlinkat
+	Available variables at do_unlinkat
+	        @<do_unlinkat+0>
+	                char*   pathname
+	                int     dfd
+	                int     type
+	                struct inode*   delegated_inode
+	                struct path     path
+	                struct qstr     last
+
+Last, add probe and start tracing,
+
+	$ perf probe --add 'do_unlinkat pathname:string'
 	$ sudo perf record -e probe:do_unlinkat –aR sleep 3600
 	$ sudo perf script
 
 The syntax of kprobe event could be found from [Documentation/trace/kprobetrace.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/kprobetrace.txt).
+
+#### 2.1.6 How to add a dynamic user space probe event via perf CLI?
+
+User space probe needs Uprobes support in both kernel and perf CLI.
+
+First, you should make sure user space debuginfo package got installed. To trace glibc API，needs install glibc debuginfo packages.
+On RHEL, glibc debuginfo packages could be installed with below command,
+
+	$ sudo debuginfo-install glibc
+
+Second, you could double check available dynamic probe points,
+
+	$ sudo perf probe -x /lib64/libc.so.6 -F | grep fopen64
+	fopen64
+
+Third, list the input arguments and local varibales,
+
+	[yango@localhost ~]$ sudo perf probe -x /lib64/libc.so.6 -L fopen64
+	<_IO_new_fopen@/usr/src/debug/glibc-2.17-c758a686/libio/iofopen.c:0>
+	      0  _IO_new_fopen (filename, mode)
+	              const char *filename;
+	              const char *mode;
+	      3  {
+	      4    return __fopen_internal (filename, mode, 1);
+	         }
+
+	         #ifdef _LIBC
+
+Last, add the probe, record trace and display trace results,
+
+	$ sudo perf probe -x /lib64/libc.so.6 -V fopen64
+	Available variables at fopen64
+	        @<_IO_new_fopen+0>
+	                char*   filename
+	                char*   mode
+
+	$ sudo perf probe -x /lib64/libc.so.6 -a 'fopen64 filename:string'
+	$ sudo ./perf record -e probe_libc:fopen64 -aR sleep 60
+	$ sudo ./perf script
+	irqbalance   568 [001] 54683.806403: probe_libc:fopen64: (7f7289620a00) filename_string="/proc/interrupts"
+	irqbalance   568 [001] 54683.806753: probe_libc:fopen64: (7f7289620a00) filename_string="/proc/stat"
+	      perf 13914 [001] 54688.046240: probe_libc:fopen64: (7f47ed015a00) filename_string="/proc/self/status"
+
+The syntax of kprobe event could be found from [Documentation/trace/uprobetracer.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/uprobetracer.txt)
 
 ### 2.2 SystemTap
 
