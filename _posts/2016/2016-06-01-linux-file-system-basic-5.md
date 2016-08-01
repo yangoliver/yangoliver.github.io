@@ -4,7 +4,7 @@ title: Linux File System - 5
 description: Linux file system(文件系统)模块的实现和基本数据结构。关键字：文件系统，内核，samplefs，VFS，存储。
 categories: [Chinese, Software]
 tags:
-- [file system, driver, crash, kernel, linux, storage]
+- [file system, driver, crash, trace, kernel, linux, storage]
 ---
 
 >本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。

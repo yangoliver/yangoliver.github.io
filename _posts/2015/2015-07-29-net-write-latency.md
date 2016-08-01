@@ -4,7 +4,7 @@ title: Network write latency
 description: An issue related to 2ms latency in 10G network. Using ftrace to diagnosis network latency problems.
 categories: [English, Software]
 tags:
-- [network, perf, linux]
+- [network, perf, trace, linux]
 ---
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
