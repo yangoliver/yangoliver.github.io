@@ -231,7 +231,86 @@ tags: [driver, perf, crash, trace, kernel, linux, storage]
 本例中的 SystemTap 脚本 [fiohist.stp](https://github.com/yangoliver/mytools/blob/master/debug/systemtap/fiohist.stp) 是作者个人为分析本测试所编写。
 详细代码请参考文中给出的源码链接。此外，在 [Linux Perf Tools Tips](http://oliveryang.net/2016/07/linux-perf-tools-tips/) 这篇文章里收录了关于在自编译内核上运行 SystemTap 脚本的一些常见问题。
 
-### 3.3 深入理解文件 IO
+### 3.3 On CPU Time 分析
+
+运行 fio 测试期间，我们可以利用 Linux `perf`， 对系统做 ON CPU Time 分析。这样可以进一步获取如下信息，
+
+- 在测试中，软件栈的哪一部分消耗了主要的 CPU 资源。可以帮助我们确定 CPU 时间优化的主要方向。
+
+- 通过查看消耗 CPU 资源的软件调用栈，了解函数调用关系。
+
+- 利用可视化工具，如 Flamgraph，对 Profiling 的大量数据做直观的呈现。方便进一步分析和定位问题。
+
+#### 3.3.1 使用 perf
+
+首先，当 fio 测试进入稳定状态，运行 `perf record` 命令，
+
+	# perf record -a -g --call-graph dwarf -F 997 sleep 60
+
+其中主要的命令行选项如下，
+
+- `-F` 选项指定 `perf` 以 `997` 次每秒的频率对 CPU 上运行的用户进程或者内核上下文进行采样 (Sampling)。
+
+  由于 Linux 内核的时钟中断是以 `1000` 次每秒的频率周期触发，所以按照 `997` 频率采样可以避免每次采样都采样到始终中断相关的处理，减少干扰。
+
+- `-a` 选项指定采样系统中所有的 CPU。
+
+- `-g` 选项指定记录下用户进程或者内核的调用栈。
+
+  其中，`--call-graph dwarf` 指定调用栈收集的方式为 `dwarf`，即 `libdwarf` 和 `libdunwind` 的方式。Perf 还支持 `fp` 和 `lbs` 方式。
+
+- `sleep 60` 则是通过 `perf` 指定运行的命令，这个命令起到了让 `perf` 运行 60 秒然后退出的效果。
+
+在 `perf record` 之后，运行 `perf report` 查看采样结果的汇总，
+
+	# sudo perf report --stdio
+
+	[...snipped...]
+
+	27.51%     0.10%  fio    [kernel.kallsyms]      [k] __generic_file_write_iter
+	                    |
+	                    ---__generic_file_write_iter
+	                       |
+	                       |--99.95%-- ext4_file_write_iter
+	                       |          __vfs_write
+	                       |          vfs_write
+	                       |          sys_write
+	                       |          do_syscall_64
+	                       |          return_from_SYSCALL_64
+	                       |          0x7ff91cd381cd
+	                       |          fio_syncio_queue
+	                       |          td_io_queue
+	                       |          thread_main
+	                       |          run_threads
+	                        --0.05%-- [...]
+	[...snipped...]
+
+#### 3.3.2 使用 Flamegraph
+
+使用 [Flamegraph](https://github.com/brendangregg/FlameGraph)，可以把前面产生的 `perf record` 的结果可视化，生成火焰图。
+运行如下命令，
+
+	# perf script | stackcollapse-perf.pl > out.perf-folded
+	# cat out.perf-folded | flamegraph.pl > flamegraph_on_cpu_perf_fs_seq_write_sync_001.svg
+
+然后，即可生成如下火焰图，
+
+<img src="/media/images/2016/flamegraph_on_cpu_perf_fs_seq_write_sync_001.svg" width="100%" height="100%" />
+
+该火焰图是 SVG 格式的矢量图，基于 XML 文件定义。在浏览器里右击在新窗口打开图片，即可进入与**火焰图的交互模式**。该模式下，统计数据信息和缩放功能都可以移动和点击鼠标来完成交互。
+通过在交互模式下浏览和缩放火焰图，我们可以得出如下结论，
+
+- `perf record` 共有 119644 个采样数据，将此定义为 100% CPU 时间。
+- `fio` 进程共有 91079 个采样数据，占用 76.13% 的 CPU 时间。
+- `swapper` 为内核上下文，包含如下部分，
+
+   `native_safe_halt` 代表 CPU 处于 IDEL 状态，共有两次，9.04% 和 9.18%。
+   `smp_reschedule_interrupt` 代表 CPU 处理调度器的 IPI 中断，用于处理器间调度的负载均衡。共有两次，1.66％ 和 1.61%。这部分需要方大矢量图移动鼠标到相关函数才能看到。
+
+- `kblockd` 工作队列线程，由 `block_run_queue_async` 触发，最终调用 `__blk_run_queue` 把 IO 发送到下层的 sampleblk 块驱动。共有两部份，合计 0.88%。
+- `rcu_gp_kthread` 处理 RCU 的内核线程，占用 0.04 % 的 CPU 时间。
+
+### 3.4 深入理解文件 IO
 
 为什么 `write` 和 `fadvise64` 调用的执行时间差异如此之大？如果对操作系统 page cache 的工作原理有基本概念的话，这个问题并不难理解，
 
@@ -246,7 +325,7 @@ tags: [driver, perf, crash, trace, kernel, linux, storage]
 
 由于 Linux 内核提供了强大的动态追踪 (Dynamic Trace) 能力，现在我们可以通过内核的 trace 工具来了解 `write` 和 `fadvise64` 调用的执行时间差异。
 
-#### 3.3.1 使用 Ftrace
+#### 3.4.1 使用 Ftrace
 
 Linux `strace` 只能追踪系统调用界面这层的信息。要追踪系统调用内部的机制，就需要借助 Linux 内核的 trace 工具了。Ftrace 就是非常简单易用的追踪系统调用内部实现的工具。
 Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt) 就是极好的入门材料。
@@ -256,7 +335,7 @@ Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torval
 这个工具是基于 Ftrace 的用 bash 和 awk 写的脚本，非常容易理解和使用。
 关于 Brendan Gregg 的 perf-tools 的使用，请阅读 [Ftrace: The hidden light switch](http://lwn.net/Articles/608497) 这篇文章。
 
-#### 3.3.2 open
+#### 3.4.2 open
 
 运行 fio 测试时，用 `funcgraph` 可以获取 `open` 系统调用的内核函数的函数图 (function graph)，
 
@@ -271,7 +350,7 @@ Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torval
 - Ext4 注册在 VFS 层的入口函数被上层调用，为上层查找元数据 (ext4_lookup)，创建文件 (ext4_create)，打开文件 (ext4_file_open) 提供服务。
   本例中，由于文件已经被创建，而且元数据已经缓存在内存中，因此，只涉及到 ext4_file_open 的代码。
 
-#### 3.3.3 fadvise64
+#### 3.4.3 fadvise64
 
 用 `funcgraph` 也可以获取 `fadvise64` 系统调用的内核函数的函数图 (function graph)，
 
@@ -279,7 +358,7 @@ Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torval
 
 详细的 `fadvise64` 系统调用的跟踪日志请查看[这里](https://raw.githubusercontent.com/yangoliver/lktm/master/drivers/block/sampleblk/labs/lab1/funcgraph_fadvise_fs_seq_write_sync_001.log)。
 
-#### 3.3.4 write
+#### 3.4.4 write
 
 用 `funcgraph` 也可以获取 `write` 系统调用的内核函数的函数图 (function graph)，
 
@@ -287,7 +366,7 @@ Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torval
 
 详细的 `write` 系统调用的跟踪日志请查看[这里](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab1/funcgraph_write_fs_seq_write_sync_001.log)。
 
-#### 3.3.5 close
+#### 3.4.5 close
 
 用 `funcgraph` 也可以获取 `close` 系统调用的内核函数的函数图 (function graph)，
 
