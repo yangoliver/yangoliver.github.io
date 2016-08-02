@@ -187,12 +187,12 @@ Then, find the module from temporary directory, and run it by `staprun`,
 
 The `-L` option showed the source code information, input arguments, and local variables,
 
-$ sudo stap -L 'kernel.function("do_unlinkat")'
-kernel.function("do_unlinkat@fs/namei.c:3857") $dfd:int $pathname:char const* $path:struct path $last:struct qstr $type:int $delegated_inode:struct inode*
+	$ sudo stap -L 'kernel.function("do_unlinkat")'
+	kernel.function("do_unlinkat@fs/namei.c:3857") $dfd:int $pathname:char const* $path:struct path $last:struct qstr $type:int $delegated_inode:struct inode*
 
 The `-e` option could be used in one liner command, and we could print 2nd argument of `do_unlinkat` by following way,
 
-$ sudo stap -e 'probe kernel.function("do_unlinkat") { printf("%s \n", kernel_string($pathname))} '
+	$ sudo stap -e 'probe kernel.function("do_unlinkat") { printf("%s \n", kernel_string($pathname))} '
 
 #### 2.2.5 Address unwind data issue for a module
 
