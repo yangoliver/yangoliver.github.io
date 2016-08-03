@@ -302,13 +302,30 @@ tags: [driver, perf, crash, trace, kernel, linux, storage]
 
 - `perf record` 共有 119644 个采样数据，将此定义为 100% CPU 时间。
 - `fio` 进程共有 91079 个采样数据，占用 76.13% 的 CPU 时间。
+
+  `fio` 的 `fio_syncio_queue` 用掉了 48.53% 的 CPU，其中绝大部分时间在内核态，`sys_write` 系统调用就消耗了 45.78%。
+
+  `fio` 的 `file_invalidate_cache` 函数占用了 20.88% 的 CPU，其中大部分都在内核态，`sys_fadvise64` 系统调用消耗了 20.81%。
+
+  在这里我们注意到，`sys_write` 和 `sys_fadvise64` 系统调用 CPU 占用资源的比例是 2:1。而之前 `strace` 得出的两个系统调用消耗时间的比例是 3:1。
+  这就意味着，`sys_write` 花费了很多时间在**睡眠态**。
+
+- 在 Ext4 文件系统的写路径，存在热点锁。
+
+  `ext4_file_write_iter` 函数里的 inode mutex 的 mutex 自旋等待时间，占用了 16.93% 的 CPU。与 `sys_write` 系统调用相比，CPU 消耗占比达到三分之一强。
+
 - `swapper` 为内核上下文，包含如下部分，
 
    `native_safe_halt` 代表 CPU 处于 IDEL 状态，共有两次，9.04% 和 9.18%。
+
    `smp_reschedule_interrupt` 代表 CPU 处理调度器的 IPI 中断，用于处理器间调度的负载均衡。共有两次，1.66％ 和 1.61%。这部分需要方大矢量图移动鼠标到相关函数才能看到。
 
-- `kblockd` 工作队列线程，由 `block_run_queue_async` 触发，最终调用 `__blk_run_queue` 把 IO 发送到下层的 sampleblk 块驱动。共有两部份，合计 0.88%。
+- `kblockd` 工作队列线程。
+
+   由 `block_run_queue_async` 触发，最终调用 `__blk_run_queue` 把 IO 发送到下层的 sampleblk 块驱动。共有两部份，合计 0.88%。
 - `rcu_gp_kthread` 处理 RCU 的内核线程，占用 0.04 % 的 CPU 时间。
+
+综合以上分析，我们可以看到，火焰图不但可以帮助我们理解 CPU 全局资源的占用情况，而且还能进一步分析到微观和细节。例如局部的热锁，父子函数的调用关系，和所占 CPU 时间比例。
 
 ### 3.4 深入理解文件 IO
 
