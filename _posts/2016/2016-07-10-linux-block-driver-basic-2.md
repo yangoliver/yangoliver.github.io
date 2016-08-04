@@ -369,20 +369,28 @@ Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torval
 
 #### 3.4.3 fadvise64
 
-根据 [fadvise64(2)](http://linux.die.net/man/2/fadvise64)，这个系统调用的作用是预先声明文件数据的访问模式。
-
-从前面 `strace` 的日志里我们得知，每次 `open` 文件之后，`fio` 都会调用两次 `fadvise64` 系统调用，只不过两次的 `advise` 参数使用有所差别，因而起到的作用也不同，
-
-- POSIX_FADV_SEQUENTIAL 主要是应用用来通知内核，它打算以顺序的方式去访问文件数据。
-- POSIX_FADV_DONTNEED 则是应用通知内核，与文件描述符 `fd` 有关的 page cache 都不需要了，脏页可以刷到盘上，然后直接丢弃了。
-
-  Linux 提供了全局刷 page cache 到磁盘，然后丢弃 page cache 的接口: /proc/sys/vm/drop_pagecache。然而 `fadvise64` 的 POSIX_FADV_DONTNEED 作用范围是指定的 `fd`，具有更细的粒度。
-
 用 `funcgraph` 也可以获取 `fadvise64` 系统调用的内核函数的函数图 (function graph)，
 
 	$ sudo ./funcgraph -d 1 -p 95069 SyS_fadvise64
 
 详细的 `fadvise64` 系统调用的跟踪日志请查看[这里](https://raw.githubusercontent.com/yangoliver/lktm/master/drivers/block/sampleblk/labs/lab1/funcgraph_fadvise_fs_seq_write_sync_001.log)。
+
+根据 [fadvise64(2)](http://linux.die.net/man/2/fadvise64)，这个系统调用的作用是预先声明文件数据的访问模式。
+
+从前面 `strace` 的日志里我们得知，每次 `open` 文件之后，`fio` 都会调用两次 `fadvise64` 系统调用，只不过两次的 `advise` 参数使用有所差别，因而起到的作用也不同，
+
+- POSIX_FADV_SEQUENTIAL 主要是应用用来通知内核，它打算以顺序的方式去访问文件数据。
+
+  如果参考我们获得的 `fadvise64` 系统调用的函数图，再结合源码，我们知道，POSIX_FADV_SEQUENTIAL 的实现非常简单，主要有以下两方面，
+
+  1. 把 VFS 层文件的预读窗口增大到默认的两倍。
+  2. 把文件对应的内核结构 `struct file` 的文件模式 `file->f_mode` 的随机访问 `FMODE_RANDOM` 标志位清除掉。从而让 VFS 预读算法对顺序读更高效。
+
+  由于以上操作仅仅涉及简单内存访问操作，因此在 `fadvise64` 系统调用的函数图里，我们可以看到它仅仅用了 0.891 us 就返回了，远远快于另外一个命令。
+
+- POSIX_FADV_DONTNEED 则是应用通知内核，与文件描述符 `fd` 有关的 page cache 都不需要了，脏页可以刷到盘上，然后直接丢弃了。
+
+  Linux 提供了全局刷 page cache 到磁盘，然后丢弃 page cache 的接口: /proc/sys/vm/drop_pagecache。然而 `fadvise64` 的 POSIX_FADV_DONTNEED 作用范围是指定的 `fd`，具有更细的粒度。
 
 #### 3.4.4 write
 
