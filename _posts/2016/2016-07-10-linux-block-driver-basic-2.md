@@ -388,9 +388,19 @@ Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torval
 
   由于以上操作仅仅涉及简单内存访问操作，因此在 `fadvise64` 系统调用的函数图里，我们可以看到它仅仅用了 0.891 us 就返回了，远远快于另外一个命令。
 
-- POSIX_FADV_DONTNEED 则是应用通知内核，与文件描述符 `fd` 有关的 page cache 都不需要了，脏页可以刷到盘上，然后直接丢弃了。
+  综上所述，POSIX_FADV_SEQUENTIAL 操作的代码路径下，全都是对文件系统预读的优化。而本文中的 `fio` 测试只有顺序写操作，因此，POS IX_FADV_SEQUENTIAL 的操作对本测试没有任何影响。
 
-  Linux 提供了全局刷 page cache 到磁盘，然后丢弃 page cache 的接口: /proc/sys/vm/drop_pagecache。然而 `fadvise64` 的 POSIX_FADV_DONTNEED 作用范围是指定的 `fd`，具有更细的粒度。
+- POSIX_FADV_DONTNEED 则是应用通知内核，与文件描述符 `fd` 关联的文件的指定范围 (`offset` 和 `len` 描述)的 page cache 都不需要了，脏页可以刷到盘上，然后直接丢弃了。
+
+  Linux 提供了全局刷 page cache 到磁盘，然后丢弃 page cache 的接口: /proc/sys/vm/drop_pagecache。然而 `fadvise64` 的 POSIX_FADV_DONTNEED 作用域是文件内的某段范围，具有更细的粒度。
+
+  在我们 `fadvise64` 系统调用的跟踪日志里，调用图关系最复杂，返回时间最长的就是 POSIX_FADV_DONTNEED 命令了。
+  但如果参考其源码实现，其实该命令主要分为以下两个步骤，
+
+  1. 回写 (write back) 文件内部指定范围的 dirty page cache 到磁盘。
+  2. 将文件对应的指定范围的 page cache 尽可能清除。
+
+TBD.
 
 #### 3.4.4 write
 
