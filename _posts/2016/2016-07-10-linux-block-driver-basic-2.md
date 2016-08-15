@@ -500,9 +500,12 @@ POSIX_FADV_DONTNEED 的主要目的是清除 page cache，因此它使用了 WB_
 
 ##### 4.3.2.2 清除页缓存
 
-将文件对应的指定范围的 page cache **尽可能**清除 (Invalidate)。之所以是尽可能，是因为这个清除操作会跳过一些页面，从而避免等待块 IO 完成。例如，脏页，和被加锁的页面。
+将文件对应的指定范围的 page cache **尽可能**清除 (Invalidate)。**尽可能**，就意味着这个清除操作可能会跳过一些页面，例如，跳过已经被加锁的页面，从而避免因等待 IO 完成而阻塞。
+其主要过程如下，
 
-TBD.
+- 利用 `pagevec_lookup_entries` 对范围内的每个页面调用 `invalidate_inode_page` 操作清除缓存页面。在此之前，使用 `trylock_page` 来尝试锁页。如果该页已经被锁住，则跳过该页，从而避免阻塞。
+  由于 Ext4 为每一个属于 page cache 的页面创建了与之关联的 meta data, 因此这个过程中还需要调用 `releasepage` 回调，即 `ext4_releasepage` 来进行释放。
+- 调用 `pagevec_release` 减少这些页面的引用计数。如果之前的清除操作成功，此时页面引用计数为 0，会将页面从 LRU 链表拿下，并释放页面。释放后的页面被归还到 per zone 的 Buddy 分配器的 free 链表里。
 
 ### 4.4 write
 
