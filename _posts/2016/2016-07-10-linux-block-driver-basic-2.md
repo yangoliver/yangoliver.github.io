@@ -515,7 +515,21 @@ POSIX_FADV_DONTNEED 的主要目的是清除 page cache，因此它使用了 WB_
 
 详细的 `write` 系统调用的跟踪日志请查看[这里](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab1/funcgraph_write_fs_seq_write_sync_001.log)。
 
-TBD
+由于我们的测试是 buffer IO，因此，`write` 系统调用只会将数据写在文件系统的 page cache 里，而不会写到 Sampleblk 的块设备上。
+系统调用 `write` 过程会经过以下层次，
+
+- VFS 层。
+
+  内核的 `sys_write` 系统调用会直接调用 `vfs_write` 进入到 VFS 层代码。
+  VFS 层为每个文件系统都抽象了文件操作表 `struct file_operations`。如果 `write` 回调被底层文件系统模块初始化了，就优先调用 `write`。否则，就调用 `write_iter`。
+
+  TBD.
+
+- 具体文件系统。文件系统模块通过实现文件操作表 `struct file_operations` 来支持基本的文件 IO 操作。其中 `write` 或 `write_iter` 是写操作的入口。
+
+  本文中的 Ext4 文件系统，只实现了 `write_iter` 入口｀，即 `ext4_file_write_iter`。
+
+  TBD.
 
 ### 4.5 close
 
