@@ -518,18 +518,45 @@ POSIX_FADV_DONTNEED 的主要目的是清除 page cache，因此它使用了 WB_
 由于我们的测试是 buffer IO，因此，`write` 系统调用只会将数据写在文件系统的 page cache 里，而不会写到 Sampleblk 的块设备上。
 系统调用 `write` 过程会经过以下层次，
 
-- VFS 层。
+1. VFS 层。
 
-  内核的 `sys_write` 系统调用会直接调用 `vfs_write` 进入到 VFS 层代码。
-  VFS 层为每个文件系统都抽象了文件操作表 `struct file_operations`。如果 `write` 回调被底层文件系统模块初始化了，就优先调用 `write`。否则，就调用 `write_iter`。
+   内核的 `sys_write` 系统调用会直接调用 `vfs_write` 进入到 VFS 层代码。
+   VFS 层为每个文件系统都抽象了文件操作表 `struct file_operations`。如果 `write` 回调被底层文件系统模块初始化了，就优先调用 `write`。否则，就调用 `write_iter`。
 
-  TBD.
+   这里不得不说，基于 iov_iter 的接口正在成为 Linux 内核处理用户态和内核态 buffer 传递的标准。而 `write_iter` 就是基于 `iov_iter` 的新的文件写 IO 的标准入口。
+   Linux 内核 IO 和网络栈的各种与用户态 buffer 打交道的接口都在被 `iov_iter` 的新接口所取代。进一步讨论请阅读 [The iov_iter interface](https://lwn.net/Articles/625077/)。
 
-- 具体文件系统。文件系统模块通过实现文件操作表 `struct file_operations` 来支持基本的文件 IO 操作。其中 `write` 或 `write_iter` 是写操作的入口。
+   此外，Linux 4.1 中，[原有的 `aio_read` 和 `aio_write` 也都被删除](https://github.com/torvalds/linux/commit/8436318205b9f29e45db88850ec60e326327e241)，
+   取而代之的正是 `read_iter` 和 `write_iter`。其中 `write_iter` 相关的要点如下，
 
-  本文中的 Ext4 文件系统，只实现了 `write_iter` 入口｀，即 `ext4_file_write_iter`。
+   - `write_iter` 既支持同步 (sync) IO，又支持异步 (async) IO。
+   - Linux 内核的同步 IO，即 `sys_write` 系统调用，最终通过 `new_sync_write` 来调用 `write_iter`。
+   - `new_sync_write` 是通过调用 `init_sync_kiocb` 来调用 `write_iter` 的。这使得底层文件系统可以通过 `is_sync_kiocb` 来判断当前发起的 IO 是同步还是异步。
+     而 `is_sync_kiocb` 主要判断依据是 `struct kiocb` 的 `ki_complete` 的取值为 NULL，即没有设置完成回调。
+   - Linux 内核的异步 IO，则通过 `sys_io_submit` 系统调用来调用 `write_iter`。而此时异步 IO 恰恰设置了 `ki_complete` 的回调为 `aio_complete`。
 
-  TBD.
+2. 具体文件系统和 MM 子系统
+
+   Linux 4.1 之后，文件系统在声明文件操作表 `struct file_operations` 时，若要支持读写，可以不实现标准的 `read` 和 `write`，但一定要实现 `read_iter` 和 `write_iter`。
+   本文中的 Ext4 文件系统，只实现了 `write_iter` 入口｀，即 `ext4_file_write_iter`。
+   对一些特殊情况做处理之后，MM 子系统的 入口函数 `__generic_file_write_iter` 被调用。在 MM 子系统的处理逻辑里，主要有以下两大分支，
+
+   - Direct IO。
+     如果文件打开方式为 O_DIRECT，这时 `kiocb` 的 `ki_flags` 被设置为 IOCB_DIRECT。此标志作为 Direct IO 模式检查的依据。
+     而 MM 子系统的 `generic_file_direct_write` 会再次调用文件系统的地址空间操作表的 `direct_IO` 方法，在 Ext4 里就是 `ext4_direct_IO`。
+
+     在 Direct IO 上下文，文件系统可以通过 `is_sync_kiocb` 来判断是否是同步 IO 或异步 IO，然后进入到具体的处理逻辑。
+     本文中的实验，fio 使用的是 Buffer IO，因此这部分不进行详细讨论。
+
+   - Buffer IO。
+     使用 Buffer IO 的时候，文件系统的数据都会写入到文件系统的 page cache 后立即返回。这也是本文中测试实验的情况。
+     MM 子系统的 `generic_perform_write` 方法会做如下处理，
+
+     * 调用文件系统的 `write_begin` 方法。Ext4 就是 `ext4_da_write_begin`。
+     * 调用 `iov_iter_copy_from_user_atomic` 把 `sys_write` 系统调用用户态 buffer 里的数据拷贝到 `write_begin` 方法返回的页面。
+     * 调用文件系统的 `write_end` 方法，即 `ext4_da_write_end`。
+
+TBD.
 
 ### 4.5 close
 
@@ -552,3 +579,4 @@ TBD
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
 * [Device Drivers, Third Edition](http://lwn.net/Kernel/LDD3)
 * [Ftrace: Function Tracer](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt)
+* [The iov_iter interface](https://lwn.net/Articles/625077/)
