@@ -17,26 +17,29 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 在 [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2/) 中，我们在 Sampleblk 驱动创建了 Ext4 文件系统，并做了一个简单的 fio 测试。
 
-上篇文章实验中使用的 fio job file 可在此处下载： [fs_seq_write_sync_001](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab1/fs_seq_write_sync_001)。
-该测试在 /dev/sampleblk1 上 mount 的 Ext4 文件系统上进行顺序 IO 写测试。其中 fio 将启动两个测试进程，同时对 /mnt/test 文件进行写操作。
-
-	$ sudo fio ./fs_seq_write_sync_001
-
 本文将继续之前的实验，围绕这个简单的 fio 测试，探究 Linux 块设备驱动和文件 IO 的运作机制。除非特别指明，本文中所有 Linux 内核源码引用都基于 4.6.0。其它内核版本可能会有较大差异。
-如需进一步了解本文所提的 fio 测试的环境准备，运行命令，还有性能分析方法，请参考该文章。
 若需对 Sampleblk 块驱动实现有所了解，请参考 [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1)。
 
-## 2. Flamegraph
+## 2. 准备
 
-使用 [Flamegraph](https://github.com/brendangregg/FlameGraph)，可以把前面产生的 `perf record` 的结果可视化，生成如下火焰图,
+阅读本文前，可能需要如下准备工作，
+
+- 了解 [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2/) 中所提的 fio 测试的环境准备，命令运行，还有性能分析方法。
+- 了解 [Flamegraph](https://github.com/brendangregg/FlameGraph) 如何解读。
+
+在上篇文章中，通过使用 [Flamegraph](https://github.com/brendangregg/FlameGraph)，我们把 fio 测试中做的 perf profiling 的结果可视化，生成了如下火焰图,
 
 <img src="/media/images/2016/flamegraph_on_cpu_perf_fs_seq_write_sync_001.svg" width="100%" height="100%" />
 
 在新窗口中打开图片，我们可以看到，火焰图不但可以帮助我们理解 CPU 全局资源的占用情况，而且还能进一步分析到微观和细节。例如局部的热锁，父子函数的调用关系，和所占 CPU 时间比例。
+关于进一步的 Flamegraph 的介绍和资料，请参考 [Brenden Gregg 的 Flamegraph 相关资源](http://www.brendangregg.com/flamegraphs.html)。
+
+本文中，该火焰图将成为我们粗略了解该 fio 测试在 Linux 4.6.0 内核涉及到的文件 IO 内部实现的主要工具。
 
 ## 3. 深入理解文件 IO
 
-为什么 `write` 和 `fadvise64` 调用的执行时间差异如此之大？如果对操作系统 page cache 的工作原理有基本概念的话，这个问题并不难理解，
+在上一篇文章中，我们发现，尽管测试的主要时间都发生在 `write` 系统调用上。但如果查看单次系统调用的时间，`fadvise64` 远远超过了 `write`。
+为什么 `write` 和 `fadvise64` 调用的执行时间差异如此之大？如果对 Linux buffer IO 机制，文件系统 page cache 的工作原理有基本概念的话，这个问题并不难理解，
 
 - Page cache 加速了文件读写操作
 
@@ -52,12 +55,12 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 ### 3.1 使用 Ftrace
 
 Linux `strace` 只能追踪系统调用界面这层的信息。要追踪系统调用内部的机制，就需要借助 Linux 内核的 trace 工具了。Ftrace 就是非常简单易用的追踪系统调用内部实现的工具。
-Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt) 就是极好的入门材料。
 
 不过，Ftrace 的 UI 是基于 linux debugfs 的。操作起来有些繁琐。
 因此，我们用 Brendan Gregg 写的 [funcgraph](https://github.com/brendangregg/perf-tools/blob/master/examples/funcgraph_example.txt) 来简化我们对 Ftrace 的使用。
 这个工具是基于 Ftrace 的用 bash 和 awk 写的脚本，非常容易理解和使用。
 关于 Brendan Gregg 的 perf-tools 的使用，请阅读 [Ftrace: The hidden light switch](http://lwn.net/Articles/608497) 这篇文章。
+此外，Linux 源码树里的 [Documentation/trace/ftrace.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt) 就是极好的 Ftrace 入门材料。
 
 ### 3.2 open
 
@@ -285,6 +288,7 @@ TBD
 * [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2/)
 * [Linux Perf Tools Tips](http://oliveryang.net/2016/07/linux-perf-tools-tips/)
 * [Using Linux Trace Tools - for diagnosis, analysis, learning and fun](https://github.com/yangoliver/mydoc/blob/master/share/linux_trace_tools.pdf)
+* [Flamegraph 相关资源](http://www.brendangregg.com/flamegraphs.html)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
 * [Device Drivers, Third Edition](http://lwn.net/Kernel/LDD3)
 * [Ftrace: Function Tracer](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt)
