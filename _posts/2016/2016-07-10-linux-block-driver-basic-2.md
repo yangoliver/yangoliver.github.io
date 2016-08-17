@@ -325,6 +325,8 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 综合以上分析，我们可以看到，火焰图不但可以帮助我们理解 CPU 全局资源的占用情况，而且还能进一步分析到微观和细节。例如局部的热锁，父子函数的调用关系，和所占 CPU 时间比例。
 
+关于进一步的 Flamegraph 的介绍和资料，请参考 [Brenden Gregg 的 Flamegraph 相关资源](http://www.brendangregg.com/flamegraphs.html)。
+
 ## 4. 小结
 
 本文通过使用 Linux 下的各种追踪工具 Strace，Systemtap，Perf，Ftrace，来分析 fio 测试的运行情况。实际上，利用 Linux 下的动态追踪工具我们达到了以下目的，
@@ -339,4 +341,5 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 * [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1)
 * [Linux Perf Tools Tips](http://oliveryang.net/2016/07/linux-perf-tools-tips/)
 * [Using Linux Trace Tools - for diagnosis, analysis, learning and fun](https://github.com/yangoliver/mydoc/blob/master/share/linux_trace_tools.pdf)
+* [Flamegraph 相关资源](http://www.brendangregg.com/flamegraphs.html)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
