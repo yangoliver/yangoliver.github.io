@@ -263,10 +263,9 @@ POSIX_FADV_DONTNEED 的主要目的是清除 page cache，因此它使用了 WB_
      MM 子系统的 `generic_perform_write` 方法会做如下处理，
 
      * 调用文件系统的 `write_begin` 方法。Ext4 就是 `ext4_da_write_begin`。
+       此函数通过调用 `grab_cache_page_write_begiin` 来分配新的 page cache。然后调用 `ext4_map_blocks` 在磁盘上分配新的，或者映射已存在的 block。
      * 调用 `iov_iter_copy_from_user_atomic` 把 `sys_write` 系统调用用户态 buffer 里的数据拷贝到 `write_begin` 方法返回的页面。
-     * 调用文件系统的 `write_end` 方法，即 `ext4_da_write_end`。
-
-TBD.
+     * 调用文件系统的 `write_end` 方法，即 `ext4_da_write_end`。该函数最终会将写完的 `buffer_head` 标记为 dirty。
 
 ### 3.5 close
 
