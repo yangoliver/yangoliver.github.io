@@ -275,11 +275,23 @@ POSIX_FADV_DONTNEED 的主要目的是清除 page cache，因此它使用了 WB_
 
 详细的 `close` 系统调用的跟踪日志请查看[这里](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab1/funcgraph_close_fs_seq_write_sync_001.log)。
 
-TBD
+`close` 系统调用主要分两个阶段，
+
+- 系统调用部分。首先，由 `close` 系统调用的参数 `fd`，可以得到其对应的 `struct file` 结构。而该结构里定义了该文件的文件操作表。
+  如果文件系统实现了该文件操作表的 `flush` 方法，则调用该方法，保证所有与文件相关的 pending operations 都可以结束。
+  最后通过 `schedule_delayed_work` 来让内核延迟执行 `delayed_fput` 处理函数。
+
+- 延迟执行部分。为防止死锁等不可预期情况发生，保证 `fput` 操作可以被安全的执行，内核实现了 [delay fput 的机制](https://lwn.net/Articles/494158/)。
+  该机制利用了 `task_work_add` 机制，保证延迟执行的 `fput` 操作可以在 `close` 系统调用返回到用户进程代码执行前，先被执行和立即返回。
+  Linux 3.6 开始，[fput 的实现开始迁移到 `task_work_add` 之上](https://github.com/torvalds/linux/commit/4a9d4b024a3102fc083c925c242d98ac27b1c5f6)。
+  真正的 `fput` 实现会调用文件操作表的 `fasync` 和 `release` 方法，来实现文件系统层面上所需要的处理。
+  最后，`struct file` 结构会被彻底释放掉。
 
 ## 4. 小结
 
-TBD
+本文基于 `fio` 的测试用例，通过 Flamegraph 和 functongraph 等工具，结合源代码来进一步理解其中涉及到的文件 IO 操作。
+一般说来，从学习源码角度看，Flamegraph 更适合对被研究的代码和功能做一个全局的疏理，而 `functongraph` 则更适合研究代码实现的细节。
+通过这些简单的了解，我们可以对 `write` 和 `fadvise64` 坐比较。 充分为什么在执行时间上有如此大差异
 
 ## 6. 延伸阅读
 
@@ -292,3 +304,4 @@ TBD
 * [Device Drivers, Third Edition](http://lwn.net/Kernel/LDD3)
 * [Ftrace: Function Tracer](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt)
 * [The iov_iter interface](https://lwn.net/Articles/625077/)
+* [Toward a safer fput](https://lwn.net/Articles/494158/)
