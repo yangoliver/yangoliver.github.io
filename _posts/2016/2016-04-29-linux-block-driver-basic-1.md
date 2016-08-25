@@ -495,6 +495,8 @@ Sampleblk 的策略函数是 sampleblk_request，通过 `blk_init_queue` 注册�
 ## 5. 延伸阅读
 
 * [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
+* [Linux Crash - coding notes](http://oliveryang.net/2015/07/linux-crash-coding-notes/)
 * [Linux Crash - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
+* [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
 * [Device Drivers, Third Edition](http://lwn.net/Kernel/LDD3)

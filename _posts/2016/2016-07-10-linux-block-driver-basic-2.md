@@ -3,7 +3,7 @@ layout: post
 title: Linux Block Driver - 2
 description: Linux 块设备驱动系列文章。通过开发简单的块设备驱动，掌握 Linux 块设备层的基本概念。
 categories: [Chinese, Software, Hardware]
-tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
+tags: [driver, perf, trace, file system, kernel, linux, storage]
 ---
 
 > 本文首发于<http://oliveryang.net>，转载时请包含原文或者作者网站链接。

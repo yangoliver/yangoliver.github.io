@@ -572,8 +572,6 @@ Some times, we have to fix this kind of scripts issue per kernel or Linux distri
 * [Debugging kernel and modules via gdb](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt)
 * [My KGTP getmod.py patch for RHEL/CentOS/Fedora](https://github.com/teawater/kgtp/commit/725bca2d473aaf991c48cf80a592bb85066ee252)
 * [8 gdb tricks you should know](https://blogs.oracle.com/ksplice/entry/8_gdb_tricks_you_should)
-* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background/)
-* [Linux Crash - page cache debug](http://oliveryang.net/2015/07/linux-crash-page-cache-debug/)
 * [Debugger flow control: Hardware breakpoints vs software breakpoints - 1](http://www.nynaeve.net/?p=80)
 * [Debugger flow control: Hardware breakpoints vs software breakpoints - 2](http://www.nynaeve.net/?p=81)
 * [GDB Python API](https://sourceware.org/gdb/onlinedocs/gdb/Python-API.html)

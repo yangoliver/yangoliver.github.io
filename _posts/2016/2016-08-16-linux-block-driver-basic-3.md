@@ -488,5 +488,6 @@ Redhat 自带的 Crash 版本无法支持 4.6.0 内核，为此，您可能需�
 * [Ftrace: Function Tracer](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt)
 * [The iov_iter interface](https://lwn.net/Articles/625077/)
 * [Toward a safer fput](https://lwn.net/Articles/494158/)
+* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background)
 * [Linux Crash - coding notes](http://oliveryang.net/2015/07/linux-crash-coding-notes/)
 * [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)
