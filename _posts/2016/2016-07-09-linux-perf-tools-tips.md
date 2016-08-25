@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: mindmap
 title: Linux Perf Tools Tips
 description: Linux perf tools tips
 categories: [English, Software]
@@ -22,13 +22,44 @@ Especially, with eBPF available in Linux 4.x kernel, I believe Linux dynamic tra
 Linux has already changed the OS world, whereas Solaris is going to die.
 Even today, the design and usage of DTrace are still elegant and outstanding, but nobody could prevent the trend of Open Source.
 
-This is just a collection of Linux perf tips instead of a well structured article. The contents of the article might be changed per my daily updates.
+This article is about Linux trace tools introduction. Especially, the new dynamic trace tools which support turn on/off dynamic probes or trace events on the fly.
 
-## 2. Tips
+## 2. Big Picture
 
-### 2.1 Perf
+Today, there are many dynamic trace tools in Linux. Many people don't have clear ideas or concepts about the positions of different Linux trace tools.
+Below **Conceptual View** of Linux trace tools could give you a high level overview about the positions of different Linux trace tools.
 
-#### 2.1.1 Perf cannot find external module symbols
+<img src="/media/images/2016/linux_trace_tools.png" width="100%" height="100%" />
+
+You may find that the underlying tools in above picture are the building blocks of other trace tools.
+Below mindmap could give you a big picture regarding to the classification of these building blocks.
+
+<pre class="km-container" minder-data-type="markdown" style="height: 250px">
+
+- Trace Events
+  - Software Events
+    - Predefined
+      - [Mcount](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt)
+      - [Tracepoint](https://github.com/torvalds/linux/blob/master/Documentation/trace/tracepoints.txt)
+    - Dynamic
+      - [Kprobe](https://github.com/torvalds/linux/blob/master/Documentation/trace/kprobetrace.txt)
+      - [Uprobe](https://github.com/torvalds/linux/blob/master/Documentation/trace/uprobetracer.txt)
+  - Hardware Events
+    - [Perf Events (PMU)](https://perf.wiki.kernel.org/index.php/Main_Page)
+
+</pre>
+
+Linux trace tools give us a good opportunity to understand system behaviors deeply and quickly. In last month, I gave a presentation in community.
+In my talk, I shared my expericences on Linux perf tools usage.
+For more information, please download the slides - [Using Linux Trace Tools - for diagnosis, analysis, learning and fun](https://github.com/yangoliver/mydoc/blob/master/share/linux_trace_tools.pdf). 
+
+## 3. Tips
+
+This section is just a collection of Linux perf tips instead of a well structured descriptions. The contents of the section might be changed per my daily updates.
+
+### 3.1 Perf
+
+#### 3.1.1 Perf cannot find external module symbols
 
 When running perf it finds the kernel symbols but it does not find external module symbols. The kernel module was written by me, and loaded by insmod command.
 How can I tell perf to find its symbols as well?
@@ -50,7 +81,7 @@ Here are the steps to fix the problem,
 	$ cp ./sampleblk.ko /lib/modules/4.6.0/kernel/drivers/block/
 	$ depmod -a
 
-#### 2.1.2 Perf probe external module symbols
+#### 3.1.2 Perf probe external module symbols
 
 List, add a kernel probe for a module, and record, report the profiling the results
 
@@ -62,13 +93,13 @@ List, add a kernel probe for a module, and record, report the profiling the resu
 
 	$ perf report
 
-#### 2.1.3 Show tracepoints in a kernel subsystem
+#### 3.1.3 Show tracepoints in a kernel subsystem
 
 List all kernel block layer tracepoints,
 
 	$ sudo perf list subsys block:*
 
-#### 2.1.4 Show kernel & module available probe points
+#### 3.1.4 Show kernel & module available probe points
 
 List all probe points in kernel,
 
@@ -80,7 +111,7 @@ List all probe points in a module,
 
 All of above probe points could be also used by ftrace and other kprobe based tools. By default, all kernel and module APIs could be listed as probe points.
 
-#### 2.1.5 How to add a dynamic kernel probe event via perf CLI?
+#### 3.1.5 How to add a dynamic kernel probe event via perf CLI?
 
 In Linux kernel, dynamic kernel probe event is supported by kprobe. Perf CLI could be its front-end.
 First, get the what lines could be probed by perf,
@@ -109,7 +140,7 @@ Last, add probe and start tracing,
 
 The syntax of kprobe event could be found from [Documentation/trace/kprobetrace.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/kprobetrace.txt).
 
-#### 2.1.6 How to add a dynamic user space probe event via perf CLI?
+#### 3.1.6 How to add a dynamic user space probe event via perf CLI?
 
 User space probe needs Uprobes support in both kernel and perf CLI.
 
@@ -153,13 +184,13 @@ Last, add the probe, record trace and display trace results,
 
 The syntax of kprobe event could be found from [Documentation/trace/uprobetracer.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/uprobetracer.txt)
 
-### 2.2 SystemTap
+### 3.2 SystemTap
 
-#### 2.2.1 How to run systemtap with customized kernel
+#### 3.2.1 How to run systemtap with customized kernel
 
 In short, we could rebuild systemtap and kernel to make it work together. Please refer to [This article](https://www.ibm.com/support/knowledgecenter/linuxonibm/liaai.systemTap/liaaisystapcustom.htm).
 
-#### 2.2.2 Where can I find systemtap example scripts?
+#### 3.2.2 Where can I find systemtap example scripts?
 
 For systemtap example scripts, there are two ways,
 
@@ -171,7 +202,7 @@ For systemtap example scripts, there are two ways,
 
 Reading example scripts is the best way to learn systemtap. [SystemTap Beginners Guide](https://www.sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html) is a good reference.
 
-#### 2.2.3 How to run pre-built systemtap module directly?
+#### 3.2.3 How to run pre-built systemtap module directly?
 
 First, build the systemtap script by running `stap -k` option,
 
@@ -183,7 +214,7 @@ Then, find the module from temporary directory, and run it by `staprun`,
 
 	$ sudo staprun /tmp/stapKI1aZ3/stap_13235.ko
 
-#### 2.2.4 How to get input arguments and local variables?
+#### 3.2.4 How to get input arguments and local variables?
 
 The `-L` option showed the source code information, input arguments, and local variables,
 
@@ -194,7 +225,7 @@ The `-e` option could be used in one liner command, and we could print 2nd argum
 
 	$ sudo stap -e 'probe kernel.function("do_unlinkat") { printf("%s \n", kernel_string($pathname))} '
 
-#### 2.2.5 Address unwind data issue for a module
+#### 3.2.5 Address unwind data issue for a module
 
 Got following warning messages while running below SystemTap one line command,
 
@@ -226,7 +257,7 @@ Or using `--all-modules` option to add unwind/symbol data for all loaded kernel 
 
 The `--all-modules` could increase the module size built by stap, `-d` should be better way to address the issue.
 
-#### 2.2.6 Error: probe overhead exceeded threshold
+#### 3.2.6 Error: probe overhead exceeded threshold
 
 Systemtap will report error while a probe couldn't return within a time threshold.
 
@@ -244,8 +275,11 @@ Or,
 
 	sudo stap -DSTP_NO_OVERLOAD -v -g ./kgdb.stp
 
-## 3. References
+## 4. References
 
+* [Using Linux Trace Tools - for diagnosis, analysis, learning and fun](https://github.com/yangoliver/mydoc/blob/master/share/linux_trace_tools.pdf)
 * [SystemTap Beginners Guide](https://www.sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
 * [perf-tools github](https://github.com/brendangregg/perf-tools)
+* [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2/)
+* [Linux Block Driver - 3](http://oliveryang.net/2016/08/linux-block-driver-basic-3/)
