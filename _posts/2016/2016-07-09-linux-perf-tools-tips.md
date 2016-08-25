@@ -226,6 +226,24 @@ Or using `--all-modules` option to add unwind/symbol data for all loaded kernel 
 
 The `--all-modules` could increase the module size built by stap, `-d` should be better way to address the issue.
 
+#### 2.2.6 Error: probe overhead exceeded threshold
+
+Systemtap will report error while a probe couldn't return within a time threshold.
+
+	$ sudo ./kgdb.stp
+	ERROR: probe overhead exceeded threshold
+	WARNING: Number of errors: 1, skipped probes: 0
+	WARNING: /home/yango/systemtap-3.1-125278/bin/staprun exited with status: 1
+	Pass 5: run failed.  [man error::pass5]
+
+There are two ways to bypass the problem,
+
+	sudo stap -g --suppress-time-limits ./kgdb.stp
+
+Or,
+
+	sudo stap -DSTP_NO_OVERLOAD -v -g ./kgdb.stp
+
 ## 3. References
 
 * [SystemTap Beginners Guide](https://www.sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html)
