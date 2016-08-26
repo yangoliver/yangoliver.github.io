@@ -24,3 +24,5 @@ comments: yes
 - [The perf-tools commits](https://github.com/brendangregg/perf-tools/commits?author=yangoliver)
 
 - [The irqstat commits](https://github.com/lanceshelton/irqstat/commits?author=yangoliver)
+
+- [Part of OpenSolaris Commits](http://oliveryang.net/2016/08/opensolaris-my-patches)
