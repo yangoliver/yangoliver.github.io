@@ -3,7 +3,7 @@ layout: mindmap
 title: Linux Perf Tools Tips
 description: Linux perf tools tips
 categories: [English, Software]
-tags: [perf, trace, kernel, linux]
+tags: [perf, trace, kernel, linux, solaris]
 ---
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.

@@ -3,8 +3,7 @@ layout: post
 title: Linux Crash - background
 description: Linux kernel debug tool - crash introduction. 用crash来调试Linux内核错误是内核程序员的基本技能。
 categories: [English, Software]
-tags:
-- [crash, kernel, linux, solaris]
+tags: [crash, kernel, linux, solaris]
 ---
 
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.

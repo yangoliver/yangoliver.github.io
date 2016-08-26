@@ -2,9 +2,8 @@
 layout: post
 title: OpenSolaris - my patches
 description: This page is used to hold Oliver Yang's OpenSolaris patch while he was working for SUN & Oracle.
-categories: [English, Software]
-tgs:
-- [solaris]
+categories: [English, Software, Career]
+tags: [kernel, solaris]
 ---
 
 This page is for tracking my patches for [OpenSolaris](https://en.wikipedia.org/wiki/OpenSolaris). As you may already know,
