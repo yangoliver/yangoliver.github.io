@@ -97,10 +97,6 @@ There are three core roles in the Scrum framework. These core roles are ideally 
           - Only interacts with upper level POs
     - Value
       - Accountale for winning in the market
-      - Maximizing the value of the product and of the dev team by following outcome
-        - Visionary product backlogs
-        - Clear sprint backlogs
-      - Accountale for winning in the market
         - Drive product success
         - Product vision
         - Own product backlog
@@ -109,20 +105,22 @@ There are three core roles in the Scrum framework. These core roles are ideally 
         - Prioritize the work
         - Accept/Reject the work
         - Determine release
+      - Maximizing the value of the product and of the dev team by following outcome
+        - Visionary product backlogs
+        - Clear sprint backlogs
     - Time Allocation
-      - Internal & External
-        - 50% time on external people (customer, sales & marketing, architect, stakeholder etc.)
-          - Investigations, interactions & analysis
-            - Customer
-            - Market
-            - Industry
-          - Define product vision, roadmap, release plan
-        - 50% time in scrum team
-          - Sprint planning
-          - Backlog refinement
-          - Sprint review
-          - Retrospective
-          - Daily scrum (Optional)
+      - 50% time on external people (customer, sales & marketing, architect, stakeholder etc.)
+        - Investigations, interactions & analysis
+          - Customer
+          - Market
+          - Industry
+        - Define product vision, roadmap, release plan
+      - 50% time in scrum team
+        - Sprint planning
+        - Backlog refinement
+        - Sprint review
+        - Retrospective
+        - Daily scrum (Optional)
     - Skills
       - Domain knowledge
         - Understand Industry
@@ -161,31 +159,32 @@ There are three core roles in the Scrum framework. These core roles are ideally 
           - Different with Project Manager
           - Let dev team make the decision
     - Time allocation
-      - Internal & External
-        - May spend time to cooperate with people outside the team
-		  - Protect team to focus sprint goals
-          - Help on removing external impediments
-        - Major time in scrum team as Agile Coach
-          - Support
-            - Nurture
-            - Energize
-          - Educate
-            - Demonstrate
-            - Teach
-            - Examples
-          - Facilitate
-            - All Scrum Meetings
-            - Dialog
-            - Environment
-          - Feedback
-            - Maintain impediments list
-              - Visual & Verbal
-          - Notice
-            - Observe
-            - Reflect
-            - Question
+      - May spend time to cooperate with people outside the team
+        - Protect team to focus sprint goals
+        - Help on removing external impediments
+      - Major time in scrum team as Agile Coach
+        - Support
+          - Nurture
+          - Energize
+        - Educate
+          - Demonstrate
+          - Teach
+          - Examples
+        - Facilitate
+          - All Scrum Meetings
+          - Dialog
+          - Environment
+        - Feedback
+          - Maintain impediments list
+            - Visual & Verbal
+        - Notice
+          - Observe
+          - Reflect
+          - Question
     - Skill
       - Agile & Scrum knowledge
+        - Process
+        - Tools
       - Coaching skills
       - Other soft skills
         - Communication
@@ -206,14 +205,13 @@ There are three core roles in the Scrum framework. These core roles are ideally 
         - Make and meet commitments by self-organizing
         - Hands-on individual contributor
     - Time allocation
-      - Internal & External
-        - Avoid to cross multiple teams or have external dependencies
-          - If couldn't, work with external team to define interface clearly
-          - Avoid multi-tasks
-        - Keep focus in sprint team
-            - Only accept work from sprint backlogs
-            - Focus on current sprint tasks and commitments
-            - Have contributions on all sprint meetings
+      - Avoid to cross multiple teams or have external dependencies
+        - If couldn't, work with external team to define interface clearly
+        - Avoid multi-tasks
+      - Keep focus in sprint team
+        - Only accept work from sprint backlogs
+        - Focus on current sprint tasks and commitments
+        - Have contributions on all sprint meetings
     - Skill
       - Technical
         - Full stack
