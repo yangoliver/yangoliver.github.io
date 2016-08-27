@@ -81,7 +81,8 @@ and [Scrum](https://en.wikipedia.org/wiki/Scrum_(software_development))。
 
 ### 3.2 Three Roles
 
-There are three core roles in the Scrum framework. These core roles are ideally colocated to deliver potentially shippable Product Increments
+There are three core roles in the Scrum Team. These core roles are ideally colocated to deliver potentially shippable Product Increments.
+Below mindmap tries to show how these 3 roles deliver their work in Scrum framework.
 
 <pre class="km-container-2" minder-data-type="markdown" style="height: 700px">
 - 3 Roles
@@ -226,37 +227,259 @@ There are three core roles in the Scrum framework. These core roles are ideally 
       - Soft Skills
         - Communication
         - Collaboration
-
 </pre>
 
 ### 3.3 Tree Artifacts
 
-<pre class="km-container-3" minder-data-type="markdown" style="height: 500px">
+<pre class="km-container-3" minder-data-type="markdown" style="height: 700px">
 - 3 Artifacts
-  - Product Backlog
-  - Sprint Backlog
-  - Product Increment
+  - PB (Product Backlog)
+    - What
+      - PB: An ordered list for things(PBIs) need to be done by Scrum team
+      - PBI: whatever must be done to successfully deliver a product
+        - Features
+        - Bug fixes
+        - Non-functional requirements
+      - [PBIs must be DEEP](https://www.mountaingoatsoftware.com/blog/make-the-product-backlog-deep)
+        - Detailed appropriately
+          - Much detail on higher priority PBIs
+          - Less detail on low priority PBIs
+        - Estimated
+          - More precise on higher priority PBIs
+          - Less precise on low priority PBIs
+        - Emergent (Dynamic Changes)
+        - Prioritized
+          - High->Top
+          - Low->bottom
+    - How
+      - Global visible and maintained publicly
+        - Anyone can contribute
+        - PO is owner who can only make the changes
+      - 4 ways to present PBIs
+        - Requirements
+        - User Story
+        - Feature
+        - Use Cases
+      - PBI granularity
+        - From big to small
+          - Epic
+          - Feature
+          - User story
+            - End-to-End: Virtual slicing
+            - Present with template
+              - Who: As a [Role]
+              - What: I want to [Activity]
+              - Why: so that [Business Value]
+        - Split just in time
+          - Short term with more details and higher priorities
+          - Long term with less details and lower priorities
+          - Schedule exmaples
+            - Short: 1~3 sprints
+            - Medium: Next 6 months
+            - Long: Future
+      - PBI prioritize
+        - Key factors
+          - Business value: PRAISE
+            - Productivity gains
+            - Reduced cost
+            - Avoided cost
+            - Increased revenue
+            - Service level improvements
+            - Enhanced quality
+            - Differentiation in the marketpalace
+          - Efforts/Cost
+          - Risk & Depedencies
+          - Understand
+       - Methods
+         - MSCW
+           - Must to have
+           - Should have
+           - Could be nice to have
+           - Won't have this (Maybe later)
+         - [Kano Model](https://en.wikipedia.org/wiki/Kano_model)
+           - Basic Quality
+           - Performance Quality
+           - Excitement Quality
+           - Indifferent Quality
+           - Reverse Quality
+         - Value methods
+           - Theme screening
+           - Theme scoring
+           - Relative weighting
+      - PBI readyness
+        - What should be done is clear enough and can be understood by team
+        - Business value is clear enough and can be reprioritized by PO
+        - Complex PBI may include [Enabling Spec](http://www.leanagiletraining.com/key-problems/agile-specifications/)
+        - User story meet INVEST criteria
+          - Independent
+          - Negotiable
+          - Valuable
+          - Estimable
+          - Size appropriately
+          - Testable
+        - Free from external dependencies
+      - PBI changes & refine
+        - Operations
+          - Added
+          - Deleted
+          - Reprioritized
+          - Estimate (should done by dev team)
+            - For accuracy instread of precision
+            - Relative estimating
+              - Planning Poker
+              - Find a base
+          - Split
+          - Update
+        - When refinement?
+          - Backlog Grooming meetings
+            - Up front meetings before 1~2 sprints
+            - Workshop during sprint
+          - After daily scrum
+          - During sprint review
+      - Meetings & activities
+        - Backlog Grooming meetings
+        - Sprint Planning meetings
+        - Other activities
+          - Business Plan
+          - Brain Storming
+          - Vision Statement
+          - Any formal & informal communications
+      - Release management
+        - 5 level's Agile planning
+          - Vision
+          - Product roadmap
+          - Replease plan
+          - Sprint plan
+          - Daily scrum
+        - Release planning
+          - [PM Iron Triangle](https://en.wikipedia.org/wiki/Project_management_triangle)
+            - Cost
+              - Difficult to change for software dev
+            - Time
+            - Scope
+          - Release model
+            - Fixed time release
+              - Fixed cost
+              - Scope is open
+            - Fixed scope release
+              - Fixed cost
+              - Time is open
+          - Extrapolate by velocity
+            - Methods
+              - Fixed time release
+                - Remaining sprints
+                - Normal velocity
+                - Optimistic velocity
+              - Fixed scope release
+                - Total story points
+                - Normal velocity
+                - Optimistic velocity
+            - Visualize: release burn down graph
+
+  - SB (Sprint Backlog)
+    - What
+      - SB: the list of work the Dev Team must address in next Sprint.
+        - Pickup from top PBIs of PB to SB.
+        - Until Dev team feels to reach the capacity
+    - How
+      - Pick up PBIs and do task break down
+        - Hourly granularity
+        - Don't exceed 8 hours
+        - No pre-assignment
+      - Task Estimation
+        - Hourly granularity
+        - Big task needs a split
+        - Daily update remaining work
+      - Dev team could change tasks of a PBI freely
+      - Once SB is commited, no PBIs could be added into SB
+  - PI (Product Increment)
 </pre>
 
 ### 3.4 Five Meetings
 
-<pre class="km-container-4" minder-data-type="markdown" style="height: 500px">
+<pre class="km-container-4" minder-data-type="markdown" style="height: 700px">
 
 - 5 Scrum Meetings
   - Sprint Planning Meeting
-    - Time: Begining of sprint
-    - Outcome: Task break down
+    - Time
+      - Begining of sprint
+      - 2 hours per week time boxed
+        - 4 hours for 4 weeks sprint
     - Attendee
       - Scrum Master
-        - Drive meeting
       - PO
-        - Clarify user story
-        - Address questions for team
       - Dev team
+      - Anyone could attend, but ensure conversation and work between PO and dev team
+    - Outcome
+      - Evaluate PBIs and set sprint goals with PO
+        - PO clarify user stories and team need understand
+        - PO need address questions for team
+        - Team capacity planning
+          - 6 hours per day
+          - Update vacation plan
+          - Update people percentage
+        - Already knew team velocity
+          - Per history data
+          - Good guess
+        - Already knew DOD scope or need update scope
+          - Why
+            - Always shipable, and avoid stabilization sprint, which is mini water-fall
+            - Maintain trust with PO by not hiding undone work
+          - How
+            - Dev
+              - Unit test
+              - Code review
+            - Test
+              - Functional
+              - Regression
+              - System integration
+              - Performance regression
+            - Documentation
+              - Design doc
+              - User doc
+              - Release notes
+        - Pick up PBIs and add them into SB until reach capacity
+      - Define Sprint Backlogs
         - Task BreakDown
+          - Hourly granularity
+          - Don't exceed 8 hours
+          - No pre-assignment
+        - High level design discussion
         - Task Estimation
+          - Hourly granularity
+          - Big task needs a split
+        - Once SB is commited, no PBIs could be added into SB
   - Daily Scrum Meeting
+    - Time
+      - Every day
+      - 15 min
+    - Attendee
+      - Scrum Master
+      - Dev team
+      - PO is optional
+    - Outcome
+      - Insepct and adapt
+        - Talks per PBI order is better
+        - 3 questions to everyone
+          - What have you done yesterday?
+          - What will I do today?
+          - Do I see any impediment that prevents me?
   - Sprint Review Meeting
+    - Time
+      - End of sprint
+      - 2 hours per week time boxed
+        - 4 hours for 4 weeks sprint
+    - Outcome
+      - PO indentifies what had been done and what hasn't been done
+      - PO Accept/Reject work per two conditions
+          - DOD
+          - Accept criteria
+      - Team demonstrates the work had been done and answer the questions
+      - PO projects likely completion date with different velocity assumptions
+    - Attendee
+      - Scrum Master
+      - PO
+      - Dev team
   - Sprint Retrospective Meeting
   - Project Backlog Grooming Meeting
 
