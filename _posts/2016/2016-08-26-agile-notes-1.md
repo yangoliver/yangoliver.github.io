@@ -86,11 +86,20 @@ There are three core roles in the Scrum framework. These core roles are ideally 
 <pre class="km-container-2" minder-data-type="markdown" style="height: 700px">
 - 3 Roles
   - Product Owner
-    - Quantity
+    - Position
       - One per product/team
       - SAFe has PO hierarchy 
+        - Portfolio
+        - Value Stream
+        - Program
+        - Scrum team
+          - Split big backlogs at sprint level
+          - Only interacts with upper level POs
     - Value
-      - Maximizing the value of the product and of the dev team
+      - Accountale for winning in the market
+      - Maximizing the value of the product and of the dev team by following outcome
+        - Visionary product backlogs
+        - Clear sprint backlogs
       - Accountale for winning in the market
         - Drive product success
         - Product vision
@@ -102,22 +111,32 @@ There are three core roles in the Scrum framework. These core roles are ideally 
         - Determine release
     - Time Allocation
       - Internal & External
-        - 50% time on customer, sales and marketing
+        - 50% time on external people (customer, sales & marketing, architect, stakeholder etc.)
+          - Investigations, interactions & analysis
+            - Customer
+            - Market
+            - Industry
+          - Define product vision, roadmap, release plan
         - 50% time in scrum team
-      - Activities
-        - Sprint planning
-        - Backlog refinement
-        - Sprint review
-        - Retrospective
-        - Daily scrum (Optional)
-        - Release planning
+          - Sprint planning
+          - Backlog refinement
+          - Sprint review
+          - Retrospective
+          - Daily scrum (Optional)
     - Skills
       - Domain knowledge
-        - Vision & Roadmap
-        - User requirements & stories
-        - Market & compitators status
-        - Release planning
-        - Architect & Features
+        - Understand Industry
+          - Vision
+          - Roadmap
+          - Architect
+          - Features
+        - Understand market
+          - Market trends
+          - Compitators status
+        - Understand customer
+          - User pain points
+          - User requirements
+          - User stories
       - People skills
         - Communication & Empathy & Collaboration
           - Customers
@@ -131,36 +150,40 @@ There are three core roles in the Scrum framework. These core roles are ideally 
         - Negotiation
         - Presentation
   - Scrum Master
-    - Quantity
+    - Position
       - One per product/team
     - Value
-      - Accountable for removing team impediments, to deliver the product goals
-        - IS: an Agile coach, facilitate team to follow Agile values, principles, and practices
-        - IS NOT: a boss, different with Project Manager
+      - Accountable for removing team impediments and empowering team to deliver the product goals
+        - IS: an Agile coach
+          - Facilitate team to follow Agile values, principles, and practices
+          - Perceive the problems and remove team impediments
+        - IS NOT: a boss
+          - Different with Project Manager
+          - Let dev team make the decision
     - Time allocation
       - Internal & External
-        - Time in scrum team? TBD
-      - Coaching Activities
-        - Support
-          - Nurture
-          - Energize
-        - Educate
-          - Demonstrate
-          - Teach
-          - Examples
-        - Facilitate
-          - Meetings
-            - Daily scrum
-            - Retrospective
-          - Dialog
-          - Environment
-        - Feedback
-          - Maintain impediments list
-            - Visual & Verbal
-        - Notice
-          - Observe
-          - Reflect
-          - Question
+        - May spend time to cooperate with people outside the team
+		  - Protect team to focus sprint goals
+          - Help on removing external impediments
+        - Major time in scrum team as Agile Coach
+          - Support
+            - Nurture
+            - Energize
+          - Educate
+            - Demonstrate
+            - Teach
+            - Examples
+          - Facilitate
+            - All Scrum Meetings
+            - Dialog
+            - Environment
+          - Feedback
+            - Maintain impediments list
+              - Visual & Verbal
+          - Notice
+            - Observe
+            - Reflect
+            - Question
     - Skill
       - Agile & Scrum knowledge
       - Coaching skills
@@ -169,13 +192,43 @@ There are three core roles in the Scrum framework. These core roles are ideally 
         - Presentation
         - Collaboration
   - Dev Team
-    - Quantity
+    - Position
       - 3-9 persons
-        - Cross-function: End-to-end, Dev & QA
-        - Self-organizing
+      - Cross-function
+        - Full cycle
+        - Whole product
+      - Self-organizing
+        - No techincal leader & architect role
+        - Use the influence rather than authority
     - Value
+      - Accountable for delivering shippable PIs at the end of each Sprint
+        - Practice Agile/Scrum principles & values
+        - Make and meet commitments by self-organizing
+        - Hands-on individual contributor
     - Time allocation
+      - Internal & External
+        - Avoid to cross multiple teams or have external dependencies
+          - If couldn't, work with external team to define interface clearly
+          - Avoid multi-tasks
+        - Keep focus in sprint team
+            - Only accept work from sprint backlogs
+            - Focus on current sprint tasks and commitments
+            - Have contributions on all sprint meetings
     - Skill
+      - Technical
+        - Full stack
+          - End-to-end
+          - Dev & QA
+        - Full Dev Cycle
+          - Analysis
+          - Design
+          - Coding
+          - Test
+          - Document
+      - Soft Skills
+        - Communication
+        - Collaboration
+
 </pre>
 
 ### 3.3 Tree Artifacts
@@ -214,10 +267,20 @@ There are three core roles in the Scrum framework. These core roles are ideally 
 ### 3.5 Five Values
 
 * Focus
+
+  Team members focus exclusively on their team goals and the Sprint Backlog; there should be no work done other than through their backlog.
 * Courage
+
+  Team members know they have the courage to work through conflict and challenges together so that they can do the right thing.
 * Openness
+
+  Team members and their stakeholders agree to be transparent about their work and any challenges they face.
 * Commitment
+
+  Team members individually commit to achieving their team goals, each and every Sprint.
 * Respect
+
+  Team members respect each other to be technically capable and to work with good intent.
 
 ## 4. References
 
