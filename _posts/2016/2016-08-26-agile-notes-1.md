@@ -6,7 +6,6 @@ categories: [English, Software, Industry]
 tags: [engineering]
 ---
 
->This is still a draft, which means the content can get changes frequently until it gets done.
 >This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
 * content
@@ -81,7 +80,13 @@ and [Scrum](https://en.wikipedia.org/wiki/Scrum_(software_development))。
 
 ### 3.2 Three Roles
 
-There are three core roles in the Scrum Team. These core roles are ideally colocated to deliver potentially shippable Product Increments.
+There are three core roles in the Scrum Team,
+
+* Product Owner
+* Scrum Mater
+* Dev Team
+
+These core roles are ideally colocated to deliver potentially shippable Product Increments.
 Below mindmap tries to show how these 3 roles deliver their work in Scrum framework.
 
 <pre class="km-container-2" minder-data-type="markdown" style="height: 700px">
@@ -231,6 +236,15 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
 
 ### 3.3 Tree Artifacts
 
+Scrum process produces 3 artifacts,
+
+* Project Backlog
+* Sprint Backlog
+* Product Increment
+
+These artifacts provide the key information about what have been planned, what are under development, and what have been done in a product.
+Below mindmap organizes all major key knowledge point related these 3 artifacts.
+
 <pre class="km-container-3" minder-data-type="markdown" style="height: 700px">
 - 3 Artifacts
   - PB (Product Backlog)
@@ -323,13 +337,29 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
           - Added
           - Deleted
           - Reprioritized
-          - Estimate (should done by dev team)
-            - For accuracy instread of precision
-            - Relative estimating
+          - Estimate
+            - The goal is for accuracy instread of precision
+            - Must be done by dev team
+              - Not PO
+              - Not by a senior engineer
+            - Done before PO prioritize the PBI
+            - Estimates are not a commitment
+            - Method: Relative estimating, instead of absolute estimating
               - Planning Poker
+              - Based on points, instead of people/day
               - Find a base
           - Split
-          - Update
+            - By data
+            - By operations (CRUD)
+            - By workflow steps
+            - By simple/complex scenarios
+            - By simpale/complex rules
+            - By IO path
+            - By acceptance test
+            - By functional and non-functional
+            - by subbing out external dependencies
+            - By having spike (investigation)
+          - Update for any unclear or poor definitions
         - When refinement?
           - Backlog Grooming meetings
             - Up front meetings before 1~2 sprints
@@ -358,16 +388,17 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
             - Time
             - Scope
           - Release model
-            - Fixed time release
+            - Time driven: Fixed time release
               - Fixed cost
               - Scope is open
-            - Fixed scope release
+            - Feature driven: Fixed scope release
               - Fixed cost
               - Time is open
           - Extrapolate by velocity
             - Methods
               - Fixed time release
                 - Remaining sprints
+                - Sprint length
                 - Normal velocity
                 - Optimistic velocity
               - Fixed scope release
@@ -393,9 +424,43 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
       - Dev team could change tasks of a PBI freely
       - Once SB is commited, no PBIs could be added into SB
   - PI (Product Increment)
+    - What
+      - PI: the sum of all the PBIs completed in a sprint
+        - Meet the well-defined DoD
+          - Poor DoD definition will cause,
+            - Not every PI could be potentially released
+            - Need extra stabilization sprint for bug fixes and testing
+        - Accepted by PO per acceptance criteria on Sprint Review meeting
+    - How
+      - Always be potentially shippable
+        - Meet the well-defined DoD
+          - Dev
+            - Unit test
+            - Code review
+          - Test
+            - Functional
+            - Regression
+            - System integration
+            - Performance regression
+          - Documentation
+            - Design doc
+            - User doc
+            - Release notes
+        - DoD has no big gaps between sprint and release level
 </pre>
 
 ### 3.4 Five Meetings
+
+A sprint iteration usually has 5 regular scrum meetings,
+
+* Sprint Planning Meeting
+* Daily Scrum Meeting
+* Sprint Backlog Grooming Meeting
+* Sprint Review Meeting
+* Sprint Retrospective Meeting
+
+All these meetings make sure Scrum team could follow the Agile principles and values, to maximized the value of Scrum team.
+Below mindmap shows that all key information related to these 5 meeting,
 
 <pre class="km-container-4" minder-data-type="markdown" style="height: 700px">
 
@@ -403,15 +468,17 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
   - Sprint Planning Meeting
     - Time
       - Begining of sprint
+      - 1 time meeting
       - 2 hours per week time boxed
         - 4 hours for 4 weeks sprint
     - Attendee
       - Scrum Master
       - PO
       - Dev team
-      - Anyone could attend, but ensure conversation and work between PO and dev team
+      - Others that can help on PBIs and SB deinitions
     - Outcome
-      - Evaluate PBIs and set sprint goals with PO
+      - Communication between PO and Dev team, other conversation need to be controled
+      - What: Evaluate PBIs and set sprint goals with PO
         - PO clarify user stories and team need understand
         - PO need address questions for team
         - Team capacity planning
@@ -421,7 +488,7 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
         - Already knew team velocity
           - Per history data
           - Good guess
-        - Already knew DOD scope or need update scope
+        - Already knew DoD scope or need update scope
           - Why
             - Always shipable, and avoid stabilization sprint, which is mini water-fall
             - Maintain trust with PO by not hiding undone work
@@ -439,7 +506,7 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
               - User doc
               - Release notes
         - Pick up PBIs and add them into SB until reach capacity
-      - Define Sprint Backlogs
+      - How: Define Sprint Backlogs
         - Task BreakDown
           - Hourly granularity
           - Don't exceed 8 hours
@@ -457,35 +524,116 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
       - Scrum Master
       - Dev team
       - PO is optional
+      - Others as observers
     - Outcome
       - Insepct and adapt
-        - Talks per PBI order is better
+        - Talks in front of Scrum task board
+        - Only Scrum team member could talk
         - 3 questions to everyone
           - What have you done yesterday?
           - What will I do today?
+            - Multiple members focus on one PBI
           - Do I see any impediment that prevents me?
+        - SM: update task board per talk
+          - Change Task state
+            - Future
+            - In progress
+            - Implemented
+            - Accepted (done by PO on Sprint review meeting)
+          - Update task assignments
+          - Add new task
+          - Add impediments and see blocking tasks and stories
+          - Update remaining time
+          - Visualzie: sprint burn down graph
+      - Peer commitment, instead of report to boss
+      - Pitfalls
+        - Overtime
+          - Technical details discussion
+          - Argument
+          - No host control
+        - Don't care other's talk
+          - Pre-assignment task, no cooperation possibility
+          - Team members are not working on one same PBI
+          - Share useless information
+        - Nothing can share
+          - Task too big to give updates everyday
+          - No preparation
   - Sprint Review Meeting
     - Time
       - End of sprint
-      - 2 hours per week time boxed
-        - 4 hours for 4 weeks sprint
-    - Outcome
-      - PO indentifies what had been done and what hasn't been done
-      - PO Accept/Reject work per two conditions
-          - DOD
-          - Accept criteria
-      - Team demonstrates the work had been done and answer the questions
-      - PO projects likely completion date with different velocity assumptions
+      - 1 time meeting
+      - 2 hours per two weeks time boxed
     - Attendee
       - Scrum Master
       - PO
       - Dev team
+      - Customers
+      - Stakeholder
+      - Managers
+    - Outcome
+      - PO indentifies what had been done and what hasn't been done
+        - PO Accept/Reject work per two conditions
+            - DoD
+            - Accept criteria
+        - Team demonstrates the work had been done and answer the questions
+        - Deliverables
+          - Demo for key PBIs, not just PPT
+          - Working software
+          - Documents
+      - Build trust between PO with customers & stakeholders
+        - Get feedbacks from customers & stakeholders
+          - AIs for PB updates
+        - PO projects likely completion date with different velocity assumptions
+      - Team decisions communications
   - Sprint Retrospective Meeting
+    - Time
+      - End of sprint
+      - 1 time meeting
+      - 2 hours
+    - Attendee (Internal only)
+      - Scrum Master (Host)
+      - PO
+      - Dev team
+    - Outcome
+      - Review last retrospective AIs
+      - Sprint retrospective and AIs generation
+        - What went well
+        - What could have been better
+        - Things we can try for next sprint
+        - Issues to escalate
+      - Celeberation for team building
   - Project Backlog Grooming Meeting
-
+    - Time
+      - Per requirements after middle of sprint
+      - Multiple meetings per sprint
+      - 5~10% of one sprint time
+    - Attendee
+      - Scrum Master
+      - PO
+      - Dev team
+      - Others that could help on PBI definitions
+    - Outcome
+      - Make PBIs ready for next 1~3 sprints
+      - Ensure long term PBIs is under healthy status
+      - PBI refinement
+        - Split big PBIs
+        - Added missing PBIs
+        - Deleted useless PBIs
+        - Reprioritize PBIs per their value
+        - Do estimation (should done by dev team)
+          - For accuracy instread of precision
+          - Relative estimating
+            - Planning Poker
+            - Find a base
+        - Update for any unclear or poor PBIs
+          - Accept criteria update for short term PBIs
+          - Other readyness update for short term PBIs
 </pre>
 
 ### 3.5 Five Values
+
+Scrum is a feedback-driven empirical approach, which needs a transparent, open and trust team culture.
+Scrum defines 5 values which could ensure this culture,
 
 * Focus
 
@@ -507,3 +655,11 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
 
 * [Agile](https://en.wikipedia.org/wiki/Agile_software_development)
 * [What is Scrum](https://en.wikipedia.org/wiki/Scrum_(software_development))
+* [Extreme programming (XP)](https://en.wikipedia.org/wiki/Extreme_programming)
+* [Lean software development](https://en.wikipedia.org/wiki/Lean_software_development)
+* [Kanban](https://en.wikipedia.org/wiki/Kanban_(development))
+* [Scrum](https://en.wikipedia.org/wiki/Scrum_(software_development))
+* [Make Product Backlog DEEP](https://www.mountaingoatsoftware.com/blog/make-the-product-backlog-deep)
+* [Kano Model](https://en.wikipedia.org/wiki/Kano_model)
+* [What is enabling spec](http://www.leanagiletraining.com/key-problems/agile-specifications/)
+* [PM Iron Triangle](https://en.wikipedia.org/wiki/Project_management_triangle)
