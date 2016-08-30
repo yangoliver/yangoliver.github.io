@@ -116,17 +116,23 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
         - Clear sprint backlogs
     - Time Allocation
       - 50% time on external people (customer, sales & marketing, architect, stakeholder etc.)
-        - Investigations, interactions & analysis
+        - Investigations, interactions and analysis
           - Customer
           - Market
           - Industry
-        - Define product vision, roadmap, release plan
       - 50% time in scrum team
         - Sprint planning
         - Backlog refinement
         - Sprint review
         - Retrospective
         - Daily scrum (Optional)
+      - Output
+        - Product vision
+        - Product roadmap
+        - Release plan
+        - Product Backlog (owner)
+        - Sprint Backlog (owner)
+        - Product Increment (accept/reject)
     - Skills
       - Domain knowledge
         - Understand Industry
@@ -187,6 +193,12 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
           - Observe
           - Reflect
           - Question
+      - Output
+        - Empower team to keep dev cadence and maximize the ROI
+          - AIs to remove impediments
+          - AIs to run Scrum process
+          - Facilate on status update (burn down chart)
+        - Coach team to make the decisions to improve process
     - Skill
       - Agile & Scrum knowledge
         - Process
@@ -218,6 +230,14 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
         - Only accept work from sprint backlogs
         - Focus on current sprint tasks and commitments
         - Have contributions on all sprint meetings
+      - Output
+        - Product Backlog (contributors)
+        - Sprint Backlog (contributors)
+          - Task breakdown
+          - Task estimation
+          - Task self-assignment
+          - Status update
+        - Product Increment (dev & test)
     - Skill
       - Technical
         - Full stack
@@ -405,8 +425,7 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
                 - Total story points
                 - Normal velocity
                 - Optimistic velocity
-            - Visualize: release burn down graph
-
+            - Visualize: release burn down chart
   - SB (Sprint Backlog)
     - What
       - SB: the list of work the Dev Team must address in next Sprint.
@@ -544,7 +563,7 @@ Below mindmap shows that all key information related to these 5 meeting,
           - Add new task
           - Add impediments and see blocking tasks and stories
           - Update remaining time
-          - Visualzie: sprint burn down graph
+          - Visualzie: sprint burn down chart
       - Peer commitment, instead of report to boss
       - Pitfalls
         - Overtime
