@@ -26,7 +26,7 @@ Agile is just a set of **principles** and **values**, which focus on customer co
 
 Agile defines **12 principles** for software development,
 
-<pre class="km-container" minder-data-type="markdown" style="height: 500px">
+<pre class="km-container" minder-data-type="markdown" style="width: 100%;height: 500px">
 
 - 12 Agile principles
   - Customer collaboration
@@ -89,7 +89,7 @@ There are three core roles in the Scrum Team,
 These core roles are ideally colocated to deliver potentially shippable Product Increments.
 Below mindmap tries to show how these 3 roles deliver their work in Scrum framework.
 
-<pre class="km-container-2" minder-data-type="markdown" style="height: 700px">
+<pre class="km-container-2" minder-data-type="markdown" style="width: 100%;height: 700px">
 - 3 Roles
   - Product Owner
     - Position
@@ -245,7 +245,7 @@ Scrum process produces 3 artifacts,
 These artifacts provide the key information about what have been planned, what are under development, and what have been done in a product.
 Below mindmap organizes all major key knowledge point related these 3 artifacts.
 
-<pre class="km-container-3" minder-data-type="markdown" style="height: 700px">
+<pre class="km-container-3" minder-data-type="markdown" style="width: 100%;height: 700px">
 - 3 Artifacts
   - PB (Product Backlog)
     - What
@@ -462,7 +462,7 @@ A sprint iteration usually has 5 regular scrum meetings,
 All these meetings make sure Scrum team could follow the Agile principles and values, to maximized the value of Scrum team.
 Below mindmap shows that all key information related to these 5 meeting,
 
-<pre class="km-container-4" minder-data-type="markdown" style="height: 700px">
+<pre class="km-container-4" minder-data-type="markdown" style="width: 100%;height: 700px">
 
 - 5 Scrum Meetings
   - Sprint Planning Meeting

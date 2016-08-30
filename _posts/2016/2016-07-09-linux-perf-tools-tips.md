@@ -34,7 +34,7 @@ Below **Conceptual View** of Linux trace tools could give you a high level overv
 You may find that the underlying tools in above picture are the building blocks of other trace tools.
 Below mindmap could give you a big picture regarding to the classification of these building blocks.
 
-<pre class="km-container" minder-data-type="markdown" style="height: 250px">
+<pre class="km-container" minder-data-type="markdown" style="width: 100%;height: 250px">
 
 - Trace Events
   - Software Events
