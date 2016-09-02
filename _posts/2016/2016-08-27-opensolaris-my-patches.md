@@ -15,9 +15,11 @@ For above reasons, it was quite difficult to find all my footprints in Illumos c
 
 ## 1. Solaris IO Subsystem
 
-### 1.1 PCIe IO Virtualization Project
+### 1.1 SRIOV Project
 
 - [New Feature: Inter-Domain communication among LDOM and Xen VMs](https://github.com/illumos/illumos-gate/blob/master/usr/src/uts/common/io/pciex/pciev.c)
+
+  Provided SRIOV devices PF/VF communication framework for PCIe config space emulation, PCIe UE & CE handling, other control commands transfers.
 
   Notes: My original commit logs were not imported in Illumos Git commit logs. I made 20000 lines of code changes in Solaris PCIe subsystem, which has both common module and Xen/LDOM specific modules.
          The `pciev.c` is one of source code file I introduced in my project. Only small part of them are opensourced. The remainning part was not opened becasue Oracle had stopped OpenSoalris Project.
