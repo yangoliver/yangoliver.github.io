@@ -25,6 +25,8 @@ For above reasons, it was quite difficult to find all my footprints in Illumos c
          The `pciev.c` is one of source code file I introduced in my project. Only small part of them are opensourced. The remainning part was not opened becasue Oracle had stopped OpenSoalris Project.
          The [illumos-gate](https://github.com/illumos/illumos-gate) is based on [Illumos](https://en.wikipedia.org/wiki/Illumos), which is a fork of OpenSolaris.
 
+- Other Solaris IO subsystem RFEs & Bugfixes
+
 ## 2. NIC drivers
 
 
