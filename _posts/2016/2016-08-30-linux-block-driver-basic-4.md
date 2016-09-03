@@ -27,14 +27,14 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 阅读本文前，可能需要如下准备工作，
 
-- 了解 [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2) 中所提的 fio 测试的环境准备，命令运行，还有性能分析方法。
 - 阅读 [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1) 中 Sampleblk 驱动的源码，理解其含义。
+- 了解 [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2) 中所提的 fio 测试的环境准备，命令运行，还有性能分析方法。
+- 了解 [Linux Block Driver - 3](http://oliveryang.net/2016/08/linux-block-driver-basic-3) 中对 fio 测试中文件 IO 的分析方法。
 
-TBD
+本文将在与前文完全相同 fio 测试的环境下，在块设备层面对该测试做进一步的分析。
 
-## 3. 深入理解 Block IO
+## 3. Block IO Pattern 分析
 
-TBD
 
 ## 4. 实验
 
