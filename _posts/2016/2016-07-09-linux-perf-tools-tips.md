@@ -200,6 +200,11 @@ For systemtap example scripts, there are two ways,
 	  $ sudo yum install -y systemtap
 	  $ cd /usr/share/doc/systemtap-client-2.8/examples
 
+- Access from systemtap source code repository
+
+	  $ git clone http://sourceware.org/git/systemtap.git
+	  $ cd ~/systemtap/testsuite/systemtap.examples
+
 Reading example scripts is the best way to learn systemtap. [SystemTap Beginners Guide](https://www.sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html) is a good reference.
 
 #### 3.2.3 How to run pre-built systemtap module directly?
