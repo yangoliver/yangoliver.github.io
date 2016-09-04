@@ -6,6 +6,11 @@ categories: [English, Software, Career]
 tags: [kernel, solaris]
 ---
 
+>The content reuse need include the original link: <http://oliveryang.net>
+
+* content
+{:toc}
+
 This page is for tracking my patches for [OpenSolaris](https://en.wikipedia.org/wiki/OpenSolaris). As you may already know,
 Oracle had closed OpenSolaris project after it accquired Sun Microsystem in 2009.
 For this reason, all my patches below was found and referred from [Illumos Github Repository](https://github.com/illumos/illumos-gate).
@@ -25,7 +30,9 @@ For above reasons, it was quite difficult to find all my footprints in Illumos c
          The `pciev.c` is one of source code file I introduced in my project. Only small part of them are opensourced. The remainning part was not opened becasue Oracle had stopped OpenSoalris Project.
          The [illumos-gate](https://github.com/illumos/illumos-gate) is based on [Illumos](https://en.wikipedia.org/wiki/Illumos), which is a fork of OpenSolaris.
 
-- Other Solaris IO subsystem RFEs & Bugfixes
+### 1.2 Other Solaris IO subsystem RFEs & Bugfixes
+
+The source code is not available in OpenSolaris code base.
 
 ## 2. NIC drivers
 
