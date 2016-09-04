@@ -7,7 +7,7 @@ tags:
 - [file system, crash, trace, kernel, linux, storage]
 ---
 
->本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
+>转载时请包含原文或者作者网站链接：<http://oliveryang.net>
 
 * content
 {:toc}

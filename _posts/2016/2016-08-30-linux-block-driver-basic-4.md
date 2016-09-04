@@ -6,8 +6,9 @@ categories: [Chinese, Software, Hardware]
 tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 ---
 
-> 本文处于草稿状态，在完成前还会有大量修改。
-> 本文首发于<http://oliveryang.net>，转载时请包含原文或者作者网站链接。
+>处于草稿状态，在完成前还会有大量修改。
+>转载时请包含原文或者作者网站链接：<http://oliveryang.net>
+
 
 * content
 {:toc}

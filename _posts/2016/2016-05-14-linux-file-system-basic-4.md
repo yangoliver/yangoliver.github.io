@@ -7,7 +7,7 @@ tags:
 - [file system, driver, crash, kernel, linux, storage]
 ---
 
->本文首发于 <http://oliveryang.net>，转载时请包含原文或者作者网站链接。
+>转载时请包含原文或者作者网站链接：<http://oliveryang.net>
 
 * content
 {:toc}
@@ -383,12 +383,12 @@ inode table 就是以 inode record 为元素的数组，不同版本 Ext 文件�
 
 [Ext4_Disk_Layout](https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout) 给出了通过 inode 号定位 inode table 里的 inode record 的具体方法，
 
-<pre>Each block group contains sb->s_inodes_per_group inodes. Because inode 0
-is defined not to exist, this formula can be used to find the block group
-that an inode lives in: bg = (inode_num - 1) / sb->s_inodes_per_group.
-The particular inode can be found within the block group's inode table at
-index = (inode_num - 1) % sb->s_inodes_per_group. To get the byte address
-within the inode table, use offset = index * sb->s_inode_size.</pre>
+>Each block group contains sb->s_inodes_per_group inodes. Because inode 0
+>is defined not to exist, this formula can be used to find the block group
+>that an inode lives in: bg = (inode_num - 1) / sb->s_inodes_per_group.
+>The particular inode can be found within the block group's inode table at
+>index = (inode_num - 1) % sb->s_inodes_per_group. To get the byte address
+>within the inode table, use offset = index * sb->s_inode_size.
 
 因为我们 block group 只有一个，因此略过。只需要算出偏移即可，
 

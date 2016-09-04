@@ -7,7 +7,7 @@ tags:
 - [file system, kernel, linux, storage]
 ---
 
->本文首发于<http://oliveryang.net>，转载时请包含原文或者作者网站链接。
+>转载时请包含原文或者作者网站链接：<http://oliveryang.net>
 
 * content
 {:toc}
@@ -16,8 +16,8 @@ tags:
 
 直接引用来自[维基百科文件系统的定义](http://en.wikipedia.org/wiki/Filesystem)，
 
-<pre>A file system is a set of abstract data types that are implemented for the storage,
-hierarchical organization, manipulation, navigation, access, and retrieval of data.</pre>
+>A file system is a set of abstract data types that are implemented for the storage,
+>hierarchical organization, manipulation, navigation, access, and retrieval of data.
 
 文件系统就是一套抽象的数据类型，实现了数据的存储，层级组织，操作，浏览，访问和取回。
 
@@ -77,8 +77,8 @@ NAS(Network Attach Storage)存储是外置存储设备的一大类，其中NFS�
 
 即集群文件系统。引用集群文件系统在维基百科的定义如下，
 
-<pre>A clustered file system is a file system which is shared by being simultaneously mounted
-on multiple servers.</pre>
+>A clustered file system is a file system which is shared by being simultaneously mounted
+>on multiple servers.
 
 同一文件系统能否在多个主机上被同时挂载使用是集群文件系统的本质。根据架构上的差异，集群文件系统又被分为以下两大类，
 

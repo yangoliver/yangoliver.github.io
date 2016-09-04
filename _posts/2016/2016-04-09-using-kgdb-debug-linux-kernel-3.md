@@ -6,7 +6,7 @@ categories: [English, Software]
 tags: [kgdb, kernel, linux, network]
 ---
 
->This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+>The content reuse need include the original link: <http://oliveryang.net>
 
 * content
 {:toc}
@@ -60,8 +60,7 @@ By leveraging sysfs interfaces, the module ELF sections base addresses could be 
 
 Here is an example of debugging Intel e1000 driver after system boot. Our goal is,
 
-	Setting break points in e1000 driver interrupt handler and checking
-	driver key data structures.
+>Setting break points in e1000 driver interrupt handler and checking driver key data structures.
 
 In fact, all my debug steps were done on my two VMs, which got connected by virtual serial console. The OS version is CentOS 7.2 with debug kernel modules installed.
 

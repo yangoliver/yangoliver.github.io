@@ -7,7 +7,7 @@ tags:
 - [scheduler, perf, kernel, linux]
 ---
 
->This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+>The content reuse need include the original link: <http://oliveryang.net>
 
 * content
 {:toc}
@@ -59,7 +59,7 @@ enough knowledge for that specific components.
 As we always reported perf scheduling issues from specific type of workload or benchmark testing. The most efficient order
 to triage scheduling performance bug is from top to bottom.
 
-<pre>application -> kernel -> hypervisor -> hardware</pre>
+>application -> kernel -> hypervisor -> hardware
 
 One issues move from one layer to next layer, we must have technical justifications with following information,
 

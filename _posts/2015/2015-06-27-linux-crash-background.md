@@ -6,7 +6,7 @@ categories: [English, Software]
 tags: [crash, kernel, linux, solaris]
 ---
 
->This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+>The content reuse need include the original link: <http://oliveryang.net>
 
 * content
 {:toc}
@@ -15,9 +15,9 @@ tags: [crash, kernel, linux, solaris]
 
 The quotes from crash [README](https://github.com/crash-utility/crash/blob/master/README),
 
-<pre>The core analysis suite is a self-contained tool that can be used to investigate
-either live systems, kernel core dumps created from dump creation facilities such
-as kdump, kvmdump, xendump, the netdump and diskdump. </pre>
+>The core analysis suite is a self-contained tool that can be used to investigate
+>either live systems, kernel core dumps created from dump creation facilities such
+>as kdump, kvmdump, xendump, the netdump and diskdump.
 
 The similar debug tool on Solaris is [mdb](https://en.wikipedia.org/wiki/Modular_Debugger). Many years ago, when I was a
 Solaris developer, hacking kernel by mdb was an exciting experiment in my work. I used to write
@@ -56,7 +56,7 @@ In practice, you can get all command usages by help under **crash>** prompt.
 It is hosted from [Github](https://github.com/crash-utility). The project does not accept the regular Github pull
 requests for code contribution. People have to mail patches to the crash utility mailing list:
 
-	crash-utility@redhat.com
+>crash-utility@redhat.com
 
 Crash is licensed at **GPLv3**. If you are working for commercial purpose, please follow the legal process in your organization
 for open source code contribution or tools integration in your commercial software.

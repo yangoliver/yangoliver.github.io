@@ -7,7 +7,7 @@ tags:
 - [scheduler, perf, kernel, linux]
 ---
 
->This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+>The content reuse need include the original link: <http://oliveryang.net>
 
 * content
 {:toc}
@@ -38,12 +38,12 @@ When SCHEDSTATS is enabled, scheduler statistics could be accessed by following 
     So far, in Linux 4.1, there are 4 sched_stat_* trace points defined by SCHEDSTATS code, there are 4 sched_stat_*
     trace points defined by SCHEDSTATS code.
 
-	<pre> # perf list | grep sched_stat_
-	  sched:sched_stat_wait              [Tracepoint event]
-	  sched:sched_stat_sleep             [Tracepoint event]
-	  sched:sched_stat_iowait            [Tracepoint event]
-	  sched:sched_stat_blocked           [Tracepoint event]
-	  sched:sched_stat_runtime           [Tracepoint event] >>>> Not a SCHEDSTAT trace point</pre>
+		# perf list | grep sched_stat_
+		  sched:sched_stat_wait         [Tracepoint event]
+		  sched:sched_stat_sleep        [Tracepoint event]
+		  sched:sched_stat_iowait       [Tracepoint event]
+		  sched:sched_stat_blocked      [Tracepoint event]
+		  sched:sched_stat_runtime      [Tracepoint event] >>> Not a SCHEDSTAT trace point
 
     Linux perf tool, record, report, script sub-commands could be used for getting system wide or per-task statistics.
 
@@ -54,10 +54,10 @@ When SCHEDSTATS is enabled, scheduler statistics could be accessed by following 
 	To enable kernel profiler, please refer to [Documentation/kernel-parameters.txt](https://github.com/torvalds/linux/blob/master/Documentation/kernel-parameters.txt).
 	This way is a **legacy** way and could be replaced by following trace point in latest kernel,
 
-	<pre> # perf list | grep sched_stat_blocked
-	  sched:sched_stat_blocked                           [Tracepoint event]
-	 # perf record -e sched:sched_stat_blocked -a -g sleep 5
-     # perf script></pre>
+		# perf list | grep sched_stat_blocked
+		  sched:sched_stat_blocked      [Tracepoint event]
+		# perf record -e sched:sched_stat_blocked -a -g sleep 5
+		# perf script
 
 ## 3. SCHEDSTATS proc files use cases
 

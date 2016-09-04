@@ -7,7 +7,7 @@ tags:
 - [scheduler, perf, kernel, linux]
 ---
 
->This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+>The content reuse need include the original link: <http://oliveryang.net>
 
 * content
 {:toc}
@@ -39,7 +39,7 @@ For any of Linux threads/processes, it should be always under one of 3 status be
 
 Then the latency breakdown could be,
 
-<pre>Latency = CPU run time + Run queue wait time + Sleep time</pre>
+> Latency = CPU run time + Run queue wait time + Sleep time
 
 When we do latency bug triage, if we can always get latency breakdown with this way, that would give people a clear problem definition and debug
 direction.

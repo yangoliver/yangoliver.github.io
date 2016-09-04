@@ -6,7 +6,7 @@ categories: [English, Software, Industry]
 tags: [engineering]
 ---
 
->This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+> The content reuse need include the original link: <http://oliveryang.net>
 
 * content
 {:toc}

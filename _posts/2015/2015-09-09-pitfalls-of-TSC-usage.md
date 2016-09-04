@@ -7,7 +7,7 @@ tags:
 - [perf, kernel, linux, virtualization, hardware]
 ---
 
->This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+>The content reuse need include the original link: <http://oliveryang.net>
 
 * content
 {:toc}
@@ -60,7 +60,7 @@ Following code are typical implementation for rdtsc() api in user space applicat
 
 The result of rdtsc is CPU cycle, that could be converted to nanoseconds by a simple calculation.
 
-<pre>ns = CPU cycles * (ns_per_sec / CPU freq)</pre>
+>ns = CPU cycles * (ns_per_sec / CPU freq)
 
 In Linux kernel, it uses more complex way to get a better results,
 
@@ -299,10 +299,10 @@ The direct return value of rdtsc is CPU cycle, but latency or time requires a re
 
 In theory, 64bit TSC register is good enough for saving the CPU cycle, per Intel 64 Architecture SDM Vol. 3A 2-33,
 
-<pre>The time-stamp counter is a model-specific 64-bit counter that is reset to zero each
-time the processor is reset. If not reset, the counter will increment ~9.5 x 1016
-times per year when the processor is operating at a clock rate of 3GHz. At this
-clock frequency, it would take over 190 years for the counter to wrap around.</pre>
+>The time-stamp counter is a model-specific 64-bit counter that is reset to zero each
+>time the processor is reset. If not reset, the counter will increment ~9.5 x 1016
+>times per year when the processor is operating at a clock rate of 3GHz. At this
+>clock frequency, it would take over 190 years for the counter to wrap around.
 
 The overflow problem here is in implementations of cycle_2_ns or cycle_2_us, which need multiply cycle with
 another big number, then this may cause the overflow problem.
@@ -355,12 +355,12 @@ re-implement by LFENCE or RDTSCP. Otherwise, this will introduce the precision i
 
 See the description in Intel 64 Architecture SDM Vol. 2B,
 
-<pre>The RDTSC instruction is not a serializing instruction. It does not necessarily wait
-until all previous instructions have been executed before reading the counter. Similarly,
-subsequent instructions may begin execution before the read operation is
-performed. If software requires RDTSC to be executed only after all previous instructions
-have completed locally, it can either use RDTSCP (if the processor supports that
-instruction) or execute the sequence LFENCE;RDTSC.</pre>
+>The RDTSC instruction is not a serializing instruction. It does not necessarily wait
+>until all previous instructions have been executed before reading the counter. Similarly,
+>subsequent instructions may begin execution before the read operation is
+>performed. If software requires RDTSC to be executed only after all previous instructions
+>have completed locally, it can either use RDTSCP (if the processor supports that
+>instruction) or execute the sequence LFENCE;RDTSC.
 
 Linux kernel has an example to have the
 [rdtsc_ordered implementation](https://github.com/torvalds/linux/commit/03b9730b769fc4d87e40f6104f4c5b2e43889f19)

@@ -7,7 +7,7 @@ tags:
 - [crash, kernel, linux]
 ---
 
->This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+>The content reuse need include the original link: <http://oliveryang.net>
 
 * content
 {:toc}
@@ -18,17 +18,17 @@ Recently, my [file page cache dump patch](https://github.com/crash-utility/crash
 got merged to crash upstream.
 Following description was copied from crash 7.1.2 [release notes](http://people.redhat.com/anderson/crash.changelog.html),
 
-	- Implementation of two new "files" command options.  The "files -c"
-	option is context-sensitive, similar to the the regular "files"
-	command when used without an argument, but replaces the FILE and
-	DENTRY columns with I_MAPPING and NRPAGES columns that reflect
-	each open file's inode.i_mapping address_space structure address,
-	and the address_space.nrpages count within it; this shows how
-	many of each open file's pages are currently in the system's
-	page cache.  The "files -p <inode>" option takes the address
-	of an inode, and dumps all of its pages that are currently in the
-	system's page cache, borrowing the "kmem -p" page structure output.
-	(yangoliver AT gmail dot com)
+>- Implementation of two new "files" command options.  The "files -c"
+>option is context-sensitive, similar to the the regular "files"
+>command when used without an argument, but replaces the FILE and
+>DENTRY columns with I_MAPPING and NRPAGES columns that reflect
+>each open file's inode.i_mapping address_space structure address,
+>and the address_space.nrpages count within it; this shows how
+>many of each open file's pages are currently in the system's
+>page cache.  The "files -p <inode>" option takes the address
+>of an inode, and dumps all of its pages that are currently in the
+>system's page cache, borrowing the "kmem -p" page structure output.
+>(yangoliver AT gmail dot com)
 
 This patch supports dumping file page cache by extending two new options for files command: -c and -p.
 Below are the examples copied from "help files" output,
