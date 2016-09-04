@@ -7,10 +7,10 @@ tags:
 - [hardware]
 ---
 
+>The content reuse need include the original link: <http://oliveryang.net>
+
 * content
 {:toc}
-
->This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
 
 ### 1. What is the SMI link?
 
@@ -18,7 +18,9 @@ SMI link is the Scalable Memory Interconnect communication channels between the 
 
 The topology of SMI link is,
 
-	Core--->QPI bus--->iMC(Integrated Memory Controller)--->SMI link--->Scalable Memory Buffer--->DDR2/3/4 bus---> Memory DIMMs
+>Core--->QPI--->iMC--->SMI link--->Scalable Memory Buffer--->DDR2/3/4 bus---> Memory DIMMs
+
+Notes: iMC stands for Integrated Memory Controller.
 
 ### 2. How do we find SMI link error?
 
@@ -26,7 +28,6 @@ On Intel platform, it could be detected by BIOS SMI(System Management Interrupt)
 A SEL log could be found like below,
 
 	9 | 06/28/2015 | 07:32:16 | SMI Link CRC Correctable Errors #0x0a | Persistent Parity Status | Asserted |  Memory_Slot=3 SMI_Link=1
-
 
 ### 3. What kind of actions should we take?
 
