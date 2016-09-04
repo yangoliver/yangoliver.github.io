@@ -7,7 +7,12 @@ tags:
 - [network, perf, trace, linux]
 ---
 
->This article was firstly published from <http://oliveryang.net>. The content reuse need include the original link.
+>The content reuse need include the original link: <http://oliveryang.net>
+
+* content
+{:toc}
+
+## 1. A latency probelm
 
 Today, one guy told me he observed the write system call latency for 80 bytes write is about 2ms on a 10G network.
 He suspected that this indicates some network latency problems.
@@ -19,7 +24,9 @@ The answer is no. At least, I am not sure. Depending on your workload.
 I told him to capture the packets by the tools like tcpdump to confirm his suspects.
 For network write system call, 2ms latency might not be quite bad.
 
-### Why do I think 2ms write system call latency is not bad?
+## 2. Analysis
+
+Why do I think 2ms write system call latency is not bad?
 
 Because it is quite possible that write system call could be returned at millisecond level, but packet got sent out at
 microsecond level.
@@ -87,7 +94,9 @@ file system and storage IO stack. That means, if write system call got pinned by
 network workload, he can also see this issue. In this case, it is not network problem.
 
 
-### How does the code path look like?
+## 3. Tracing
+
+How does the code path look like?
 
 Linux provides the rich set of dynamic tracing tools to allow us to learn kernel code path.
 
