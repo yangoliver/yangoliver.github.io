@@ -284,13 +284,8 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
       - PBI: whatever must be done to successfully deliver a product
         - Epic
         - Feature
-        - Enabler
-          - Spike
-            - Investigtation & POC
-            - Other (non-functional requirements)
-              - Test automation
-              - Tools for productivity
-          - Defect
+        - User Story
+        - Enabler Story
       - PBI: Defination of Ready
         - User story meet INVEST criteria
           - Independent
@@ -306,7 +301,15 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
           - Ready for MVP(Minimum Valueable Product)
         - Business Value
           - Business value is clear enough and can be reprioritized by PO
-        - Type (Feature vs. Enabler)
+        - Type
+          - User Story
+          - Enabler Story
+            - Spike
+              - Investigtation & POC
+              - Other (non-functional requirements)
+                - Test automation
+                - Tools for productivity
+            - Defect
         - Description
           - 4 ways to present PBIs
             - Feature
