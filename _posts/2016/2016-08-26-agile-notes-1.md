@@ -270,11 +270,7 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
   - PB (Product Backlog)
     - What
       - PB: An ordered list for things(PBIs) need to be done by Scrum team
-      - PBI: whatever must be done to successfully deliver a product
-        - Features
-        - Bug fixes
-        - Non-functional requirements
-      - [PBIs must be DEEP](https://www.mountaingoatsoftware.com/blog/make-the-product-backlog-deep)
+      - [PB must be DEEP](https://www.mountaingoatsoftware.com/blog/make-the-product-backlog-deep)
         - Detailed appropriately
           - Much detail on higher priority PBIs
           - Less detail on low priority PBIs
@@ -285,25 +281,60 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
         - Prioritized
           - High->Top
           - Low->bottom
+      - PBI: whatever must be done to successfully deliver a product
+        - Epic
+        - Feature
+        - Enabler
+          - Spike
+            - Investigtation & POC
+            - Other (non-functional requirements)
+              - Test automation
+              - Tools for productivity
+          - Defect
+      - PBI: Defination of Ready
+        - User story meet INVEST criteria
+          - Independent
+          - Negotiable
+          - Valuable
+          - Estimable
+          - Size appropriately
+            - End-to-End: Virtual slicing
+            - 1/4 sprint?
+          - Testable
+        - Order/Priority
+          - Sortable
+          - Ready for MVP(Minimum Valueable Product)
+        - Business Value
+          - Business value is clear enough and can be reprioritized by PO
+        - Type (Feature vs. Enabler)
+        - Description
+          - 4 ways to present PBIs
+            - Feature
+            - User Story
+              - Who: As a [Role]
+              - What: I want to [Activity]
+              - Why: so that [Benefit]
+            - Requirements
+            - Use Cases
+        - Understand
+          - Implementation & Task break down ready?
+            - What should be done is clear enough and can be understood by team
+          - Enabling spec is required?
+            - [Complex PBIs need a Enabling Spec](http://www.leanagiletraining.com/key-problems/agile-specifications/)
+        - Risk & Dependency
+          - Free from external dependencies
+        - Estimate
+          - Provided by team
+          - No unit, which are story points
     - How
       - Global visible and maintained publicly
         - Anyone can contribute
         - PO is owner who can only make the changes
-      - 4 ways to present PBIs
-        - Requirements
-        - User Story
-        - Feature
-        - Use Cases
       - PBI granularity
         - From big to small
           - Epic
           - Feature
           - User story
-            - End-to-End: Virtual slicing
-            - Present with template
-              - Who: As a [Role]
-              - What: I want to [Activity]
-              - Why: so that [Business Value]
         - Split just in time
           - Short term with more details and higher priorities
           - Long term with less details and lower priorities
@@ -313,13 +344,14 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
             - Long: Future
       - PBI prioritize
         - Key factors
-          - Business value: PRAISE
+          - Business value: PRAISE-ED
             - Productivity gains
             - Reduced cost
             - Avoided cost
             - Increased revenue
             - Service level improvements
             - Enhanced quality
+            - Ease of use
             - Differentiation in the marketpalace
           - Efforts/Cost
           - Risk & Depedencies
@@ -340,18 +372,6 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
            - Theme screening
            - Theme scoring
            - Relative weighting
-      - PBI readyness
-        - What should be done is clear enough and can be understood by team
-        - Business value is clear enough and can be reprioritized by PO
-        - Complex PBI may include [Enabling Spec](http://www.leanagiletraining.com/key-problems/agile-specifications/)
-        - User story meet INVEST criteria
-          - Independent
-          - Negotiable
-          - Valuable
-          - Estimable
-          - Size appropriately
-          - Testable
-        - Free from external dependencies
       - PBI changes & refine
         - Operations
           - Added
