@@ -101,31 +101,36 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
         - Scrum team
           - Split big backlogs at sprint level
           - Only interacts with upper level POs
-    - Value
-      - Accountale for winning in the market
+    - Work Values
+      - Accountable for winning in the market by visionary product ROADMAP and PLAN
         - Drive product success
         - Product vision
-        - Own product backlog
         - Maximize ROI
         - Define value
-        - Prioritize the work
-        - Accept/Reject the work
         - Determine release
-      - Maximizing the value of the product and of the dev team by following outcome
-        - Visionary product backlogs
+      - Maximizing the value of the product and of the dev team by driving clear READY and DONE
         - Clear sprint backlogs
-    - Time Allocation
+          - Own product backlog
+          - Prioritize the work
+        - Clear of DoD and acceptance criteria
+          - Accept/Reject the work
+    - Time Application
       - 50% time on external people (customer, sales & marketing, architect, stakeholder etc.)
         - Investigations, interactions and analysis
           - Customer
           - Market
           - Industry
       - 50% time in scrum team
-        - Sprint planning
-        - Backlog refinement
-        - Sprint review
-        - Retrospective
-        - Daily scrum (Optional)
+        - Flow management
+          - Release flow management
+            - Backlog grooming
+            - PI/Release planning
+          - Sprint flow management
+            - Backlog grooming
+            - Sprint planning
+            - Sprint review
+            - Retrospective
+            - Daily scrum (Optional)
       - Output
         - Product vision
         - Product roadmap
@@ -133,7 +138,7 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
         - Product Backlog (owner)
         - Sprint Backlog (owner)
         - Product Increment (accept/reject)
-    - Skills
+    - Skill Requirements
       - Domain knowledge
         - Understand Industry
           - Vision
@@ -162,7 +167,7 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
   - Scrum Master
     - Position
       - One per product/team
-    - Value
+    - Work Value
       - Accountable for removing team impediments and empowering team to deliver the product goals
         - IS: an Agile coach
           - Facilitate team to follow Agile values, principles, and practices
@@ -170,7 +175,7 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
         - IS NOT: a boss
           - Different with Project Manager
           - Let dev team make the decision
-    - Time allocation
+    - Time Application
       - May spend time to cooperate with people outside the team
         - Protect team to focus sprint goals
         - Help on removing external impediments
@@ -199,7 +204,7 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
           - AIs to run Scrum process
           - Facilate on status update (burn down chart)
         - Coach team to make the decisions to improve process
-    - Skill
+    - Skill Requirements
       - Agile & Scrum knowledge
         - Process
         - Tools
@@ -217,12 +222,12 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
       - Self-organizing
         - No techincal leader & architect role
         - Use the influence rather than authority
-    - Value
+    - Work Value
       - Accountable for delivering shippable PIs at the end of each Sprint
         - Practice Agile/Scrum principles & values
         - Make and meet commitments by self-organizing
         - Hands-on individual contributor
-    - Time allocation
+    - Time Application
       - Avoid to cross multiple teams or have external dependencies
         - If couldn't, work with external team to define interface clearly
         - Avoid multi-tasks
@@ -238,7 +243,7 @@ Below mindmap tries to show how these 3 roles deliver their work in Scrum framew
           - Task self-assignment
           - Status update
         - Product Increment (dev & test)
-    - Skill
+    - Skill Requirements
       - Technical
         - Full stack
           - End-to-end
@@ -270,6 +275,13 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
   - PB (Product Backlog)
     - What
       - PB: An ordered list for things(PBIs) need to be done by Scrum team
+        - Large Products: Hierarchical Backlogs
+          - Need hierarchical PO
+        - Multiple Teams: One Product Backlog
+          - Good: Interchangeable teams with general skills
+          - Bad: Different teams with special skills
+        - One Team: Multiple Products
+          - Try to merge to one PB to have single priority
       - [PB must be DEEP](https://www.mountaingoatsoftware.com/blog/make-the-product-backlog-deep)
         - Detailed appropriately
           - Much detail on higher priority PBIs
@@ -284,9 +296,12 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
       - PBI: whatever must be done to successfully deliver a product
         - Epic
         - Feature
-        - User Story
-        - Enabler Story
-      - PBI: Defination of Ready
+          - User Story
+        - Enabler
+          - Defects
+          - Techincal Work (POC)
+          - Knowledge Acquisition (Investigation)
+      - PBI: DoR (Defination of Ready)
         - User story meet INVEST criteria
           - Independent
           - Negotiable
@@ -304,12 +319,13 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
         - Type
           - User Story
           - Enabler Story
+            - Defects
             - Spike
-              - Investigtation & POC
+              - Techincal Work (POC)
+              - Knowledge Acquisition (Investigation)
               - Other (non-functional requirements)
                 - Test automation
                 - Tools for productivity
-            - Defect
         - Description
           - 4 ways to present PBIs
             - Feature
@@ -457,11 +473,11 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
     - How
       - Pick up PBIs and do task break down
         - Hourly granularity
+        - Big task needs a split
         - Don't exceed 8 hours
         - No pre-assignment
       - Task Estimation
         - Hourly granularity
-        - Big task needs a split
         - Daily update remaining work
       - Dev team could change tasks of a PBI freely
       - Once SB is commited, no PBIs could be added into SB
@@ -613,7 +629,7 @@ Below mindmap shows that all key information related to these 5 meeting,
       - Stakeholder
       - Managers
     - Outcome
-      - PO indentifies what had been done and what hasn't been done
+      - PO identifies what had been done and what hasn't been done
         - PO Accept/Reject work per two conditions
             - DoD
             - Accept criteria
