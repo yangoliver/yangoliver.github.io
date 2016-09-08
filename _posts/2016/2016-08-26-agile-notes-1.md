@@ -273,6 +273,7 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
 <pre class="km-container-3" minder-data-type="markdown" style="width: 100%;height: 700px">
 - 3 Artifacts
   - PB (Product Backlog)
+    - Owner: Product owner
     - What
       - PB: An ordered list for things(PBIs) need to be done by Scrum team
         - Large Products: Hierarchical Backlogs
@@ -466,6 +467,7 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
                 - Optimistic velocity
             - Visualize: release burn down chart
   - SB (Sprint Backlog)
+    - Owner: Dev team
     - What
       - SB: the list of work the Dev Team must address in next Sprint.
         - Pickup from top PBIs of PB to SB.
