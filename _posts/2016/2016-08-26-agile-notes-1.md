@@ -343,6 +343,9 @@ Below mindmap organizes all major key knowledge point related these 3 artifacts.
             - [Complex PBIs need a Enabling Spec](http://www.leanagiletraining.com/key-problems/agile-specifications/)
         - Risk & Dependency
           - Free from external dependencies
+        - Accept Criteria
+          - Clear and easy understand
+          - Be part of DoD
         - Estimate
           - Provided by team
           - No unit, which are story points
@@ -721,5 +724,6 @@ Scrum defines 5 values which could ensure this culture,
 * [Scrum](https://en.wikipedia.org/wiki/Scrum_(software_development))
 * [Make Product Backlog DEEP](https://www.mountaingoatsoftware.com/blog/make-the-product-backlog-deep)
 * [Kano Model](https://en.wikipedia.org/wiki/Kano_model)
-* [What is enabling spec](http://www.leanagiletraining.com/key-problems/agile-specifications/)
+* [What is enabling spec](http://www.leanagiletraining.com/key-problems/agile-specifications)
 * [PM Iron Triangle](https://en.wikipedia.org/wiki/Project_management_triangle)
+* [How to split a user story](http://agileforall.com/resources/how-to-split-a-user-story)
