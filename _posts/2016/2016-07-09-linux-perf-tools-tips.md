@@ -184,6 +184,56 @@ Last, add the probe, record trace and display trace results,
 
 The syntax of kprobe event could be found from [Documentation/trace/uprobetracer.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/uprobetracer.txt)
 
+#### 3.1.7 Can't show user process symbol correctly in call graph?
+
+Using perf record and perf script couldn't show the call graph with correct symbol correctly (marked by unknown),
+
+	$ sudo perf record -a -g -e block:block_rq_insert sleep 10
+
+	$ sudo perf script
+	fio 71005 [000] 977641.575503: block:block_rq_insert: 253,1 W 0 () 3510 + 255 [fio]
+	                  5111e1 __elv_add_request (/lib/modules/4.6.0-rc3+/build/vmlinux)
+	                  518e64 blk_flush_plug_list (/lib/modules/4.6.0-rc3+/build/vmlinux)
+	                  51910b blk_queue_bio (/lib/modules/4.6.0-rc3+/build/vmlinux)
+	                  517453 generic_make_request (/lib/modules/4.6.0-rc3+/build/vmlinux)
+	                  517597 submit_bio (/lib/modules/4.6.0-rc3+/build/vmlinux)
+	                   107de ext4_io_submit ([ext4])
+	                    c6bc ext4_writepages ([ext4])
+	                  39cd3e do_writepages (/lib/modules/4.6.0-rc3+/build/vmlinux)
+	                  390b66 __filemap_fdatawrite_range (/lib/modules/4.6.0-rc3+/build/vmlinux)
+	                  3d5d96 sys_fadvise64 (/lib/modules/4.6.0-rc3+/build/vmlinux)
+	                  203c12 do_syscall_64 (/lib/modules/4.6.0-rc3+/build/vmlinux)
+	                  8bb721 return_from_SYSCALL_64 (/lib/modules/4.6.0-rc3+/build/vmlinux)
+	                   ebd4d posix_fadvise64 (/usr/lib64/libc-2.17.so)
+	                       0 [unknown] ([unknown])
+
+By using dwarf method to collect call graph information, it could show the fio symbol in user space stack trace，
+
+	$ sudo perf record -a -g --call-graph dwarf -e block:block_rq_insert sleep 10
+	
+    $ sudo perf script | head -n 20
+    fio 73790 [000] 1011438.379090: block:block_rq_insert: 253,1 W 0 () 3510 + 255 [fio]
+                  5111e1 __elv_add_request (/lib/modules/4.6.0-rc3+/build/vmlinux)
+                  518e64 blk_flush_plug_list (/lib/modules/4.6.0-rc3+/build/vmlinux)
+                  51910b blk_queue_bio (/lib/modules/4.6.0-rc3+/build/vmlinux)
+                  517453 generic_make_request (/lib/modules/4.6.0-rc3+/build/vmlinux)
+                  517597 submit_bio (/lib/modules/4.6.0-rc3+/build/vmlinux)
+                   107de ext4_io_submit ([ext4])
+                    c6bc ext4_writepages ([ext4])
+                  39cd3e do_writepages (/lib/modules/4.6.0-rc3+/build/vmlinux)
+                  390b66 __filemap_fdatawrite_range (/lib/modules/4.6.0-rc3+/build/vmlinux)
+                  3d5d96 sys_fadvise64 (/lib/modules/4.6.0-rc3+/build/vmlinux)
+                  203c12 do_syscall_64 (/lib/modules/4.6.0-rc3+/build/vmlinux)
+                  8bb721 return_from_SYSCALL_64 (/lib/modules/4.6.0-rc3+/build/vmlinux)
+            7fd1e61d7d4d posix_fadvise64 (/usr/lib64/libc-2.17.so)
+                  4303b3 file_invalidate_cache (/usr/local/bin/fio)
+                  41a79b td_io_open_file (/usr/local/bin/fio)
+                  43f40d get_io_u (/usr/local/bin/fio)
+                  45ad89 thread_main (/usr/local/bin/fio)
+                  45cffc run_threads (/usr/local/bin/fio)
+    [...snipped...]
+
+
 ### 3.2 SystemTap
 
 #### 3.2.1 How to run systemtap with customized kernel
