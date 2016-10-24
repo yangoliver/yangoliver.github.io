@@ -68,7 +68,7 @@ Linux 4.6 内核的块设备层的预定义了 19 个通用块层的 tracepoints
 	$ sudo perf record -a -g --call-graph dwarf -e block:block_rq_insert sleep 10
 
 因为我们指定了记录调用栈的信息，所以，`perf script` 可以获取 `fio` 从用户态到内核 `block:block_rq_insert` tracepoint 的完整调用栈的信息。
-并且，给出了设备主次号，相关操作，及起始扇区和扇区数，
+并且，给出了主次设备号，相关操作，及起始扇区和扇区数，
 
 	$ sudo perf script | head -n 20
 	fio 73790 [000] 1011438.379090: block:block_rq_insert: 253,1 W 0 () 3510 + 255 [fio]
@@ -141,14 +141,91 @@ Linux 4.6 内核的块设备层的预定义了 19 个通用块层的 tracepoints
 	  256 |                                                       0
 	  512 |                                                       0
 
-可以看到，128 ~ 255 扇区的分布占了绝大多数，本例中，其实具体是这个区间的 255 扇区的数目，与之前 perf 查看的结果类似。
+可以看到，128 ~ 255 扇区的分布占了绝大多数，本例中，实际上这个区间的 IO 请求都是 255 个扇区，与之前 perf 查看的结果一致。
 
 ### 3.2 写延迟分析
 
+[iosnoop](https://github.com/brendangregg/perf-tools/blob/master/iosnoop) 不但可以了解块设备上的 IO 请求大小，更有从 IO 请求发起到完成的延迟时间的信息。
+下面我们在运行 `fio` 测试时，使用 `iosnoop` 来获得的相关信息。
 
-## 4. 实验
+首先，我们需要得到 `fio` 测试所用的块设备的主次设备号，
 
-TBD
+	$ mount | grep sample
+	/dev/sampleblk1 on /mnt type ext4 (rw,relatime,seclabel,data=ordered)
+	[yango@localhost ~]$ ls -l /dev/sampleblk1
+	brw-rw----. 1 root disk 253, 1 Aug 12 22:10 /dev/sampleblk1
+
+然后，运行 `iosnoop` 来获取所有在 `/dev/sampleblk1` 上的 IO 请求，
+
+	$ sudo iosnoop -d 253,1 -s -t
+	Tracing block I/O. Ctrl-C to end
+	STARTs          ENDs            COMM         PID    TYPE DEV      BLOCK        BYTES     LATms
+	11165.028153    11165.028194    fio          11425  W    253,1    4534         130560     0.04
+	11165.028196    11165.028210    fio          11425  W    253,1    4789         130560     0.01
+	11165.028211    11165.028224    fio          11425  W    253,1    5044         130560     0.01
+	11165.028227    11165.028241    fio          11425  W    253,1    5299         130560     0.01
+	11165.028244    11165.028258    fio          11425  W    253,1    5554         130560     0.01
+	11165.028261    11165.028274    fio          11425  W    253,1    5809         130560     0.01
+	11165.028276    11165.028290    fio          11425  W    253,1    6064         130560     0.01
+	11165.028295    11165.028309    fio          11425  W    253,1    6319         130560     0.01
+	11165.028311    11165.028312    fio          11425  W    253,1    6574         4096       0.00
+	11165.029896    11165.029937    fio          11425  W    253,1    2486         130560     0.04
+	11165.029939    11165.029951    fio          11425  W    253,1    2741         130560     0.01
+	11165.029952    11165.029965    fio          11425  W    253,1    2996         130560     0.01
+	11165.029968    11165.029981    fio          11425  W    253,1    3251         130560     0.01
+	11165.029982    11165.029995    fio          11425  W    253,1    3506         130560     0.01
+	11165.029998    11165.030012    fio          11425  W    253,1    3761         130560     0.01
+	11165.030012    11165.030026    fio          11425  W    253,1    4016         130560     0.01
+	11165.030029    11165.030042    fio          11425  W    253,1    4271         130560     0.01
+	11165.030044    11165.030045    fio          11425  W    253,1    4526         4096       0.00
+	11165.030095    11165.030135    fio          11425  W    253,1    4534         130560     0.04
+
+可以看到，该输出不但包含了 IO 请求的大小，而且还有 IO 延迟时间。如，130560 字节正好就是 255 扇区，4096 字节，恰好就是 8 个扇区。因此，IO 大小和之前其它工具得到时类似的。
+而在发出 255 扇区的 IO 请求延迟是有变化的，大致是 0.01 毫秒或者 0.04 毫秒，大概是百纳秒级别的延迟。
+
+`iosnoop` 在短时间内会产生大量的输出，每个 IO 请求的 IO 延迟时间都可能有很大差异，如何能对 `fio` 测试的延迟有没有更好的数据呈现方式呢？
+
+[Heatmap](https://github.com/brendangregg/HeatMap) 就是一个这样的工具，其具体使用方法如下，
+
+	$ sudo ./iosnoop -d 253,1 -s -t >  iosnoop.log
+	$ grep '^[0-9]'  iosnoop.log | awk '{ print $1, $9 }' | sed  's/\.//g' | sed 's/$/0/g' > trace.txt
+	$ ./trace2heatmap.pl --unitstime=us --unitslatency=us --maxlat=200 --grid trace.txt> heatmap.svg
+
+于是，基于 `iosnoop` 工具得到的数据，我们生成了下面的热点图 (Heatmap)，
+
+<img src="/media/images/2016/heatmap_latency_iosnoop_fs_seq_write_sync_001.svg" width="100%" height="100%" />
+
+右击该图片，在新窗口打开，在图片范围内移动鼠标，即可看到不同的延迟时间所占 IO 请求数据采样的百分比。
+例如，颜色最红的那一行代表采样最多的 IO 延迟，在横轴时间是 40 秒时，延迟范围大概是 8 ~ 12 微妙，具有这样延迟的 IO 请求站了全部采样的 76%。
+
+### 3.3 文件和块 IO 延迟的比较
+
+在 [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2) 中，我们介绍过 `fio` 的输出中自带 IO 延迟的计算和数值分布的统计。
+例如，下面的输出就是这个 `fio` 测试的一个结果，
+
+	job1: (groupid=0, jobs=1): err= 0: pid=22977: Thu Jul 21 22:10:28 2016
+	  write: io=1134.8GB, bw=1038.2MB/s, iops=265983, runt=1118309msec
+	    clat (usec): min=0, max=66777, avg= 1.63, stdev=21.57
+	     lat (usec): min=0, max=66777, avg= 1.68, stdev=21.89
+	    clat percentiles (usec):
+	     |  1.00th=[    0],  5.00th=[    1], 10.00th=[    1], 20.00th=[    1],
+	     | 30.00th=[    1], 40.00th=[    1], 50.00th=[    2], 60.00th=[    2],
+	     | 70.00th=[    2], 80.00th=[    2], 90.00th=[    2], 95.00th=[    3],
+	     | 99.00th=[    4], 99.50th=[    7], 99.90th=[   18], 99.95th=[   25],
+	     | 99.99th=[  111]
+	    lat (usec) : 2=49.79%, 4=49.08%, 10=0.71%, 20=0.34%, 50=0.06%
+	    lat (usec) : 100=0.01%, 250=0.01%, 500=0.01%, 750=0.01%, 1000=0.01%
+	    lat (msec) : 2=0.01%, 4=0.01%, 10=0.01%, 20=0.01%, 50=0.01%
+	    lat (msec) : 100=0.01%
+
+> 如果仔细分析上面的结果，可以发现，其中 clat 和 lat 的分布要明显好于 iosnoop 的结果。这是为什么呢？
+
+其实这很好解释：因为 `fio` 的 clat 和 lat 是文件同步 IO 的延迟，该 IO 模式是 buffer IO，即文件的读写是基于文件的 page cache 的，是内存的读写。因此 clat 和 lat 的延迟要小很多。
+
+而本章中，`iosnoop` 的 IO 延迟是块 IO 的延迟。文件系统 buffer IO 的读写并不会直接触发块设备的读写，因此，`iosnoop` 的 IO 请求和 `fio` 的 IO 请求根本不是同一个 IO 请求。
+
+如果还记得 [Linux Block Driver - 3](http://oliveryang.net/2016/08/linux-block-driver-basic-3) 里的分析，我们知道,
+这里的 `iosnoop` 的 IO 请求，都是 `fio` 通过调用 fadvise64，使用 POSIX_FADV_DONTNEED 把 /mnt/test 在 page cache 里的数据 flush 到磁盘引发的。
 
 ## 5. 小结
 
