@@ -119,7 +119,8 @@ tags: [driver, perf, trace, file system, kernel, linux, storage]
 在测试进行到 58.1%  的时候，我们中断程序，得到了上述的输出。从输出中我们得出如下结论，
 
 - 两个线程总共的写的吞吐量为 2080.5MB/s，在磁盘上的 IPOS 是 4243062。
-- 每个线程的平局延迟为 1.68us，方差是 21.8 左右。
+- 每个线程的平均完成延迟 (clat) 为 1.63us，方差是 21.57。
+- 每个线程的平均总延迟 (lat) 为 1.68us，方差是 21.89。
 - 磁盘 IO merge 很少，磁盘的利用率也只有 37.65%。
 - 线程所在处理器的时间大部分在内核态：69.65%，用户态时间只有 8.44% 。
 
@@ -228,6 +229,72 @@ tags: [driver, perf, trace, file system, kernel, linux, storage]
 
 本例中的 SystemTap 脚本 [fiohist.stp](https://github.com/yangoliver/mytools/blob/master/debug/systemtap/fiohist.stp) 是作者个人为分析本测试所编写。
 详细代码请参考文中给出的源码链接。此外，在 [Linux Perf Tools Tips](http://oliveryang.net/2016/07/linux-perf-tools-tips/) 这篇文章里收录了关于在自编译内核上运行 SystemTap 脚本的一些常见问题。
+
+#### 3.2.4 延迟统计
+
+`fio` 的测试结果已经提供了详尽的 IO 延迟数据。因为 fs_seq_write_sync_001 文件定义的是文件 buffer IO，并且是同步写模式。因此，`fio` 报告的延迟数据就是在文件 IO 层面上的，我们不需要使用其它的工具了。
+
+查看 `fio` 源码，可以发现，它记录了一次 IO 流程的三个时间，
+
+	起始时间 (io_u->start_time) >>>>>> 触发时间 (io_u->issue_time) >>>>>> 完成时间 (icd->time)
+
+其具体含义分别如下，
+
+- 起始时间
+
+  在文件打开的状态下，是读写入文件的缓冲区准备好后的时间。源代码定义：io_u->start_time。
+
+- 触发时间
+
+  同步 IO 时，是读写系统调用发起前的时间。
+  异步 IO 时，是 IO 请求成功放入请求队列后 (td->io_ops->queue) 返回的时间。
+  源代码定义：io_u->issue_time。
+
+- 完成时间
+
+  是 IO 完成时的时间。源代码定义：icd->time。
+
+而在 `fio` 输出里，则存在三种类型的延迟数据，分别为如下含义，
+
+- slat (submission latency)
+
+  即 IO 提交延迟。其确切含义是 IO 准备好到 IO 真正开始的时间 (即 io_u->issue_time － io_u->start_time)。
+  需要注意的是，在同步 (SYNC) IO 模式下，slat 并不计算，这是因为同步 IO 的这两个时间非常接近，没有计算意义。
+
+- clat (completion latency)
+
+  即 IO 完成延迟。其确切含义是 IO 真正开始到 IO 返回的时间 (即 icd->time - io_u->issue_time)。
+
+- lat (latency)
+
+  即 IO 总延迟，其确切含义是 IO 准备好到 IO 返回的总时间 （即 icd->time - io_u->issue_time)。
+
+
+有了以上概念，再解读下面的数据就很简单了。
+
+例如，本测试里完成延迟 clat (completion latency) 的结果如下，其中包含了均值 (avg) 和方差 (stdev)，
+
+	clat (usec): min=0, max=66777, avg= 1.63, stdev=21.57
+
+而总延迟 lat (latency) 结果如下，
+
+	lat (usec): min=0, max=66777, avg= 1.68, stdev=21.89
+
+其中，clat percentiles 给出了各种 IO 完成延迟的百分比分布，
+
+    clat percentiles (usec):
+     |  1.00th=[    0],  5.00th=[    1], 10.00th=[    1], 20.00th=[    1],
+     | 30.00th=[    1], 40.00th=[    1], 50.00th=[    2], 60.00th=[    2],
+     | 70.00th=[    2], 80.00th=[    2], 90.00th=[    2], 95.00th=[    3],
+     | 99.00th=[    4], 99.50th=[    7], 99.90th=[   18], 99.95th=[   25],
+     | 99.99th=[  111]
+
+而总 IO 延迟的百分比分布也包括在输出了，
+
+    lat (usec) : 2=49.79%, 4=49.08%, 10=0.71%, 20=0.34%, 50=0.06%
+    lat (usec) : 100=0.01%, 250=0.01%, 500=0.01%, 750=0.01%, 1000=0.01%
+    lat (msec) : 2=0.01%, 4=0.01%, 10=0.01%, 20=0.01%, 50=0.01%
+    lat (msec) : 100=0.01%
 
 ### 3.3 On CPU Time 分析
 
