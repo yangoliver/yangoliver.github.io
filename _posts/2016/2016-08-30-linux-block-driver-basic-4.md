@@ -227,9 +227,39 @@ Linux 4.6 内核的块设备层的预定义了 19 个通用块层的 tracepoints
 如果还记得 [Linux Block Driver - 3](http://oliveryang.net/2016/08/linux-block-driver-basic-3) 里的分析，我们知道,
 这里的 `iosnoop` 的 IO 请求，都是 `fio` 通过调用 fadvise64，使用 POSIX_FADV_DONTNEED 把 /mnt/test 在 page cache 里的数据 flush 到磁盘引发的。
 
+### 3.4 块 IO 吞吐量和 IOPS
+
+运行 `fio` 测试时，我们可以利用 [iostat(1)](https://linux.die.net/man/1/iostat) 命令来获取指定块设备在测试中的吞吐量 (throughput) 和 IOPS。
+
+	$ iostat /dev/sampleblk1  -xmdz 1
+	Linux 4.6.0-rc3+ (localhost.localdomain) 	08/25/2016 	_x86_64_	(2 CPU)
+
+	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+	sampleblk1        0.00     0.37    0.00   59.13     0.00     6.50   225.31     0.01    0.15    0.00    0.15   0.02   0.12
+
+	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+	sampleblk1        0.00   168.00    0.00 8501.00     0.00   932.89   224.74     0.77    0.10    0.00    0.10   0.02  14.40
+
+	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+	sampleblk1        0.00    63.00    0.00 8352.00     0.00   909.64   223.05     0.89    0.11    0.00    0.11   0.02  16.30
+
+	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+	sampleblk1        0.00    59.00    0.00 8305.00     0.00   908.45   224.02     0.98    0.13    0.00    0.13   0.02  17.50
+
+	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+	sampleblk1        0.00    36.00    0.00 8536.00     0.00   936.51   224.69     1.06    0.13    0.00    0.13   0.02  19.00
+
+	[...snipped...]
+
+其中，rMB/s 和 wMB/s 就是读写的吞吐量，而 r/s 和 w/s 就是 IOPS。
+本例中，sampleblk1 块设备的吞吐量是 908 ～ 932 MB/s，IOPS 大概在 8300 ~ 8500 每秒。
+
 ## 5. 小结
 
-TBD
+本文通过使用 Linux 下的各种追踪工具 Systemtap，Perf，`iosnoop` (基于 ftrace 和 tracepoint)，及 `iostat` 来分析 fio 测试时，底层块设备的运行情况。
+我们掌握了本文中块设备 IO 在 fio  测试的主要特征，块 IO size，IO 延迟分布。这是性能分析里 resource analysis 方法的一部分。
+
+关于 Linux 动态追踪工具的更多信息，请参考延伸阅读章节里的链接。
 
 ## 6. 延伸阅读
 
