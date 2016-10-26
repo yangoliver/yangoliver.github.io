@@ -6,7 +6,6 @@ categories: [Chinese, Software, Hardware]
 tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 ---
 
->处于草稿状态，在完成前还会有大量修改。
 >转载时请包含原文或者作者网站链接：<http://oliveryang.net>
 
 
@@ -253,6 +252,12 @@ Linux 4.6 内核的块设备层的预定义了 19 个通用块层的 tracepoints
 
 其中，rMB/s 和 wMB/s 就是读写的吞吐量，而 r/s 和 w/s 就是 IOPS。
 本例中，sampleblk1 块设备的吞吐量是 908 ～ 932 MB/s，IOPS 大概在 8300 ~ 8500 每秒。
+
+需要说明的是，此处的的吞吐量和 IOPS 与如下所示的 `fio` 返回的输出里的有很大不同，
+
+	write: io=1134.8GB, bw=1038.2MB/s, iops=265983, runt=1118309msec
+
+本例的测试中，`fio` 返回的是应用程序的 IO 吞吐量和 IOPS，而 `iostat` 返回的是底层一个块设备层面的吞吐量和 IOPS。
 
 ## 5. 小结
 
