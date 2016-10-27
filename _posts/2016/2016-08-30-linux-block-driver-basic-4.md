@@ -259,14 +259,14 @@ Linux 4.6 内核的块设备层的预定义了 19 个通用块层的 tracepoints
 
 本例的测试中，`fio` 返回的是应用程序的 IO 吞吐量和 IOPS，而 `iostat` 返回的是底层一个块设备层面的吞吐量和 IOPS。
 
-## 5. 小结
+## 4. 小结
 
 本文通过使用 Linux 下的各种追踪工具 Systemtap，Perf，`iosnoop` (基于 ftrace 和 tracepoint)，及 `iostat` 来分析 fio 测试时，底层块设备的运行情况。
 我们掌握了本文中块设备 IO 在 fio  测试的主要特征，块 IO size，IO 延迟分布。这是性能分析里 resource analysis 方法的一部分。
 
 关于 Linux 动态追踪工具的更多信息，请参考延伸阅读章节里的链接。
 
-## 6. 延伸阅读
+## 5. 延伸阅读
 
 * [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1)
 * [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2)
