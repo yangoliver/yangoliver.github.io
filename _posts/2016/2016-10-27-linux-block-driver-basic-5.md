@@ -33,7 +33,7 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 本文将在与前文完全相同 `fio` 测试负载下，使用 `blktrace` 在块设备层面对该测试做进一步的分析。
 
-## 3. Blktrace 分析
+## 3. IO 流程分析
 
 [blktrace(8)](https://linux.die.net/man/8/blktrace) 是非常方便的跟踪块设备 IO 的工具。我们可以利用这个工具来分析前几篇文章中的 `fio` 测试时的块设备 IO 情况。
 
@@ -47,8 +47,30 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 	    Total:               1168040 events (dropped 0),    54752 KiB data
 
 退出跟踪后，IO 操作的都被记录在日志文件里。可以使用	[blkparse(1)](https://linux.die.net/man/1/blkparse) 命令来解析和查看这些 IO 操作的记录。
+虽然 blkparse(1) 手册给出了每个 IO 操作里的具体跟踪动作 (Trace Action) 字符的含义，但下面的表格，更近一步地包含了下面的信息，
 
-如下例，我们可以利用 grep 命令，过滤所有 IO 完成状态 (C 状态)返回的 IO 记录，
+- Trace Action 之间的时间顺序
+- 每个 `blkparse` 的 Trace Action 对应的 Linux block tracepoints 的名字，和内核对应的 trace 函数。
+- Trace Action 是否对块设备性能有正面或者负面的影响
+- Trace Action 的额外说明，这个比 blkparse(1) 手册里的描述更贴近 Linux 实现
+
+| Order | Blktrace action | Linux block tracepoints   | Kernel trace function     | Perf impacts | Description                                         |
+|-------|-----------------|---------------------------|---------------------------|--------------|-----------------------------------------------------|
+|  1    |       Q         | block:block_bio_queue     | trace_block_bio_queue     | Neutral      |                                                     |
+|  2    |       B         | block:block_bio_bounce    | trace_block_bio_bounce    | Negative     |                                                     |
+|  3    |       X         | block:block_split         | trace_block_split         | Negative     |                                                     |
+|  4    |       M         | block:block_bio_backmerge | trace_block_bio_backmerge | Positive     |                                                     |
+|  5    |       F         | block:block_bio_frontmerge| trace_block_bio_frontmerge| Positive     |                                                     |
+|  6    |       G         | block:block_getrq         | trace_block_getrq         | Neutral      |                                                     |
+|  7    |       S         | block:block_sleeprq       | trace_block_sleeprq       | Negative     |                                                     |
+|  8    |       P         | block:block_plug          | trace_block_plug          | Positive     |                                                     |
+|  9    |       I         | block:block_rq_insert     | trace_block_rq_insert     | Neutral      |                                                     |
+|  10   |       U         | block:block_unplug        | trace_block_unplug        | Neutral      |                                                     |
+|  11   |       A         | block:block_rq_remap      | trace_block_rq_remap      | Neutral      | Only used by stacked devices, eg. DM(Device Mapper) |
+|  12   |       D         | block:block_rq_issue      | trace_block_rq_issue      | Neutral      | Device driver code is picking up the request        |
+|  13   |       C         | block:block_rq_complete   | trace_block_rq_complete   | Neutral      |                                                     |
+
+如下例，我们可以利用 grep 命令，过滤所有 IO 完成动作 (C Trace Action) 返回的 IO 记录，
 
 	$ blkparse sampleblk1.blktrace.0   | grep C | head -n20
 	253,1    0       71     0.000091017 76455  C   W 2488 + 255 [0]
