@@ -54,21 +54,21 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 - Trace Action 是否对块设备性能有正面或者负面的影响
 - Trace Action 的额外说明，这个比 blkparse(1) 手册里的描述更贴近 Linux 实现
 
-| Order | Blktrace action | Linux block tracepoints   | Kernel trace function     | Perf impacts | Description                                         |
-|-------|-----------------|---------------------------|---------------------------|--------------|-----------------------------------------------------|
-|  1    |       Q         | block:block_bio_queue     | trace_block_bio_queue     | Neutral      |                                                     |
-|  2    |       B         | block:block_bio_bounce    | trace_block_bio_bounce    | Negative     |                                                     |
-|  3    |       X         | block:block_split         | trace_block_split         | Negative     |                                                     |
-|  4    |       M         | block:block_bio_backmerge | trace_block_bio_backmerge | Positive     |                                                     |
-|  5    |       F         | block:block_bio_frontmerge| trace_block_bio_frontmerge| Positive     |                                                     |
-|  6    |       G         | block:block_getrq         | trace_block_getrq         | Neutral      |                                                     |
-|  7    |       S         | block:block_sleeprq       | trace_block_sleeprq       | Negative     |                                                     |
-|  8    |       P         | block:block_plug          | trace_block_plug          | Positive     |                                                     |
-|  9    |       I         | block:block_rq_insert     | trace_block_rq_insert     | Neutral      |                                                     |
-|  10   |       U         | block:block_unplug        | trace_block_unplug        | Neutral      |                                                     |
-|  11   |       A         | block:block_rq_remap      | trace_block_rq_remap      | Neutral      | Only used by stacked devices, eg. DM(Device Mapper) |
-|  12   |       D         | block:block_rq_issue      | trace_block_rq_issue      | Neutral      | Device driver code is picking up the request        |
-|  13   |       C         | block:block_rq_complete   | trace_block_rq_complete   | Neutral      |                                                     |
+|Order|Action|Linux block tracepoints   |Kernel trace function     |Perf impact|Description                                                                                                          |
+|-----|------|--------------------------|--------------------------|-----------|---------------------------------------------------------------------------------------------------------------------|
+|  1  | Q    |block:block_bio_queue     |trace_block_bio_queue     |Neutral    |Intent to queue a bio on a given reqeust_queue. No real requests exists yet.                                         |
+|  2  | B    |block:block_bio_bounce    |trace_block_bio_bounce    |Negative   |Pages in bio has copied to bounce buffer to avoid hardware (DMA) limits.                                             |
+|  3  | X    |block:block_split         |trace_block_split         |Negative   |Split a bio with smaller pieces due to underlying block device's limits.                                             |
+|  4  | M    |block:block_bio_backmerge |trace_block_bio_backmerge |Positive   |A previously inserted request exists that ends on the boundary of where this bio begins, so IO scheduler merges them.|
+|  5  | F    |block:block_bio_frontmerge|trace_block_bio_frontmerge|Positive   |Same as the back merge, except this i/o ends where a previously inserted requests starts.                            |
+|  6  | S    |block:block_sleeprq       |trace_block_sleeprq       |Negative   |No available request structures were available (eg. memory pressure), so the issuer has to wait for one to be freed. |
+|  7  | G    |block:block_getrq         |trace_block_getrq         |Neutral    |Allocated a free request struct successfully.                                                                        |
+|  8  | P    |block:block_plug          |trace_block_plug          |Positive   |                                                                                                                     |
+|  9  | I    |block:block_rq_insert     |trace_block_rq_insert     |Neutral    |                                                                                                                     |
+|  10 | U    |block:block_unplug        |trace_block_unplug        |Neutral    |                                                                                                                     |
+|  11 | A    |block:block_rq_remap      |trace_block_rq_remap      |Neutral    | Only used by stacked devices, eg. DM(Device Mapper)                                                                 |
+|  12 | D    |block:block_rq_issue      |trace_block_rq_issue      |Neutral    | Device driver code is picking up the request                                                                        |
+|  13 | C    |block:block_rq_complete   |trace_block_rq_complete   |Neutral    |                                                                                                                     |
 
 如下例，我们可以利用 grep 命令，过滤所有 IO 完成动作 (C Trace Action) 返回的 IO 记录，
 
