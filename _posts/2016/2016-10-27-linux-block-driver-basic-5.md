@@ -63,12 +63,12 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 |  5  | F    |block:block_bio_frontmerge|trace_block_bio_frontmerge|Positive   |Same as the back merge, except this i/o ends where a previously inserted requests starts.                            |
 |  6  | S    |block:block_sleeprq       |trace_block_sleeprq       |Negative   |No available request structures were available (eg. memory pressure), so the issuer has to wait for one to be freed. |
 |  7  | G    |block:block_getrq         |trace_block_getrq         |Neutral    |Allocated a free request struct successfully.                                                                        |
-|  8  | P    |block:block_plug          |trace_block_plug          |Positive   |                                                                                                                     |
-|  9  | I    |block:block_rq_insert     |trace_block_rq_insert     |Neutral    |                                                                                                                     |
-|  10 | U    |block:block_unplug        |trace_block_unplug        |Neutral    |                                                                                                                     |
-|  11 | A    |block:block_rq_remap      |trace_block_rq_remap      |Neutral    | Only used by stacked devices, eg. DM(Device Mapper)                                                                 |
-|  12 | D    |block:block_rq_issue      |trace_block_rq_issue      |Neutral    | Device driver code is picking up the request                                                                        |
-|  13 | C    |block:block_rq_complete   |trace_block_rq_complete   |Neutral    |                                                                                                                     |
+|  8  | P    |block:block_plug          |trace_block_plug          |Positive   |I/O isn't immediately dispatched to request_queue, instead it is held back by current process IO plug list.          |
+|  9  | I    |block:block_rq_insert     |trace_block_rq_insert     |Neutral    |A request is sent to the IO scheduler internal queue and later service by the driver.                                |
+|  10 | U    |block:block_unplug        |trace_block_unplug        |Neutral    |Flush queued IO request to device request_queue, could be triggered by timeout or intentionally function call.       |
+|  11 | A    |block:block_rq_remap      |trace_block_rq_remap      |Neutral    |Only used by stacked devices, for example, DM(Device Mapper) and raid driver.                                        |
+|  12 | D    |block:block_rq_issue      |trace_block_rq_issue      |Neutral    |Device driver code is picking up the request                                                                         |
+|  13 | C    |block:block_rq_complete   |trace_block_rq_complete   |Neutral    |A previously issued request has been completed. The output will detail the sector and size of that request.          |
 
 如下例，我们可以利用 grep 命令，过滤所有 IO 完成动作 (C Trace Action) 返回的 IO 记录，
 
@@ -136,3 +136,4 @@ TBD
 * [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background)
 * [Linux Crash - coding notes](http://oliveryang.net/2015/07/linux-crash-coding-notes/)
 * [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)
+* [Explicit block device plugging](https://lwn.net/Articles/438256)
