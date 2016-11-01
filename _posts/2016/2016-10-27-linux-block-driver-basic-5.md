@@ -65,12 +65,12 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 |  7  | G    |block:block_getrq         |trace_block_getrq         |Neutral    |Allocated a free request struct successfully.                                                                        |
 |  8  | P    |block:block_plug          |trace_block_plug          |Positive   |I/O isn't immediately dispatched to request_queue, instead it is held back by current process IO plug list.          |
 |  9  | I    |block:block_rq_insert     |trace_block_rq_insert     |Neutral    |A request is sent to the IO scheduler internal queue and later service by the driver.                                |
-|  10 | U    |block:block_unplug        |trace_block_unplug        |Neutral    |Flush queued IO request to device request_queue, could be triggered by timeout or intentionally function call.       |
+|  10 | U    |block:block_unplug        |trace_block_unplug        |Positive   |Flush queued IO request to device request_queue, could be triggered by timeout or intentionally function call.       |
 |  11 | A    |block:block_rq_remap      |trace_block_rq_remap      |Neutral    |Only used by stacked devices, for example, DM(Device Mapper) and raid driver.                                        |
 |  12 | D    |block:block_rq_issue      |trace_block_rq_issue      |Neutral    |Device driver code is picking up the request                                                                         |
 |  13 | C    |block:block_rq_complete   |trace_block_rq_complete   |Neutral    |A previously issued request has been completed. The output will detail the sector and size of that request.          |
 
-如下例，我们可以利用 grep 命令，过滤所有 IO 完成动作 (C Trace Action) 返回的 IO 记录，
+如下例，我们可以利用 grep 命令，过滤 `blkparse` 解析出来的所有有关 IO 完成动作 (C Action) 的 IO 记录，
 
 	$ blkparse sampleblk1.blktrace.0   | grep C | head -n20
 	253,1    0       71     0.000091017 76455  C   W 2488 + 255 [0]
@@ -92,13 +92,15 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 	253,1    0      108     0.000378428 76455  C   W 6321 + 255 [0]
 	253,1    0      110     0.000379581 76455  C   W 6576 + 8 [0]
 
-以上例子中，可以看到，前 20 条跟踪记录，恰好是一共 4096 字节的数据，即 `fio` 设置的文件 IO 的一次写 buffer 的大小。
+例如，上面的输出中，第一条记录的含义是，
 
-因为在每条记录里，我们都可以得到 IO 操作的起始扇区地址，因此可以找到针对指定的一个扇区起始地址的 IO 操作历程。
-例如，上例中，第一条记录的含义是，
+> 它是序号为 71 的 IO 完成 (C) 操作。是进程号为 76455 的进程，在 CPU 0，对主次设备号 253,1 的块设备，发起的起始地址为 2488，长度为 255 个扇区的写 (W) 操作。
+> 该 IO 完成 （C）时被记录，当时的时间戳是 0.000091017，是精确到纳秒级的时间戳。利用 IO 操作的时间戳，我们就可以计算两个 IO 操作之间的具体延迟数据。
 
-> 序号为 71 的 IO 操作，是进程号为 76455 的进程，在 CPU 0，对主次设备号 253,1 的块设备的起始地址 2488，长度为 255 个扇区的写 (W) 操作，完成 （C）后返回。
+上面的例子中，可以看到，前 20 条跟踪记录，恰好是一共 4096 字节的数据。本文中 `fio` 测试是 buffer IO 测试，因此，块 IO 是出现在 `fadvise64` 使用 POSIX_FADV_DONTNEED 来 flush 文件系统页缓存时的。
+这时，文件系统对块设备发送的 IO 是基于 4K 页面的大小。而这些 4K 的页面，在块设备层被拆分成如上 20 个更小的块 IO 请求来发送。
 
+因为在每条记录里，我们都可以得到 IO 操作的起始扇区地址，因此，利用该起始扇区地址，可以找到针对这个地址的完整的 IO 操作过程。
 如果我们想找到所有起始扇区为 2488 的 IO 操作，则可以用如下办法，
 
 	$ blkparse sampleblk1.blktrace.0   | grep 2488 | head -n6
@@ -113,7 +115,11 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 	Q -> X -> G -> I -> D -> C
 
+如果对照前面的 blkparse(1) 的 Trace Action 的说明表格，我们就可以很容易理解，内核在块设备层对该起始扇区做的所有 IO 操作的时序。
+
 下面，就针对同一个起始扇区号为 2488 的 IO 操作所经历的历程，对Linux 块 IO 流程做简要说明。
+
+TBD.
 
 ## 4. 小结
 
