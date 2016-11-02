@@ -33,7 +33,7 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 本文将在与前文完全相同 `fio` 测试负载下，使用 `blktrace` 在块设备层面对该测试做进一步的分析。
 
-## 3. IO 流程分析
+## 3. 使用 blktrace
 
 [blktrace(8)](https://linux.die.net/man/8/blktrace) 是非常方便的跟踪块设备 IO 的工具。我们可以利用这个工具来分析前几篇文章中的 `fio` 测试时的块设备 IO 情况。
 
@@ -66,7 +66,7 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 |  8  | P    |block:block_plug          |trace_block_plug          |Positive   |I/O isn't immediately dispatched to request_queue, instead it is held back by current process IO plug list.          |
 |  9  | I    |block:block_rq_insert     |trace_block_rq_insert     |Neutral    |A request is sent to the IO scheduler internal queue and later service by the driver.                                |
 |  10 | U    |block:block_unplug        |trace_block_unplug        |Positive   |Flush queued IO request to device request_queue, could be triggered by timeout or intentionally function call.       |
-|  11 | A    |block:block_rq_remap      |trace_block_rq_remap      |Neutral    |Only used by stacked devices, for example, DM(Device Mapper) and raid driver.                                        |
+|  11 | A    |block:block_rq_remap      |trace_block_rq_remap      |Neutral    |Only used by stackable devices, for example, DM(Device Mapper) and raid driver.                                        |
 |  12 | D    |block:block_rq_issue      |trace_block_rq_issue      |Neutral    |Device driver code is picking up the request                                                                         |
 |  13 | C    |block:block_rq_complete   |trace_block_rq_complete   |Neutral    |A previously issued request has been completed. The output will detail the sector and size of that request.          |
 
@@ -100,8 +100,10 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 上面的例子中，可以看到，前 20 条跟踪记录，恰好是一共 4096 字节的数据。本文中 `fio` 测试是 buffer IO 测试，因此，块 IO 是出现在 `fadvise64` 使用 POSIX_FADV_DONTNEED 来 flush 文件系统页缓存时的。
 这时，文件系统对块设备发送的 IO 是基于 4K 页面的大小。而这些 4K 的页面，在块设备层被拆分成如上 20 个更小的块 IO 请求来发送。
 
-因为在每条记录里，我们都可以得到 IO 操作的起始扇区地址，因此，利用该起始扇区地址，可以找到针对这个地址的完整的 IO 操作过程。
-如果我们想找到所有起始扇区为 2488 的 IO 操作，则可以用如下办法，
+## 4. IO 流程分析
+
+在 blktrace 的每条记录里，都包含 IO 操作的起始扇区地址。因此，利用该起始扇区地址，可以找到针对这个地址的完整的 IO 操作过程。
+前面的例子里，如果我们想找到所有起始扇区为 2488 的 IO 操作，则可以用如下办法，
 
 	$ blkparse sampleblk1.blktrace.0   | grep 2488 | head -n6
 	253,1    0        1     0.000000000 76455  Q   W 2488 + 2048 [fio]
@@ -119,13 +121,35 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 下面，就针对同一个起始扇区号为 2488 的 IO 操作所经历的历程，对Linux 块 IO 流程做简要说明。
 
-TBD.
+### 4.1 Q - bio 排队
 
-## 4. 小结
+TODO
 
-TBD
+### 4.2 X - bio 拆分
 
-## 5. 延伸阅读
+TODO
+
+### 4.3 G - 分配 IO 请求
+
+TODO
+
+### 4.4 I - 请求插入队列
+
+TODO
+
+### 4.5 D - 发起 IO 请求
+
+TODO
+
+### 4.6 C - bio 完成
+
+TODO
+
+## 5. 小结
+
+TODO
+
+## 6. 延伸阅读
 
 * [Linux Block Driver - 1](http://oliveryang.net/2016/04/linux-block-driver-basic-1)
 * [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2)
