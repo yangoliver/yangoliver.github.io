@@ -119,9 +119,69 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 如果对照前面的 blkparse(1) 的 Trace Action 的说明表格，我们就可以很容易理解，内核在块设备层对该起始扇区做的所有 IO 操作的时序。
 
-下面，就针对同一个起始扇区号为 2488 的 IO 操作所经历的历程，对Linux 块 IO 流程做简要说明。
+下面，就针对同一个起始扇区号为 2488 的 IO 操作所经历的历程，对 Linux 块 IO 流程做简要说明。
 
 ### 4.1 Q - bio 排队
+
+- Code path，请参考 [perf events 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_bio_queue.log)，
+
+	  100.00%   100.00%  fio      [kernel.vmlinux]  [k] generic_make_request_checks
+                |
+                ---generic_make_request_checks
+                   generic_make_request
+                   |
+                   |--88.24%-- blk_queue_split
+                   |          blk_queue_bio
+                   |          generic_make_request
+                   |          submit_bio
+                   |          ext4_io_submit
+                   |          |
+                   |          |--56.38%-- ext4_writepages
+                   |          |          do_writepages
+                   |          |          __filemap_fdatawrite_range
+                   |          |          sys_fadvise64
+                   |          |          do_syscall_64
+                   |          |          return_from_SYSCALL_64
+                   |          |          posix_fadvise64
+                   |          |          0
+                   |          |
+                   |           --43.62%-- ext4_bio_write_page
+                   |                     mpage_submit_page
+                   |                     mpage_process_page_bufs
+                   |                     mpage_prepare_extent_to_map
+                   |                     ext4_writepages
+                   |                     do_writepages
+                   |                     __filemap_fdatawrite_range
+                   |                     sys_fadvise64
+                   |                     do_syscall_64
+                   |                     return_from_SYSCALL_64
+                   |                     posix_fadvise64
+                   |                     0
+                   |
+                    --11.76%-- submit_bio
+                              ext4_io_submit
+                              |
+                              |--58.95%-- ext4_writepages
+                              |          do_writepages
+                              |          __filemap_fdatawrite_range
+                              |          sys_fadvise64
+                              |          do_syscall_64
+                              |          return_from_SYSCALL_64
+                              |          posix_fadvise64
+                              |          0
+                              |
+                               --41.05%-- ext4_bio_write_page
+                                         mpage_submit_page
+                                         mpage_process_page_bufs
+                                         mpage_prepare_extent_to_map
+                                         ext4_writepages
+                                         do_writepages
+                                         __filemap_fdatawrite_range
+                                         sys_fadvise64
+                                         do_syscall_64
+                                         return_from_SYSCALL_64
+                                         posix_fadvise64
+                                         0
 
 TODO
 
@@ -157,12 +217,7 @@ TODO
 * [Linux Block Driver - 4](http://oliveryang.net/2016/08/linux-block-driver-basic-4)
 * [Linux Perf Tools Tips](http://oliveryang.net/2016/07/linux-perf-tools-tips/)
 * [Using Linux Trace Tools - for diagnosis, analysis, learning and fun](https://github.com/yangoliver/mydoc/blob/master/share/linux_trace_tools.pdf)
-* [Flamegraph 相关资源](http://www.brendangregg.com/flamegraphs.html)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
-* [Device Drivers, Third Edition](http://lwn.net/Kernel/LDD3)
-* [Ftrace: Function Tracer](https://github.com/torvalds/linux/blob/master/Documentation/trace/ftrace.txt)
-* [The iov_iter interface](https://lwn.net/Articles/625077/)
-* [Toward a safer fput](https://lwn.net/Articles/494158/)
 * [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background)
 * [Linux Crash - coding notes](http://oliveryang.net/2015/07/linux-crash-coding-notes/)
 * [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)
