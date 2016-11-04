@@ -123,7 +123,15 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 ### 4.1 Q - bio 排队
 
-- Code path，请参考 [perf events 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_bio_queue.log)，
+本文中的 `fio` 测试程序由于是同步的 buffer IO 的写入，因此，在 `write` 系统调用返回时，`fio` 的数据其实并没有真正写在块设备上，而是写到了文件系统的 page cache 里。
+如前面几篇文章所述，最终的块设备的 IO 触发，是由 `fadvise64` flush 脏的 page cache 引起的。
+
+因此，`fadvise64` 的系统调用会调用到 Ext4 文件系统的 page cache 写入函数，然后由 Ext4 将内存页封装成 `bio` 来提交给块设备。
+和大多数块设备的提交函数一样，函数的入口是 `submit_bio`，该函数会调用 `generic_make_request`，随后代码进入到 `generic_make_request_checks` 对 `bio` 进行检查。
+在该函数结尾，通过了检查后，内核代码调用了 `trace_block_bio_queue` 来报告自己意图将 `bio` 发送到设备的队列里。
+
+需要注意的是，此时，`bio` 只是打算要被插入到队列里，而不是已经放在队列里。
+具体 Code path，请参考 [perf 命令对 block:block_bio_queue 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_bio_queue.log)，
 
 	  100.00%   100.00%  fio      [kernel.vmlinux]  [k] generic_make_request_checks
                 |
@@ -182,8 +190,6 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
                                          return_from_SYSCALL_64
                                          posix_fadvise64
                                          0
-
-TODO
 
 ### 4.2 X - bio 拆分
 
