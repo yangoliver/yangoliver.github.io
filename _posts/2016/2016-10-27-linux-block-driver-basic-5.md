@@ -129,11 +129,11 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 因此，`fadvise64` 的系统调用会调用到 Ext4 文件系统的 page cache 写入函数，然后由 Ext4 将内存页封装成 `bio` 来提交给块设备。
 和大多数块设备的提交函数一样，函数的入口是 `submit_bio`，该函数会调用 `generic_make_request`，随后代码进入到 `generic_make_request_checks` 对 `bio` 进行检查。
 在该函数结尾，通过了检查后，内核代码调用了 `trace_block_bio_queue` 来报告自己意图将 `bio` 发送到设备的队列里。
+需要注意的是，此时，`bio` 只是打算要被插入到队列里，而不是已经放在队列里。而且，这时提交的 `bio` 的 `bio->bi_next` 是 NULL 值，并未形成链表。
 
-需要注意的是，此时，`bio` 只是打算要被插入到队列里，而不是已经放在队列里。
-具体 Code path，请参考 [perf 命令对 block:block_bio_queue 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_bio_queue.log)，
+Q 操作对应的具体代码路径，请参考 [perf 命令对 block:block_bio_queue 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_bio_queue.log)，
 
-	  100.00%   100.00%  fio      [kernel.vmlinux]  [k] generic_make_request_checks
+	100.00%   100.00%  fio      [kernel.vmlinux]  [k] generic_make_request_checks
                 |
                 ---generic_make_request_checks
                    generic_make_request
@@ -193,23 +193,175 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 ### 4.2 X - bio 拆分
 
-TODO
+文件系统提交 `bio` 时，`generic_make_request` 会调用 `blk_queue_bio` 将 `bio` 缓存到设备请求队列 (request_queue) 里。
+而在缓存 `bio` 之前，`blk_queue_bio` 会调用 `blk_queue_split`，此函数根据块设备的请求队列设置的 `limits.max_sectors` 和 `limits.max_segments` 属性，来对超出自己处理能力的大 `bio` 进行拆分。
+
+而这里请求队列的 `limits.max_sectors` 和 `limits.max_segments` 属性，则是由块设备驱动程序在初始化时，根据自己的处理能力设置的。
+当 `bio` 拆分频繁发生时，这时 IO 操作的性能会受到影响，因此，`blktrace` 结果中的 X 操作，需要做进一步分析。
+
+X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_split 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_split.log)，
+
+	100.00%   100.00%  fio      [kernel.vmlinux]  [k] blk_queue_split
+	            |
+	            ---blk_queue_split
+	               blk_queue_bio
+	               generic_make_request
+	               submit_bio
+	               ext4_io_submit
+	               |
+	               |--55.73%-- ext4_writepages
+	               |          do_writepages
+	               |          __filemap_fdatawrite_range
+	               |          sys_fadvise64
+	               |          do_syscall_64
+	               |          return_from_SYSCALL_64
+	               |          posix_fadvise64
+	               |          0
+	               |
+	                --44.27%-- ext4_bio_write_page
+	                          mpage_submit_page
+	                          mpage_process_page_bufs
+	                          mpage_prepare_extent_to_map
+	                          ext4_writepages
+	                          do_writepages
+	                          __filemap_fdatawrite_range
+	                          sys_fadvise64
+	                          do_syscall_64
+	                          return_from_SYSCALL_64
+	                          posix_fadvise64
+	                          0
 
 ### 4.3 G - 分配 IO 请求
 
-TODO
+
+
+	100.00%   100.00%  fio      [kernel.vmlinux]  [k] get_request
+                |
+                ---get_request
+                   blk_queue_bio
+                   generic_make_request
+                   submit_bio
+                   ext4_io_submit
+                   |
+                   |--54.41%-- ext4_writepages
+                   |          do_writepages
+                   |          __filemap_fdatawrite_range
+                   |          sys_fadvise64
+                   |          do_syscall_64
+                   |          return_from_SYSCALL_64
+                   |          posix_fadvise64
+                   |          0
+                   |
+                    --45.59%-- ext4_bio_write_page
+                              mpage_submit_page
+                              mpage_process_page_bufs
+                              mpage_prepare_extent_to_map
+                              ext4_writepages
+                              do_writepages
+                              __filemap_fdatawrite_range
+                              sys_fadvise64
+                              do_syscall_64
+                              return_from_SYSCALL_64
+                              posix_fadvise64
+                              0
 
 ### 4.4 I - 请求插入队列
 
-TODO
+
+	100.00%   100.00%  fio      [kernel.vmlinux]  [k] __elv_add_request
+                |
+                ---__elv_add_request
+                   blk_flush_plug_list
+                   |
+                   |--74.74%-- blk_queue_bio
+                   |          generic_make_request
+                   |          submit_bio
+                   |          ext4_io_submit
+                   |          ext4_writepages
+                   |          do_writepages
+                   |          __filemap_fdatawrite_range
+                   |          sys_fadvise64
+                   |          do_syscall_64
+                   |          return_from_SYSCALL_64
+                   |          posix_fadvise64
+                   |          0
+                   |
+                    --25.26%-- blk_finish_plug
+                              ext4_writepages
+                              do_writepages
+                              __filemap_fdatawrite_range
+                              sys_fadvise64
+                              do_syscall_64
+                              return_from_SYSCALL_64
+                              posix_fadvise64
+                              0
 
 ### 4.5 D - 发起 IO 请求
 
-TODO
+
+	100.00%   100.00%  fio      [kernel.vmlinux]  [k] blk_peek_request
+                |
+                ---blk_peek_request
+                   blk_fetch_request
+                   sampleblk_request
+                   __blk_run_queue
+                   queue_unplugged
+                   blk_flush_plug_list
+                   |
+                   |--72.41%-- blk_queue_bio
+                   |          generic_make_request
+                   |          submit_bio
+                   |          ext4_io_submit
+                   |          ext4_writepages
+                   |          do_writepages
+                   |          __filemap_fdatawrite_range
+                   |          sys_fadvise64
+                   |          do_syscall_64
+                   |          return_from_SYSCALL_64
+                   |          posix_fadvise64
+                   |          0
+                   |
+                    --27.59%-- blk_finish_plug
+                              ext4_writepages
+                              do_writepages
+                              __filemap_fdatawrite_range
+                              sys_fadvise64
+                              do_syscall_64
+                              return_from_SYSCALL_64
+                              posix_fadvise64
+                              0
 
 ### 4.6 C - bio 完成
 
-TODO
+	100.00%     0.00%  fio      [kernel.vmlinux]    [k] __blk_run_queue
+                |
+                ---__blk_run_queue
+                   queue_unplugged
+                   blk_flush_plug_list
+                   |
+                   |--76.92%-- blk_queue_bio
+                   |          generic_make_request
+                   |          submit_bio
+                   |          ext4_io_submit
+                   |          ext4_writepages
+                   |          do_writepages
+                   |          __filemap_fdatawrite_range
+                   |          sys_fadvise64
+                   |          do_syscall_64
+                   |          return_from_SYSCALL_64
+                   |          posix_fadvise64
+                   |          0
+                   |
+                    --23.08%-- blk_finish_plug
+                              ext4_writepages
+                              do_writepages
+                              __filemap_fdatawrite_range
+                              sys_fadvise64
+                              do_syscall_64
+                              return_from_SYSCALL_64
+                              posix_fadvise64
+                              0
+
 
 ## 5. 小结
 
