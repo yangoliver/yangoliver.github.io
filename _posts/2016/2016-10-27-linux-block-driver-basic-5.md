@@ -197,7 +197,7 @@ Q 操作对应的具体代码路径，请参考 [perf 命令对 block:block_bio_
 而在缓存 `bio` 之前，`blk_queue_bio` 会调用 `blk_queue_split`，此函数根据块设备的请求队列设置的 `limits.max_sectors` 和 `limits.max_segments` 属性，来对超出自己处理能力的大 `bio` 进行拆分。
 
 而这里请求队列的 `limits.max_sectors` 和 `limits.max_segments` 属性，则是由块设备驱动程序在初始化时，根据自己的处理能力设置的。
-当 `bio` 拆分频繁发生时，这时 IO 操作的性能会受到影响，因此，`blktrace` 结果中的 X 操作，需要做进一步分析。
+当 `bio` 拆分频繁发生时，这时 IO 操作的性能会受到影响，因此，`blktrace` 结果中的 X 操作，需要做进一步分析，来搞清楚 Sampleblk 驱动如何设置请求队列属性，进而影响到 `bio` 拆分的。
 
 X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_split 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_split.log)，
 
@@ -231,9 +231,70 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
 	                          posix_fadvise64
 	                          0
 
-### 4.3 G - 分配 IO 请求
+### 4.3 M - 合并 IO 请求
 
+如前所述，文件系统向通用块层提交 IO 请求时，使用的是 `struct bio` 结构，并且 `bio->bi_next` 是 NULL 值，并未形成链表。
+在 `blk_queue_bio` 代码中，这个被提交的 `bio` 的缓存处理存在以下几种情况，
 
+* 如果当前进程 IO 处于 Plug 状态，那么尝试将 `bio` 合并到当前进程的 plugged list 里，即 `current->plug.list` 里。
+* 如果当前进程 IO 处于 Unplug 状态，那么尝试利用 IO 调度器的代码找到合适的 IO `request`，并将 `bio` 合并到该 `request` 中。
+* 如果无法将 `bio` 合并到已经存在的 IO `request` 结构里，那么就进入到单独为该 `bio` 分配空闲 IO `request` 的逻辑里。
+
+不论是 plugged list 还是 IO scheduler 的 IO 合并，都分为向前合并和向后合并两种情况，
+
+- ELEVATOR_BACK_MERGE 由 `bio_attempt_back_merge` 完成
+- ELEVATOR_FRONT_MERGE 由 `bio_attempt_front_merge` 完成
+
+细心的读者会发现，前面 `fio` 测试对起始扇区 2488 发起的下面顺序的 IO 操作里，并未包含 M 操作，
+
+	Q -> X -> G -> I -> D -> C
+
+但是，整个 `fio` 测试过程中，还是有部分 IO 被合并了，因为我们并没有用 `blktrace` 捕捉全部 IO 操作，因此没有跟踪到这些合并操作。
+当合并操作发生时，其时序如下，
+
+	Q -> X -> M -> G -> I -> D -> C
+
+如果用 `perf` 命令去跟踪 block:block_bio_backmerge 和 block:block_bio_frontmerge 的事件，会发现都是向后合并操作，测试全程没有向前合并操作。
+这是由于本例中的 `fio` 测试是文件顺序写 IO，因此都是向后合并这种情况，所以只有 M 操作，而不会有 F 操作。
+
+M 操作对应的具体代码路径，请参考 [perf 命令对 block:block_bio_backmerge 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_bio_backmerge.log)，
+
+	100.00%   100.00%  fio      [kernel.vmlinux]  [k] bio_attempt_back_merge
+                |
+                ---bio_attempt_back_merge
+                   blk_attempt_plug_merge
+                   blk_queue_bio
+                   generic_make_request
+                   submit_bio
+                   ext4_io_submit
+                   |
+                   |--94.23%-- ext4_writepages
+                   |          do_writepages
+                   |          __filemap_fdatawrite_range
+                   |          sys_fadvise64
+                   |          do_syscall_64
+                   |          return_from_SYSCALL_64
+                   |          posix_fadvise64
+                   |          0
+                   |
+                    --5.77%-- ext4_bio_write_page
+                              mpage_submit_page
+                              mpage_process_page_bufs
+                              mpage_prepare_extent_to_map
+                              ext4_writepages
+                              do_writepages
+                              __filemap_fdatawrite_range
+                              sys_fadvise64
+                              do_syscall_64
+                              return_from_SYSCALL_64
+                              posix_fadvise64
+                              0
+
+### 4.4 G - 分配 IO 请求
+
+如前面小结所述，在 `blk_queue_bio` 代码中，若无法合并 `bio` 到已存在的 IO `request` 里， 该函数会为 `bio` 分配一个 IO 请求结构，即 `struct request`。
+
+G 操作对应的具体代码路径，请参考 [perf 命令对 block:block_getrq 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_getrq.log)，
 
 	100.00%   100.00%  fio      [kernel.vmlinux]  [k] get_request
                 |
@@ -265,8 +326,7 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
                               posix_fadvise64
                               0
 
-### 4.4 I - 请求插入队列
-
+### 4.5 I - 请求插入队列
 
 	100.00%   100.00%  fio      [kernel.vmlinux]  [k] __elv_add_request
                 |
@@ -296,7 +356,7 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
                               posix_fadvise64
                               0
 
-### 4.5 D - 发起 IO 请求
+### 4.6 D - 发起 IO 请求
 
 
 	100.00%   100.00%  fio      [kernel.vmlinux]  [k] blk_peek_request
@@ -331,7 +391,7 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
                               posix_fadvise64
                               0
 
-### 4.6 C - bio 完成
+### 4.7 C - bio 完成
 
 	100.00%     0.00%  fio      [kernel.vmlinux]    [k] __blk_run_queue
                 |
