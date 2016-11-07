@@ -328,6 +328,23 @@ G 操作对应的具体代码路径，请参考 [perf 命令对 block:block_getr
 
 ### 4.5 I - 请求插入队列
 
+如前面小结所述，在 `blk_queue_bio` 代码中，当已经为不能合并的 `bio` 分配了 `request`，下一步则有如下两种可能，
+
+* 如果当前进程 IO 已经被 Plug，这个新的 `request` 将会被加到当前进程的 `plug->list` 里来。
+* 如果当前进程的 IO 已经或者马上处于 unplug 状态，那么 `request` 将被插入到 IO 调度器的内部队列里。
+
+`blk_queue_bio` 会通过触发 Unplug 操作，最终调用 `__elv_add_request` 函数负责将 `request` 插入到 IO 调度器内部队列，其中牵涉到下面两种情况，
+
+* ELEVATOR_INSERT_SORT_MERGE
+
+  将 `request` 合并到 IO 调度器队列已存在的 `request` 里，并释放新分配的 `request`。
+
+* ELEVATOR_INSERT_SORT
+
+  将 `request` 插入到 IO 调度器经过排序的队列里。例如，将 `request` 插入到 deadline 调度器排序过的红黑树里。
+
+I 操作对应的具体代码路径，请参考 [perf 命令对 block:block_rq_insert 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_rq_insert.log)，
+
 	100.00%   100.00%  fio      [kernel.vmlinux]  [k] __elv_add_request
                 |
                 ---__elv_add_request
@@ -355,6 +372,11 @@ G 操作对应的具体代码路径，请参考 [perf 命令对 block:block_getr
                               return_from_SYSCALL_64
                               posix_fadvise64
                               0
+
+上面的调用栈清楚地显示出两种触发 Unplug 的时机，
+
+* 文件系统通过调用 `blk_flush_plug_list` 显式地触发
+* 当 `blk_queue_bio` 检测到当前进程 `plug->list` 的请求数目超过了 BLK_MAX_REQUEST_COUNT
 
 ### 4.6 D - 发起 IO 请求
 
