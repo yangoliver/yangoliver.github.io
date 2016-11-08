@@ -66,7 +66,7 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 |  8  | P    |block:block_plug          |trace_block_plug          |Positive   |I/O isn't immediately dispatched to request_queue, instead it is held back by current process IO plug list.          |
 |  9  | I    |block:block_rq_insert     |trace_block_rq_insert     |Neutral    |A request is sent to the IO scheduler internal queue and later service by the driver.                                |
 |  10 | U    |block:block_unplug        |trace_block_unplug        |Positive   |Flush queued IO request to device request_queue, could be triggered by timeout or intentionally function call.       |
-|  11 | A    |block:block_rq_remap      |trace_block_rq_remap      |Neutral    |Only used by stackable devices, for example, DM(Device Mapper) and raid driver.                                        |
+|  11 | A    |block:block_rq_remap      |trace_block_rq_remap      |Neutral    |Only used by stackable devices, for example, DM(Device Mapper) and raid driver.                                      |
 |  12 | D    |block:block_rq_issue      |trace_block_rq_issue      |Neutral    |Device driver code is picking up the request                                                                         |
 |  13 | C    |block:block_rq_complete   |trace_block_rq_complete   |Neutral    |A previously issued request has been completed. The output will detail the sector and size of that request.          |
 
@@ -373,13 +373,17 @@ I 操作对应的具体代码路径，请参考 [perf 命令对 block:block_rq_i
                               posix_fadvise64
                               0
 
-上面的调用栈清楚地显示出两种触发 Unplug 的时机，
-
-* 文件系统通过调用 `blk_flush_plug_list` 显式地触发
-* 当 `blk_queue_bio` 检测到当前进程 `plug->list` 的请求数目超过了 BLK_MAX_REQUEST_COUNT
 
 ### 4.6 D - 发起 IO 请求
 
+有两种常见的触发 Unplug IO 的时机，
+
+* 文件系统通过调用 `blk_finish_plug` 显式地触发
+* 当 `blk_queue_bio` 检测到当前进程 `plug->list` 的请求数目超过了 BLK_MAX_REQUEST_COUNT
+
+当 Unplug 发生时，`__blk_run_queue` 最终会被调用，然后块驱动程序的策略函数就会被调用，进而进入块设备 IO 流程。本例中，sampleblk 驱动的策略函数 `sampleblk_request` 开始被调用，
+
+D 操作对应的具体代码路径，请参考 [perf 命令对 block:block_rq_issue 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_rq_issue.log)，
 
 	100.00%   100.00%  fio      [kernel.vmlinux]  [k] blk_peek_request
                 |
