@@ -4,10 +4,13 @@ layout: page
 comments: yes
 ---
 
-I'm a software engineer who works in Linux/Unix kernel area.
-This site is used for personal notes and knowledge sharing. 
+### Biography
 
-### Contact
+Oliver Yang, Software Engineer in DELL/EMC, System Architect, leads cloud data protection storage project,
+and is responsible for the Storage system OS architecture for both physical appliance and virtualized edition.
+Rich working experiences in system software, server and storage industry. Before joining EMC, worked for Sun Microsystem and Oracle as Solaris kernel developers.
+
+### Social Network
 <script src="//platform.linkedin.com/in.js" type="text/javascript"></script>
 <script type="IN/MemberProfile" data-id="https://www.linkedin.com/in/yayong" data-format="inline" data-related="false"></script>
 - Email: yangoliver ~~at~~ gmail ~~dot~~ com
