@@ -419,35 +419,45 @@ D 操作对应的具体代码路径，请参考 [perf 命令对 block:block_rq_i
 
 ### 4.7 C - bio 完成
 
-	100.00%     0.00%  fio      [kernel.vmlinux]    [k] __blk_run_queue
-                |
-                ---__blk_run_queue
-                   queue_unplugged
-                   blk_flush_plug_list
-                   |
-                   |--76.92%-- blk_queue_bio
-                   |          generic_make_request
-                   |          submit_bio
-                   |          ext4_io_submit
-                   |          ext4_writepages
-                   |          do_writepages
-                   |          __filemap_fdatawrite_range
-                   |          sys_fadvise64
-                   |          do_syscall_64
-                   |          return_from_SYSCALL_64
-                   |          posix_fadvise64
-                   |          0
-                   |
-                    --23.08%-- blk_finish_plug
-                              ext4_writepages
-                              do_writepages
-                              __filemap_fdatawrite_range
-                              sys_fadvise64
-                              do_syscall_64
-                              return_from_SYSCALL_64
-                              posix_fadvise64
-                              0
+块驱动在处理完 IO 请求后，可以通过调用 `blk_end_request_all` 来通知通用块层 IO 操作完成。
 
+C 操作对应的具体代码路径，请参考 [perf 命令对 block:block_rq_complete 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_rq_complete.log),
+
+	100.00%   100.00%  fio      [kernel.vmlinux]    [k] blk_update_request
+                |
+                ---blk_update_request
+                   |
+                   |--99.99%-- blk_update_bidi_request
+                   |          blk_end_bidi_request
+                   |          blk_end_request_all
+                   |          sampleblk_request
+                   |          __blk_run_queue
+                   |          queue_unplugged
+                   |          blk_flush_plug_list
+                   |          |
+                   |          |--76.92%-- blk_queue_bio
+                   |          |          generic_make_request
+                   |          |          submit_bio
+                   |          |          ext4_io_submit
+                   |          |          ext4_writepages
+                   |          |          do_writepages
+                   |          |          __filemap_fdatawrite_range
+                   |          |          sys_fadvise64
+                   |          |          do_syscall_64
+                   |          |          return_from_SYSCALL_64
+                   |          |          posix_fadvise64
+                   |          |          0
+                   |          |
+                   |           --23.08%-- blk_finish_plug
+                   |                     ext4_writepages
+                   |                     do_writepages
+                   |                     __filemap_fdatawrite_range
+                   |                     sys_fadvise64
+                   |                     do_syscall_64
+                   |                     return_from_SYSCALL_64
+                   |                     posix_fadvise64
+                   |                     0
+                    --0.01%-- [...]
 
 ## 5. 小结
 
