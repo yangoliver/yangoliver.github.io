@@ -421,6 +421,12 @@ D 操作对应的具体代码路径，请参考 [perf 命令对 block:block_rq_i
 
 块驱动在处理完 IO 请求后，可以通过调用 `blk_end_request_all` 来通知通用块层 IO 操作完成。
 
+通知通用块层完成的函数还有 `blk_end_request`。两者的区别主要是，`blk_end_request` 是为 partial complete 设计实现的，但是`blk_end_request_all` 缺省就是完整的 `bio` 完成来设计的。
+因此，调用 `blk_end_request` 时，需要指定 IO 操作完成的字节数。因此，如果块设备驱动支持 IO 部分完成特性，则可以使用 `blk_end_request` 来支持。
+
+此外，还存在 `__blk_end_request_all` 和 `__blk_end_request` 形式的 IO 完成通知函数。这两个函数必须在获取 `request_queue` 队列的锁以后才开始调用。
+而 `blk_end_request_all` 和 `blk_end_request` 则不需要拿队列锁。
+
 C 操作对应的具体代码路径，请参考 [perf 命令对 block:block_rq_complete 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_rq_complete.log),
 
 	100.00%   100.00%  fio      [kernel.vmlinux]    [k] blk_update_request
