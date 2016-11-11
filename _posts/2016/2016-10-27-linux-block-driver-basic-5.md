@@ -467,7 +467,8 @@ C 操作对应的具体代码路径，请参考 [perf 命令对 block:block_rq_c
 
 ## 5. 小结
 
-TODO
+本文在与前几篇文章相同的 `fio` 测试过程中，使用 `blktrace` 和 `perf` 追踪的块设备层的 IO 操作，解释了 Linux 内核块设备 IO 的基本流程。
+第三小节中的 blkparse(1) trace action 的表格对理解 `blktrace` 的输出含义也做了简单的总结，有助于熟悉 `blktrace` 的使用和结果分析。
 
 ## 6. 延伸阅读
 
@@ -478,7 +479,4 @@ TODO
 * [Linux Perf Tools Tips](http://oliveryang.net/2016/07/linux-perf-tools-tips/)
 * [Using Linux Trace Tools - for diagnosis, analysis, learning and fun](https://github.com/yangoliver/mydoc/blob/master/share/linux_trace_tools.pdf)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
-* [Linux Crash - background](http://oliveryang.net/2015/06/linux-crash-background)
-* [Linux Crash - coding notes](http://oliveryang.net/2015/07/linux-crash-coding-notes/)
-* [Linux Crash White Paper (了解 crash 命令)](http://people.redhat.com/anderson/crash_whitepaper)
 * [Explicit block device plugging](https://lwn.net/Articles/438256)
