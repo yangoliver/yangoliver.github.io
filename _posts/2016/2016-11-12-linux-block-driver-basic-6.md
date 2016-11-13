@@ -36,30 +36,90 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 
 ## 3. bio 拆分问题
 
-[blktrace(8)](https://linux.die.net/man/8/blktrace) 是非常方便的跟踪块设备 IO 的工具。我们可以利用这个工具来分析前几篇文章中的 `fio` 测试时的块设备 IO 情况。
-
-在 blktrace 的每条记录里，都包含 IO 操作的起始扇区地址。因此，利用该起始扇区地址，可以找到针对这个地址的完整的 IO 操作过程。
-前面的例子里，如果我们想找到所有起始扇区为 2488 的 IO 操作，则可以用如下办法，
+在 [Linux Block Driver - 5](http://oliveryang.net/2016/10/linux-block-driver-basic-5) 中，我们发现，每次 IO，在块设备层都会经历一次 bio 拆分操作。
 
 	$ blkparse sampleblk1.blktrace.0   | grep 2488 | head -n6
 	253,1    0        1     0.000000000 76455  Q   W 2488 + 2048 [fio]
-	253,1    0        2     0.000001750 76455  X   W 2488 / 2743 [fio]
+	253,1    0        2     0.000001750 76455  X   W 2488 / 2743 [fio] >>> 拆分
 	253,1    0        4     0.000003147 76455  G   W 2488 + 255 [fio]
 	253,1    0       53     0.000072101 76455  I   W 2488 + 255 [fio]
 	253,1    0       70     0.000075621 76455  D   W 2488 + 255 [fio]
 	253,1    0       71     0.000091017 76455  C   W 2488 + 255 [0]
 
-可以直观的看出，这个 `fio` 测试对起始扇区 2488 发起的 IO 操作经历了以下历程，
-
-	Q -> X -> G -> I -> D -> C
+而我们知道，IO 拆分操作对块设备性能是有负面的影响的。那么，为什么会出现这样的问题？我们应当如何避免这个问题？
 
 ### 3.1 原因分析
 
-文件系统提交 `bio` 时，`generic_make_request` 会调用 `blk_queue_bio` 将 `bio` 缓存到设备请求队列 (request_queue) 里。
+当文件系统提交 `bio` 时，`generic_make_request` 会调用 `blk_queue_bio` 将 `bio` 缓存到设备请求队列 (request_queue) 里。
 而在缓存 `bio` 之前，`blk_queue_bio` 会调用 `blk_queue_split`，此函数根据块设备的请求队列设置的 `limits.max_sectors` 和 `limits.max_segments` 属性，来对超出自己处理能力的大 `bio` 进行拆分。
 
+那么，本例中的 sampleblk 驱动的块设备，是否设置了 `request_queue` 的相关属性呢？我们可以利用 `crash` 命令，查看该设备驱动的 `request_queue` 及其属性，
+
+	crash7> dev -d
+	MAJOR GENDISK            NAME       REQUEST_QUEUE      TOTAL ASYNC  SYNC   DRV
+	    8 ffff88003505f000   sda        ffff880034e34800       0     0     0     0
+	   11 ffff88003505e000   sr0        ffff880034e37500       0     0     0     0
+	   11 ffff880035290800   sr1        ffff880034e36c00       0     0     0     0
+	  253 ffff88003669b800   sampleblk1 ffff880034e30000       0     0     0     0  >>> sampleblk 驱动对应的块设备
+
+	crash7> request_queue.limits ffff880034e30000
+	  limits = {
+	    bounce_pfn = 4503599627370495,
+	    seg_boundary_mask = 4294967295,
+	    virt_boundary_mask = 0,
+	    max_hw_sectors = 255,
+	    max_dev_sectors = 0,
+	    chunk_sectors = 0,
+	    max_sectors = 255,				>>> Split bio 的原因
+	    max_segment_size = 65536,
+	    physical_block_size = 512,
+	    alignment_offset = 0,
+	    io_min = 512,
+	    io_opt = 0,
+	    max_discard_sectors = 0,
+	    max_hw_discard_sectors = 0,
+	    max_write_same_sectors = 0,
+	    discard_granularity = 0,
+	    discard_alignment = 0,
+	    logical_block_size = 512,
+	    max_segments = 128,
+	    max_integrity_segments = 0,
+	    misaligned = 0 '\000',
+	    discard_misaligned = 0 '\000',
+	    cluster = 1 '\001',
+	    discard_zeroes_data = 0 '\000',
+	    raid_partial_stripes_expensive = 0 '\000'
+	  }
+
 而这里请求队列的 `limits.max_sectors` 和 `limits.max_segments` 属性，则是由块设备驱动程序在初始化时，根据自己的处理能力设置的。
-当 `bio` 拆分频繁发生时，这时 IO 操作的性能会受到影响，因此，`blktrace` 结果中的 X 操作，需要做进一步分析，来搞清楚 Sampleblk 驱动如何设置请求队列属性，进而影响到 `bio` 拆分的。
+
+那么 sampleblk 是如何初始化 request_queue 的呢？
+
+在 sampleblk 驱动的代码里，我们只找到如下函数，
+
+	static int sampleblk_alloc(int minor)
+	{
+	[...snipped...]
+	    spin_lock_init(&sampleblk_dev->lock);
+	    sampleblk_dev->queue = blk_init_queue(sampleblk_request,
+	        &sampleblk_dev->lock);
+	[...snipped...]
+
+而进一步研究 `blk_init_queue` 的实现，我们就发现，这个 `limits.max_sectors` 的限制，正好就是调用 `blk_init_queue` 引起的，
+
+	blk_init_queue->blk_init_queue_node->blk_init_allocated_queue->blk_queue_make_request->blk_set_default_limits
+
+调用 `blk_init_queue` 会最终导致 `blk_set_default_limits` 将系统定义的默认限制参数设置到 `request_queue` 上，
+
+	include/linux/blkdev.h
+
+	enum blk_default_limits {
+	    BLK_MAX_SEGMENTS    = 128,
+	    BLK_SAFE_MAX_SECTORS    = 255, >>> sampleblk 使用的初值
+	    BLK_DEF_MAX_SECTORS = 2560,
+	    BLK_MAX_SEGMENT_SIZE    = 65536,
+	    BLK_SEG_BOUNDARY_MASK   = 0xFFFFFFFFUL,
+	};
 
 X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_split 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_split.log)，
 
