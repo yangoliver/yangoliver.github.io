@@ -121,37 +121,7 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 	    BLK_SEG_BOUNDARY_MASK   = 0xFFFFFFFFUL,
 	};
 
-X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_split 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_split.log)，
-
-	100.00%   100.00%  fio      [kernel.vmlinux]  [k] blk_queue_split
-	            |
-	            ---blk_queue_split
-	               blk_queue_bio
-	               generic_make_request
-	               submit_bio
-	               ext4_io_submit
-	               |
-	               |--55.73%-- ext4_writepages
-	               |          do_writepages
-	               |          __filemap_fdatawrite_range
-	               |          sys_fadvise64
-	               |          do_syscall_64
-	               |          return_from_SYSCALL_64
-	               |          posix_fadvise64
-	               |          0
-	               |
-	                --44.27%-- ext4_bio_write_page
-	                          mpage_submit_page
-	                          mpage_process_page_bufs
-	                          mpage_prepare_extent_to_map
-	                          ext4_writepages
-	                          do_writepages
-	                          __filemap_fdatawrite_range
-	                          sys_fadvise64
-	                          do_syscall_64
-	                          return_from_SYSCALL_64
-	                          posix_fadvise64
-	                          0
+X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_split 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_split.log)。
 
 ### 3.2 问题解决
 
