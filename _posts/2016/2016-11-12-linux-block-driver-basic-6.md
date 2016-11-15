@@ -53,6 +53,8 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 当文件系统提交 `bio` 时，`generic_make_request` 会调用 `blk_queue_bio` 将 `bio` 缓存到设备请求队列 (request_queue) 里。
 而在缓存 `bio` 之前，`blk_queue_bio` 会调用 `blk_queue_split`，此函数根据块设备的请求队列设置的 `limits.max_sectors` 和 `limits.max_segments` 属性，来对超出自己处理能力的大 `bio` 进行拆分。
 
+X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_split 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_split.log)。
+
 那么，本例中的 sampleblk 驱动的块设备，是否设置了 `request_queue` 的相关属性呢？我们可以利用 `crash` 命令，查看该设备驱动的 `request_queue` 及其属性，
 
 	crash7> dev -d
@@ -82,7 +84,7 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 	    discard_granularity = 0,
 	    discard_alignment = 0,
 	    logical_block_size = 512,
-	    max_segments = 128,
+	    max_segments = 128,             >>> Split bio 的又一原因
 	    max_integrity_segments = 0,
 	    misaligned = 0 '\000',
 	    discard_misaligned = 0 '\000',
@@ -121,7 +123,9 @@ tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 	    BLK_SEG_BOUNDARY_MASK   = 0xFFFFFFFFUL,
 	};
 
-X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_split 的跟踪结果](https://github.com/yangoliver/lktm/blob/master/drivers/block/sampleblk/labs/lab2/perf_block_split.log)。
+由于 sampleblk 设备是基于内存的块设备，并不存在一般块设备硬件的限制，故此，我们可以通过调用 `blk_set_stacking_limits` 解除 Linux IO 栈的诸多限制。
+
+具体改动可以参考 [lktm 里 sampleblk 的改动](https://github.com/yangoliver/lktm/commit/bc05891d53334cc3fa4690b87718c935ba76f52b#diff-3858c6a043ac372fbae32d03d9f26d16).
 
 ### 3.2 问题解决
 
