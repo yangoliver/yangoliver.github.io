@@ -251,7 +251,7 @@ Linux 4.6 内核的块设备层的预定义了 19 个通用块层的 tracepoints
 	[...snipped...]
 
 其中，rMB/s 和 wMB/s 就是读写的吞吐量，而 r/s 和 w/s 就是 IOPS。
-本例中，sampleblk1 块设备的吞吐量是 908 ～ 932 MB/s，IOPS 大概在 8300 ~ 8500 每秒。
+本例中，sampleblk1 块设备的吞吐量是 908 ～ 932 MB/s，IOPS 大概在 8300 ~ 8500。
 
 需要说明的是，此处的的吞吐量和 IOPS 与如下所示的 `fio` 返回的输出里的有很大不同，
 
