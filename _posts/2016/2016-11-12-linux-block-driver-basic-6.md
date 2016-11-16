@@ -101,10 +101,13 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
 
 	static int sampleblk_alloc(int minor)
 	{
+
 	[...snipped...]
+
 	    spin_lock_init(&sampleblk_dev->lock);
 	    sampleblk_dev->queue = blk_init_queue(sampleblk_request,
 	        &sampleblk_dev->lock);
+
 	[...snipped...]
 
 而进一步研究 `blk_init_queue` 的实现，我们就发现，这个 `limits.max_sectors` 的限制，正好就是调用 `blk_init_queue` 引起的，
@@ -127,6 +130,92 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
 
 具体改动可以参考 [lktm 里 sampleblk 的改动](https://github.com/yangoliver/lktm/commit/bc05891d53334cc3fa4690b87718c935ba76f52b#diff-3858c6a043ac372fbae32d03d9f26d16).
 
+经过驱动的重新编译、加载、文件系统格式化，装载，可以查看 sampleblk 驱动的 `request_queue` 确认限制已经解除，
+
+	crash7> mod -s sampleblk /home/yango/ws/lktm/drivers/block/sampleblk/day1/sampleblk.ko
+	     MODULE       NAME                   SIZE  OBJECT FILE
+	ffffffffa0068580  sampleblk              2681  /home/yango/ws/lktm/drivers/block/sampleblk/day1/sampleblk.ko
+	crash7> dev -d
+	MAJOR GENDISK            NAME       REQUEST_QUEUE      TOTAL ASYNC  SYNC   DRV
+	   11 ffff88003501b800   sr0        ffff8800338b0000       0     0     0     0
+	    8 ffff88003501e000   sda        ffff880034a8c800       0     0     0     0
+	    8 ffff88003501f000   sdb        ffff880034a8da00       0     0     0     0
+	   11 ffff88003501d800   sr1        ffff8800338b0900       0     0     0     0
+	  253 ffff880033867800   sampleblk1 ffff8800338b2400       0     0     0     0
+	crash7> request_queue.limits -x ffff8800338b2400
+	  limits = {
+	    bounce_pfn = 0xfffffffffffff,
+	    seg_boundary_mask = 0xffffffff,
+	    virt_boundary_mask = 0x0,
+	    max_hw_sectors = 0xffffffff,
+	    max_dev_sectors = 0xffffffff,  >>> 最大值，原来是 255
+	    chunk_sectors = 0x0,
+	    max_sectors = 0xffffffff,
+	    max_segment_size = 0xffffffff,
+	    physical_block_size = 0x200,
+	    alignment_offset = 0x0,
+	    io_min = 0x200,
+	    io_opt = 0x0,
+	    max_discard_sectors = 0x0,
+	    max_hw_discard_sectors = 0x0,
+	    max_write_same_sectors = 0xffffffff,
+	    discard_granularity = 0x0,
+	    discard_alignment = 0x0,
+	    logical_block_size = 0x200,
+	    max_segments = 0xffff,   >>> 最大值，原来是 128
+	    max_integrity_segments = 0x0,
+	    misaligned = 0x0,
+	    discard_misaligned = 0x0,
+	    cluster = 0x1,
+	    discard_zeroes_data = 0x1,
+	    raid_partial_stripes_expensive = 0x0
+	  }
+
+运行与之前系列文章中相同的 `fio` 测试，同时用 `blktrace` 跟踪 IO 操作，
+
+	$ sudo blktrace /dev/sampleblk1
+
+可以看到，此时已经没有 bio 拆分操作，即 X action,
+
+	$ blkparse sampleblk1.blktrace.0 | grep X | wc -l
+	0
+
+如果查看 IO 完成的操作，可以看到，文件系统的 page cache 4K 大小的页面可以在一个块 IO 操作完成，也可以分多次完成，如下例中 2 次和 3 次，
+
+	$ blkparse sampleblk1.blktrace.0 | grep C | head -10
+	253,1    0        9     0.000339563 128937  C   W 2486 + 4096 [0]
+	253,1    0       18     0.002813922 128937  C   W 2486 + 4096 [0]
+	253,1    1        9     0.006499452 128938  C   W 4966 + 1616 [0]
+	253,1    0       27     0.006674160 128924  C   W 2486 + 2256 [0]
+	253,1    0       34     0.006857810 128937  C   W 4742 + 224 [0]
+	253,1    1       19     0.009835686 128938  C   W 2486 + 1736 [0]
+	253,1    1       21     0.010198002 128938  C   W 4222 + 2360 [0]
+	253,1    0       45     0.012429598 128937  C   W 2486 + 4096 [0]
+	253,1    0       54     0.015565043 128937  C   W 2486 + 4096 [0]
+	253,1    0       63     0.017418088 128937  C   W 2486 + 4096 [0]
+
+但如果查看 [Linux Block Driver - 5](http://oliveryang.net/2016/10/linux-block-driver-basic-5) 的结果，则一个页面的写要固定被拆分成 20 次 IO 操作。
+
+用 `iostat` 查看块设备的性能，我们可以发现，设备的 IO 吞吐量比 [Linux Block Driver - 4](http://oliveryang.net/2016/08/linux-block-driver-basic-4) 提高了 10% ～ 15%。
+原来版本驱动 900 多 MB/s 的吞吐量提升到了 1000 多 MB/s。 但另一翻边，IOPS 从原有的 8000 多降到了 700 多，整整差了 10 倍。
+
+	$ iostat /dev/sampleblk1  -xmdz 1
+	
+	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+	sampleblk1        0.00   558.42    0.00  761.39     0.00  1088.20  2927.08     0.22    0.29    0.00    0.29   0.27  20.79
+	
+	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+	sampleblk1        0.00   542.00    0.00  768.00     0.00  1097.41  2926.44     0.20    0.26    0.00    0.26   0.25  19.20
+	
+	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+	sampleblk1        0.00   524.00    0.00  799.00     0.00  1065.24  2730.43     0.21    0.26    0.00    0.26   0.25  20.00
+	
+	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+	sampleblk1        0.00   846.00    0.00  742.00     0.00  1079.73  2980.17     0.20    0.27    0.00    0.27   0.26  19.60
+	
+	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
+	sampleblk1        0.00   566.00    0.00  798.00     0.00  1068.08  2741.14     0.21    0.26    0.00    0.26   0.26  20.50
+
 ### 3.2 问题解决
 
 TBD
@@ -141,6 +230,7 @@ TBD
 * [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2)
 * [Linux Block Driver - 3](http://oliveryang.net/2016/08/linux-block-driver-basic-3)
 * [Linux Block Driver - 4](http://oliveryang.net/2016/08/linux-block-driver-basic-4)
+* [Linux Block Driver - 5](http://oliveryang.net/2016/10/linux-block-driver-basic-5)
 * [Linux Perf Tools Tips](http://oliveryang.net/2016/07/linux-perf-tools-tips/)
 * [Using Linux Trace Tools - for diagnosis, analysis, learning and fun](https://github.com/yangoliver/mydoc/blob/master/share/linux_trace_tools.pdf)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
