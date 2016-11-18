@@ -196,8 +196,13 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
 
 但如果查看 [Linux Block Driver - 5](http://oliveryang.net/2016/10/linux-block-driver-basic-5) 的结果，则一个页面的写要固定被拆分成 20 次 IO 操作。
 
-用 `iostat` 查看块设备的性能，我们可以发现，设备的 IO 吞吐量比 [Linux Block Driver - 4](http://oliveryang.net/2016/08/linux-block-driver-basic-4) 提高了 10% ～ 15%。
-原来版本驱动 900 多 MB/s 的吞吐量提升到了 1000 多 MB/s。 但另一翻边，IOPS 从原有的 8000 多降到了 700 多，整整差了 10 倍。
+用 `iostat` 查看块设备的性能，我们可以发现尽管 IO 吞吐量在新的改动下得到提升，但是却增加了 IO 等待时间，
+
+- 设备的 IO 吞吐量比 [Linux Block Driver - 4](http://oliveryang.net/2016/08/linux-block-driver-basic-4) 提高了 10% ～ 15%。
+- 原来版本驱动 900 多 MB/s 的吞吐量提升到了 1000 多 MB/s。
+- 但另一方面，IOPS 从原有的 8000 多降到了 700 多，整整差了 10 倍。
+- 平均的 IO 请求大小 (avgrq-sz) 从 220 左右增加到了 2700 ～ 2900 多子节，增加了 10 倍多。
+- 平均写等待时间 (w_await) 从 0.10 ~ 0.15 毫秒增加到了 0.20 ～ 0.22 毫秒。
 
 	$ iostat /dev/sampleblk1  -xmdz 1
 	
