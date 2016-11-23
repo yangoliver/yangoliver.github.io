@@ -363,6 +363,7 @@ inode table 就是以 inode record 为元素的数组，不同版本 Ext 文件�
 如下命令可以创建一个文件，并且得到磁盘上文件对应的 inode 号,
 
 	$ sudo touch /mnt/a
+	$ sudo echo "Linux file system - 4" > /mnt/a
 	$ ls -i /mnt/a
 	12 /mnt/a
 
@@ -372,14 +373,15 @@ inode table 就是以 inode record 为元素的数组，不同版本 Ext 文件�
 	debugfs 1.42.9 (28-Dec-2013)
 	Inode: 12   Type: regular    Mode:  0644   Flags: 0x80000
 	Generation: 603494144    Version: 0x00000001
-	User:     0   Group:     0   Size: 0
+	User:     0   Group:     0   Size: 22
 	File ACL: 21    Directory ACL: 0
-	Links: 1   Blockcount: 2
+	Links: 1   Blockcount: 4
 	Fragment:  Address: 0    Number: 0    Size: 0
 	ctime: 0x5745313c -- Tue May 24 21:59:40 2016
 	atime: 0x5745313c -- Tue May 24 21:59:40 2016
 	mtime: 0x5745313c -- Tue May 24 21:59:40 2016
 	EXTENTS:
+	(0):4109  /* 该文件的 Extent 区段号，稍后将会用到 */
 
 [Ext4_Disk_Layout](https://ext4.wiki.kernel.org/index.php/Ext4_Disk_Layout) 给出了通过 inode 号定位 inode table 里的 inode record 的具体方法，
 
@@ -408,6 +410,76 @@ inode table 就是以 inode record 为元素的数组，不同版本 Ext 文件�
 	  i_blocks_lo = 0x2,
 	  i_flags = 0x80000,
 	[...snipped...]
+	  i_block = {127754, 4, 0, 0, 1, 4109, 0, 0, 0, 0, 0, 0, 0, 0, 0},  /* 数据映射区域，B+ 树节点 */
+
+### 4.6 查看 Extent Tree
+
+Ext3 文件系统使用了直接、间接、二级间接和三级间接块的形式来定位磁盘中的数据块。
+通过 `ext3_inode->i_block[]` 数组可以定位到该 inode 的数据存储的位置。
+
+* i_block[0] 到 i_block[11] 存储的是 data block 号。如果文件小于12 个块时，就存储在这里。
+
+* i_block[12] 存储的是 Indirect block (一级间接映射) ，即其指向的块存储的不是数据，而是块号。
+  如果文件大于 12 个块，而小于 blocksize/4 + 12 时，i_block[12] 指向的数据有效。其存储的数据块个数为：blocksize/4.
+
+* i_block[13] 存储的是 Double indirect block (二级间接映射). 其存储的数据块个数可以为：blocksize/4 * blocksize/4.
+
+* i_block[14] 存储的是 Triple indirect block (三级间接映射). 其存储的数据块个数为：blocksize/4 * blocksize/4 * blocksize/4.
+
+Ext3 的这种数据块映射和存储方式比较低效，1000 个连续的数据块也需要相应的 1000 个映射这些数据块的元数据记录。而且也因此限制了单个文件的大小。
+
+Ext4 则引入了 Extent (区段) 的概念，使用 B+ 树来索引数据块。这时，1000 个连续的数据块只需要一个 12 字节的 `ext4_extent` 数据结构就可以描述。
+通过 `ext4_inode->i_block[]` 数组可以定位到 Extent (区段) 的数据存储的位置。
+
+* i_block[0] 到 i_block[2] 3 个元素一定是一个 `ext4_extent_header` 结构
+* i_block[3] 到 i_block[15] 共 12 个元素，每 3 个元素可能是一个 `ext4_extent` 或 `ext4_extent_idx` 结构，这取决于所表示的文件的大小。
+
+例如，本例中，`ext4_extent_header` 的 `eh_depth` 为 0，就表示后面 4 组元素都应该是 B＋ 树的叶子节点，即 `ext4_extent` 结构。
+
+	crash> struct -o ext4_inode.i_block 0xffffc900017c5d80
+	struct ext4_inode {
+	  [ffffc900017c5da8] __le32 i_block[15];
+	  }
+
+	crash> ext4_extent_header -x ffffc900017c5da8
+	struct ext4_extent_header {
+	  eh_magic = 0xf30a,  /* Magic number, 0xF30A */
+	  eh_entries = 0x1,   /* Inode 对应的 Extent 区段数 */
+	  eh_max = 0x4,		  /* 最大的区段数 */
+	  eh_depth = 0x0,     /* 段节点在段树中的深度。0 则表示为叶子节点，指向数据块；否则指向其它段节点 */
+	  eh_generation = 0x0
+	}
+
+本例中，`eh_entries` 为 1，表明只有一个区段，且存放于 i_block[3] 到 i_block[5]，
+
+	crash> p /x 0xffffc900017c5da8+0x12
+	$13 = 0xffffc900017c5dba
+	crash> struct ext4_extent 0xffffc900017c5dba
+	struct ext4_extent {
+	  ee_block = 0,
+	  ee_len = 1,
+	  ee_start_hi = 0,
+	  ee_start_lo = 4109  /* 文件对应的区段的数据块号，与 debugfs 显示结果一致 */
+	}
+
+### 4.7 查看 Data Block
+
+前面我们已经通过遍历 `ext4_inode->i_block[]` 的 B＋ 树节点找到了 `/mnt/a` 文件对应的数据块号。所以很容易计算出 4109 块号对应的内存地址，并且打印其内容，
+
+	crash7> p /x 0xffffc900017bc000+4109*1024  /* Super block 里显示块长度为 1024 */
+	$15 = 0xffffc90001bbf400
+	crash7> rd -a 0xffffc90001bbf400
+	0xffffc90001bbf400:  Linux file system - 4
+
+可以看到，正是我们创建该文件时写入的字符串。此外，我们也可以利用 `debugfs` 工具的命令来查看指定数据块号的内容，
+
+	$ sudo debugfs /dev/sampleblk1 -R 'bd 4109'
+	debugfs 1.42.9 (28-Dec-2013)
+	0000  4c69 6e75 7820 6669 6c65 2073 7973 7465  Linux file syste
+	0020  6d20 2d20 340a 0000 0000 0000 0000 0000  m - 4...........
+	0040  0000 0000 0000 0000 0000 0000 0000 0000  ................
+
+至此，我们清楚地了解了 Ext4 文件系统是如何从文件的 inode 号定位到磁盘上的 inode 结构，然后定位到具体数据存放的数据块的。
 
 ## 5. 延伸阅读
 
