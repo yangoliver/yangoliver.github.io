@@ -198,12 +198,6 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
 
 用 `iostat` 查看块设备的性能，我们可以发现尽管 IO 吞吐量在新的改动下得到提升，但是却增加了 IO 等待时间，
 
-- 设备的 IO 吞吐量比 [Linux Block Driver - 4](http://oliveryang.net/2016/08/linux-block-driver-basic-4) 提高了 10% ～ 15%。
-- 原来版本驱动 900 多 MB/s 的吞吐量提升到了 1000 多 MB/s。
-- 但另一方面，IOPS 从原有的 8000 多降到了 700 多，整整差了 10 倍。
-- 平均的 IO 请求大小 (avgrq-sz) 从 220 左右增加到了 2700 ～ 2900 多子节，增加了 10 倍多。
-- 平均写等待时间 (w_await) 从 0.10 ~ 0.15 毫秒增加到了 0.20 ～ 0.22 毫秒。
-
 	$ iostat /dev/sampleblk1  -xmdz 1
 	
 	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
@@ -220,6 +214,15 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
 	
 	Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util
 	sampleblk1        0.00   566.00    0.00  798.00     0.00  1068.08  2741.14     0.21    0.26    0.00    0.26   0.26  20.50
+
+与修复问题之前的 `iostat` 结果相比，我们可以得到如下结论，
+
+- 设备的 IO 吞吐量比 [Linux Block Driver - 4](http://oliveryang.net/2016/08/linux-block-driver-basic-4) 提高了 10% ～ 15%。
+- 原来版本驱动 900 多 MB/s 的吞吐量提升到了 1000 多 MB/s。
+- 但另一方面，IOPS 从原有的 8000 多降到了 700 多，整整差了 10 倍。
+- 平均的 IO 请求大小 (avgrq-sz) 从 220 左右增加到了 2700 ～ 2900 多子节，增加了 10 倍多。
+- 平均写等待时间 (w_await) 从 0.10 ~ 0.15 毫秒增加到了 0.20 ～ 0.22 毫秒。
+
 
 ### 3.2 问题解决
 
