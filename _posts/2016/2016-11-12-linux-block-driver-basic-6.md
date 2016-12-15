@@ -6,7 +6,7 @@ categories: [Chinese, Software, Hardware]
 tags: [driver, perf, crash, trace, file system, kernel, linux, storage]
 ---
 
->本文尚未完成，内容变动频繁，请转载。转载时请包含原文或者作者网站链接：<http://oliveryang.net>
+>转载时请包含原文或者作者网站链接：<http://oliveryang.net>
 
 * content
 {:toc}
@@ -126,8 +126,9 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
 	    BLK_SEG_BOUNDARY_MASK   = 0xFFFFFFFFUL,
 	};
 
-由于 sampleblk 设备是基于内存的块设备，并不存在一般块设备硬件的限制，故此，我们可以通过调用 `blk_set_stacking_limits` 解除 Linux IO 栈的诸多限制。
+### 3.2 问题解决
 
+由于 sampleblk 设备是基于内存的块设备，并不存在一般块设备硬件的限制，故此，我们可以通过调用 `blk_set_stacking_limits` 解除 Linux IO 栈的诸多限制。
 具体改动可以参考 [lktm 里 sampleblk 的改动](https://github.com/yangoliver/lktm/commit/bc05891d53334cc3fa4690b87718c935ba76f52b#diff-3858c6a043ac372fbae32d03d9f26d16).
 
 经过驱动的重新编译、加载、文件系统格式化，装载，可以查看 sampleblk 驱动的 `request_queue` 确认限制已经解除，
@@ -223,14 +224,11 @@ X 操作对应的具体代码路径，请参考 [perf 命令对 block:block_spli
 - 平均的 IO 请求大小 (avgrq-sz) 从 220 左右增加到了 2700 ～ 2900 多子节，增加了 10 倍多。
 - 平均写等待时间 (w_await) 从 0.10 ~ 0.15 毫秒增加到了 0.20 ～ 0.22 毫秒。
 
-
-### 3.2 问题解决
-
-TBD
-
 ## 4. 小结
 
-TBD
+本文分析了在前几篇文章中的 `fio` 测试中观测到的 `bio` 拆分的问题，并给出了一个解决方案。修复了拆分问题后，测试的吞吐量得到了提高，IO 延迟增加了。同时，IOPS 也下降了 10 倍。
+而 IOPS 的下降比例，和 IO 请求的增加比例相当，可以看出 IOPS 是和 IO 大小密切相关的。
+实际上，这个测试也从另一个角度说明了，抛开测试负载的各种属性，IO 大小，IO 读写比例，顺序还是随机 IO，去比较 IOPS 是没有意义的。
 
 ## 5. 延伸阅读
 
