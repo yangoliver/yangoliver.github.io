@@ -457,10 +457,12 @@ Ext4 则引入了 Extent (区段) 的概念，使用 B+ 树来索引数据块。
 	crash> struct ext4_extent 0xffffc900017c5dba
 	struct ext4_extent {
 	  ee_block = 0,
-	  ee_len = 1,
+	  ee_len = 1,         /* Extent 里的块的个数，因为是 __le16 类型，所以一个 extent 块数是 <= 32768 */
 	  ee_start_hi = 0,
 	  ee_start_lo = 4109  /* 文件对应的区段的数据块号，与 debugfs 显示结果一致 */
 	}
+
+由于一个 extent 最大块数是 32768，因此对于 4k 大小的块来说，一个 extent 的最大长度就是 128M。
 
 ### 4.7 查看 Data Block
 
