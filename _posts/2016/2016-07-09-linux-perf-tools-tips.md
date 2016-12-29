@@ -383,6 +383,7 @@ Or,
 
 * [Using Linux Trace Tools - for diagnosis, analysis, learning and fun](https://github.com/yangoliver/mydoc/blob/master/share/linux_trace_tools.pdf)
 * [SystemTap Beginners Guide](https://www.sourceware.org/systemtap/SystemTap_Beginners_Guide/index.html)
+* [Perf Exmaples](http://www.brendangregg.com/perf.html)
 * [Ftrace: The hidden light switch](http://lwn.net/Articles/608497)
 * [perf-tools github](https://github.com/brendangregg/perf-tools)
 * [Linux Block Driver - 2](http://oliveryang.net/2016/07/linux-block-driver-basic-2/)
