@@ -140,7 +140,56 @@ Last, add probe and start tracing,
 
 The syntax of kprobe event could be found from [Documentation/trace/kprobetrace.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/kprobetrace.txt).
 
-#### 3.1.6 How to add a dynamic user space probe event via perf CLI?
+#### 3.1.6 "Failed to load kernel map" or "Failed to open debuginfo file" error messages
+
+On my customized Linux kernel, I ran into above errors even, I specified the correct kernel debug-info binaries with -k option, why?
+
+	# perf probe -nv 'vfs_read:0 count' -k /vmlinux-ddr550797 -s ~/linux-3.2/
+	probe-definition(0): vfs_read:0 count -k /vmlinux-ddr550797 -s /root/linux-3.2/
+	symbol:vfs_read file:(null) line:0 offset:0 return:0 lazy:(null)
+	parsing arg: count into count
+	parsing arg: -k into -k
+	parsing arg: /vmlinux-ddr550797 into /vmlinux-ddr550797
+	parsing arg: -s into -s
+	parsing arg: /root/linux-3.2/ into /root/linux-3.2/
+	5 arguments
+	Looking at the vmlinux_path (6 entries long)
+	Failed to load kernel map.
+	Failed to find path of kernel module.
+	Failed to open debuginfo file.
+	  Error: Failed to add events. (-2)
+
+Using strace could get the root causes,
+
+	# strace perf probe -nv 'vfs_read:0 count' -k /vmlinux-ddr550797 -s ~/linux-3.2/
+
+	[...snipped...]
+	write(2, "Looking at the vmlinux_path (6 e"..., 45Looking at the vmlinux_path (6 entries long)
+	) = 45
+	open("vmlinux", O_RDONLY)               = -1 ENOENT (No such file or directory)
+	open("/boot/vmlinux", O_RDONLY)         = -1 ENOENT (No such file or directory)
+	open("/boot/vmlinux-3.2.33-ddr552094", O_RDONLY) = -1 ENOENT (No such file or directory)
+	open("/lib/modules/3.2.33-ddr552094/build/vmlinux", O_RDONLY) = -1 ENOENT (No such file or directory)
+	open("/usr/lib/debug/lib/modules/3.2.33-ddr552094/vmlinux", O_RDONLY) = -1 ENOENT (No such file or directory)
+	write(2, "Failed to load kernel map.\n", 27Failed to load kernel map.
+	) = 27
+	write(2, "Failed to find path of kernel mo"..., 38Failed to find path of kernel module.
+	) = 38
+	write(2, "Failed to open debuginfo file.\n", 31Failed to open debuginfo file.
+	) = 31
+	write(2, "  Error: Failed to add events. ("..., 36  Error: Failed to add events. (-2)
+	) = 36
+	exit_group(254)                         = ?
+	+++ exited with 254 +++
+
+Then we know that we could create a symbol link or make install kernel with debug-info to one of directories of above outputs.
+
+	# mkdir /lib/modules/3.2.33-ddr552094/build/
+	# ln -s /vmlinux-ddr552094 /lib/modules/3.2.33-ddr552094/build/vmlinux
+
+With the workaround above, the perf command could work now.
+
+#### 3.1.7 How to add a dynamic user space probe event via perf CLI?
 
 User space probe needs Uprobes support in both kernel and perf CLI.
 
@@ -184,7 +233,7 @@ Last, add the probe, record trace and display trace results,
 
 The syntax of kprobe event could be found from [Documentation/trace/uprobetracer.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/uprobetracer.txt)
 
-#### 3.1.7 Can't show user process symbol correctly in call graph?
+#### 3.1.8 Can't show user process symbol correctly in call graph?
 
 Using perf record and perf script couldn't show the call graph with correct symbol correctly (marked by unknown),
 
