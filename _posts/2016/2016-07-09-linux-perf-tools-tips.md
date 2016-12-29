@@ -138,6 +138,42 @@ Last, add probe and start tracing,
 	$ sudo perf record -e probe:do_unlinkat –aR sleep 3600
 	$ sudo perf script
 
+Besides tracing the function boundary, we could trace any line of source code or variables if kernel debug-info and source code is specified with -k/-s or installed to a right directory.
+
+For exmaple, using -L to browse the source code lines which could be traced. Here we just want to check line 32,
+
+	$ sudo sudo perf probe -L do_unlinkat | grep 32
+	     32  		inode = dentry->d_inode;
+	$ sudo sudo perf probe -V do_unlinkat:32
+	Available variables at do_unlinkat:32
+	        @<do_unlinkat+363>
+	                int     error
+	                int     type
+	                struct dentry*  dentry
+	                struct inode*   delegated_inode
+	                struct inode*   inode
+	                struct path     path
+	                struct qstr     last
+	                unsigned int    lookup_flags
+
+At line 32, we could trace local variable dentry, then we add a new probe,
+
+	$ sudo perf probe -a 'do_unlinkat:32 dentry->d_iname:string'
+	Added new event:
+	  probe:do_unlinkat    (on do_unlinkat:32 with d_iname=dentry->d_iname:string)
+
+	You can now use it in all perf tools, such as:
+
+		perf record -e probe:do_unlinkat -aR sleep 1
+
+Run perf record with rm file command, we could print member of dentry struct (`dentry->d_iname`) easily,
+
+	$ sudo perf record -e probe:do_unlinkat -aR rm /tmp/test
+	[ perf record: Woken up 1 times to write data ]
+	[ perf record: Captured and wrote 0.161 MB perf.data (1 samples) ]
+	$ sudo perf script
+	              rm  2711 [000]  1710.484803: probe:do_unlinkat: (ffffffff8122855b) d_iname="test"
+
 The syntax of kprobe event could be found from [Documentation/trace/kprobetrace.txt](https://github.com/torvalds/linux/blob/master/Documentation/trace/kprobetrace.txt).
 
 #### 3.1.6 "Failed to load kernel map" or "Failed to open debuginfo file" error messages
