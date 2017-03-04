@@ -317,12 +317,12 @@ For this reason, if we really want to dump `struct e1000_adapter` contents, we n
 Below command dumped the `struct e1000_adapter` contents based on `0x8c0(%rsi)`, the RSI value is the second parameter value of `e1000_intr` in previous backtrace,
 
 	(gdb) p *(struct e1000_adapter *)(0xffff88003ae4e000+0x8c0)
-	$14 = {active_vlans = {0 <repeats 64 times>}, mng_vlan_id = 65535, bd_number = 0, rx_buffer_len = 1522, wol = 0, smartspeed = 0, en_mng_pt = 0, link_speed = 1000, link_duplex = 2, stats_lock = {{
-	      rlock = {raw_lock = {{head_tail = 28705206, tickets = {head = 438, tail = 438}}}}}}, total_tx_bytes = 0, total_tx_packets = 0, total_rx_bytes = 180, total_rx_packets = 3, itr = 20000,
+	$14 = {active_vlans = {0 <repeats 64 times>}, mng_vlan_id = 65535, bd_number = 0, rx_buffer_len = 1522, wol = 0, smartspeed = 0, en_mng_pt = 0, link_speed = 1000, link_duplex = 2, stats_lock = \{\{
+	      rlock = \{raw_lock = \{\{head_tail = 28705206, tickets = \{head = 438, tail = 438\}\}\}\}\}\}, total_tx_bytes = 0, total_tx_packets = 0, total_rx_bytes = 180, total_rx_packets = 3, itr = 20000,
 	  itr_setting = 3, tx_itr = 1, rx_itr = 1, fc_autoneg = 1 '\001', tx_ring = 0xffff880036f95180, restart_queue = 0, txd_cmd = 2332033024, tx_int_delay = 8, tx_abs_int_delay = 32, gotcl = 0,
 	  gotcl_old = 37571, tpt_old = 288, colc_old = 0, tx_timeout_count = 0, tx_fifo_head = 0, tx_head_addr = 0, tx_fifo_size = 0, tx_timeout_factor = 1 '\001', tx_fifo_stall = {counter = 0},
 	  pcix_82544 = false, detect_tx_hung = false, dump_buffers = false, clean_rx = 0xffffffffa0061d90 <e1000_clean_rx_irq>, alloc_rx_buf = 0xffffffffa0062310 <e1000_alloc_rx_buffers>,
-	  rx_ring = 0xffff880036f951c0, napi = {poll_list = {next = 0xdead000000100100, prev = 0xdead000000200200}, state = 17, weight = 64, gro_count = 0, poll = 0xffffffffa0064810 <e1000_clean>,
+	  rx_ring = 0xffff880036f951c0, napi = \{poll_list = \{next = 0xdead000000100100, prev = 0xdead000000200200\}, state = 17, weight = 64, gro_count = 0, poll = 0xffffffffa0064810 <e1000_clean>,
 
     [...snipped...]
 
