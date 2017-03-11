@@ -6,9 +6,9 @@ comments: yes
 
 ### Biography
 
-Oliver Yang, Software Engineer in DELL/EMC, System Architect, leads cloud data protection storage project,
-and is responsible for the Storage system OS architecture for both physical appliance and virtualized edition.
-Rich working experiences in system software, server and storage industry. Before joining EMC, worked for Sun Microsystem and Oracle as Solaris kernel developers.
+Oliver Yang, a Linux kernel and performance engineer in Alicloud.
+
+Have rich working experiences in system software, server and storage industry. Before joining Alicloud, worked for EMC, Oracle, Sun Microsystem as a kernel developer.
 
 My techincal areas,
 
