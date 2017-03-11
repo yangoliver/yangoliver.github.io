@@ -8,6 +8,9 @@ tags: [kernel, linux]
 
 > 转载时请包含作者网站链接：<http://oliveryang.net>
 
+* content
+{:toc}
+
 ## 1. 什么是 printk flooding？
 
 Linux 内核里，`printk` 是程序员们常用的错误报告和调试手段之一。然而，不恰当使用或者滥用 `printk` 会导致高频 printk 调用，最终在内核里引发 printk flooding 这样的问题。
