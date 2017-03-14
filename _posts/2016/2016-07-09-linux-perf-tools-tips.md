@@ -50,7 +50,7 @@ Below mindmap could give you a big picture regarding to the classification of th
 </pre>
 
 Linux trace tools give us a good opportunity to understand system behaviors deeply and quickly. In last month, I gave a presentation in community.
-In my talk, I shared my expericences on Linux perf tools usage.
+In my talk, I shared my experiences on Linux perf tools usage.
 For more information, please download the slides - [Using Linux Trace Tools - for diagnosis, analysis, learning and fun](https://github.com/yangoliver/mydoc/blob/master/share/linux_trace_tools.pdf). 
 
 ## 3. Tips
@@ -120,7 +120,7 @@ First, get the what lines could be probed by perf,
 	<do_unlinkat@/lib/modules/4.6.0-rc3+/build/fs/namei.c:0>
     0  static long do_unlinkat(int dfd, const char __user *pathname)
 
-Second, query probeable input arguments and local variable,
+Second, query probable input arguments and local variable,
 
 	$ sudo perf probe -V do_unlinkat
 	Available variables at do_unlinkat
@@ -140,7 +140,7 @@ Last, add probe and start tracing,
 
 Besides tracing the function boundary, we could trace any line of source code or variables if kernel debug-info and source code is specified with -k/-s or installed to a right directory.
 
-For exmaple, using -L to browse the source code lines which could be traced. Here we just want to check line 32,
+For example, using -L to browse the source code lines which could be traced. Here we just want to check line 32,
 
 	$ sudo sudo perf probe -L do_unlinkat | grep 32
 	     32  		inode = dentry->d_inode;
@@ -239,7 +239,7 @@ Second, you could double check available dynamic probe points,
 	$ sudo perf probe -x /lib64/libc.so.6 -F | grep fopen64
 	fopen64
 
-Third, list the input arguments and local varibales,
+Third, list the input arguments and local variables,
 
 	[yango@localhost ~]$ sudo perf probe -x /lib64/libc.so.6 -L fopen64
 	<_IO_new_fopen@/usr/src/debug/glibc-2.17-c758a686/libio/iofopen.c:0>
@@ -317,6 +317,79 @@ By using dwarf method to collect call graph information, it could show the fio s
                   45ad89 thread_main (/usr/local/bin/fio)
                   45cffc run_threads (/usr/local/bin/fio)
     [...snipped...]
+
+#### 3.1.9 Sort call graph with better view?
+
+While using `perf record` to understand kernel code path, one of issue is the `perf report` doesn't give the proper view for code path learning purpose.
+The `-s parent` option could sort output by parent functions of stack trace.
+
+Below is an exmaple to learn memory allocation code path,
+
+	$sudo perf record -e kmem:mm_page_alloc -ag sleep 1
+	$sudo perf report --max-stack=6 --stdio -s parent
+	97.66%    97.66%  [other]
+	        |
+	        ---__alloc_pages_nodemask
+	           |
+	           |--54.31%-- alloc_pages_vma
+	           |          |
+	           |          |--76.58%-- handle_mm_fault
+	           |          |          |
+	           |          |          |--99.82%-- __do_page_fault
+	           |          |           --0.18%-- [...]
+	           |          |
+	           |          |--16.31%-- do_wp_page
+	           |          |          handle_mm_fault
+	           |          |
+	           |          |--7.08%-- __do_fault
+	           |          |          handle_mm_fault
+	           |           --0.03%-- [...]
+	           |
+	           |--45.49%-- alloc_pages_current
+	           |          |
+	           |          |--61.84%-- __get_free_pages
+	           |          |          |
+	           |          |          |--60.26%-- proc_pid_readlink
+	           |          |          |
+	           |          |          |--29.44%-- environ_read
+	           |          |          |
+	           |          |          |--4.29%-- get_zeroed_page
+	           |          |          |
+	           |          |          |--3.89%-- __tlb_remove_page
+	           |          |          |
+	           |          |          |--1.25%-- pgd_alloc
+	           |          |          |
+	           |          |          |--0.53%-- proc_pid_cmdline_read
+	           |          |           --0.33%-- [...]
+	           |          |
+	           |          |--23.63%-- pte_alloc_one
+	           |          |          |
+	           |          |          |--98.79%-- __pte_alloc
+	           |          |          |
+	           |          |           --1.21%-- copy_huge_pmd
+	           |          |
+	           |          |--10.04%-- __page_cache_alloc
+	           |          |          grab_cache_page_write_begin
+	           |          |
+	           |          |--3.71%-- __pmd_alloc
+	           |          |          |
+	           |          |          |--82.42%-- copy_page_range
+	           |          |          |
+	           |          |          |--13.19%-- handle_mm_fault
+	           |          |          |
+	           |          |           --4.40%-- move_page_tables
+	           |          |
+	           |          |--0.57%-- pipe_write
+	           |          |          do_sync_write
+	           |           --0.20%-- [...]
+	            --0.20%-- [...]
+
+	     2.01%     2.01%  sys_mincore
+	            |
+	            ---__alloc_pages_nodemask
+	               alloc_pages_current
+	               __get_free_pages
+	               sys_mincore
 
 
 ### 3.2 SystemTap
