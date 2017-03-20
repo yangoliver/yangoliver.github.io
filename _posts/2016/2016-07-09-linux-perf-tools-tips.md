@@ -427,7 +427,13 @@ Then, find the module from temporary directory, and run it by `staprun`,
 
 	$ sudo staprun /tmp/stapKI1aZ3/stap_13235.ko
 
-#### 3.2.4 How to get input arguments and local variables?
+#### 3.2.4 How to overwrite function return value?
+
+Use the guru mode to overwrite the kernel function return value. Below oneline script could set the function always return 1 to caller,
+
+	$ sudo stap -g -e 'probe kernel.function("devmem_is_allowed").return { $return = 1 }'
+
+#### 3.2.5 How to get input arguments and local variables?
 
 The `-L` option showed the source code information, input arguments, and local variables,
 
@@ -438,7 +444,7 @@ The `-e` option could be used in one liner command, and we could print 2nd argum
 
 	$ sudo stap -e 'probe kernel.function("do_unlinkat") { printf("%s \n", kernel_string($pathname))} '
 
-#### 3.2.5 Address unwind data issue for a module
+#### 3.2.6 Address unwind data issue for a module
 
 Got following warning messages while running below SystemTap one line command,
 
@@ -470,7 +476,7 @@ Or using `--all-modules` option to add unwind/symbol data for all loaded kernel 
 
 The `--all-modules` could increase the module size built by stap, `-d` should be better way to address the issue.
 
-#### 3.2.6 Error: probe overhead exceeded threshold
+#### 3.2.7 Error: probe overhead exceeded threshold
 
 Systemtap will report error while a probe couldn't return within a time threshold.
 
