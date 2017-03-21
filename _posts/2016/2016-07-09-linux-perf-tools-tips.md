@@ -429,7 +429,7 @@ Then, find the module from temporary directory, and run it by `staprun`,
 
 #### 3.2.4 How to overwrite function return value?
 
-Use the guru mode to overwrite the kernel function return value. Below oneline script could set the function always return 1 to caller,
+Using the guru mode overwrites the kernel function return value. Below oneline script could make the function always return 1 to the caller,
 
 	$ sudo stap -g -e 'probe kernel.function("devmem_is_allowed").return { $return = 1 }'
 
