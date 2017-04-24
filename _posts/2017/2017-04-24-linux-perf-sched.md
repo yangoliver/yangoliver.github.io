@@ -6,9 +6,9 @@ categories: [Chinese, Software]
 tags: [perf, kernel, linux]
 ---
 
->本文翻译自 Brendan Gregg 博客文章，所有权利归原作者所有
-
->原文链接 http://www.brendangregg.com/blog/2017-03-16/perf-sched.html
+>本文翻译自 Brendan Gregg 博客文章，所有权利归原作者所有.<br>
+>译者: Oliver Yang<br>
+>原文链接: http://www.brendangregg.com/blog/2017-03-16/perf-sched.html
 
 
 * content
