@@ -3,7 +3,7 @@ layout: post
 title: Linux Memory Pressure - 1
 description: About system memory pressure, which includes hardware and linux kernel knowledge
 categories: [Chinese, Software, Hardware]
-tags: [kernel, linux, hardware]
+tags: [perf, memory, kernel, linux, hardware]
 ---
 
 > 草稿状态，请勿装载。转载时请包含作者网站链接：<http://oliveryang.net>
@@ -46,6 +46,9 @@ tags: [kernel, linux, hardware]
 
 内存访问吞吐量。
 
+例如，Intel Broadwell 某个系统的硬件内存带宽上限为 130GB/s。那么我们可以利用 `perf -e intel_cqm` 命令观查当前的应用的内存使用的吞吐量，看是否达到了系统硬件的带宽瓶颈。
+详情请参考关联文档中的 [Introduction to Cache Quality of service in Linux Kernel](http://events.linuxfoundation.org/sites/events/files/slides/presentlinuxcon.pdf) 这篇文档。
+
 ### 2.2 IOPS ###
 
 内存访问的 IOPS。
@@ -57,3 +60,7 @@ tags: [kernel, linux, hardware]
 ## 3. 影响内存性能的因素 ##
 
 TBD。
+
+## 4. 关联文档 ##
+
+* [Introduction to Cache Quality of service in Linux Kernel](http://events.linuxfoundation.org/sites/events/files/slides/presentlinuxcon.pdf)
