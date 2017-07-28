@@ -550,7 +550,7 @@ Inside the scripts, it actually uses the similar approaches with our manually wa
 
 In fact, in Linux v4.0, the gdb scripts for kernel debugging support got integrated.
 All gdb scripts are available under kernel mainline source tree: [scripts/gdb](https://github.com/torvalds/linux/tree/master/scripts/gdb).
-On RHEL 7.2, following the steps in [Documentation/gdb-kernel-debugging.txt](https://github.com/torvalds/linux/blob/master/Documentation/gdb-kernel-debugging.txt)
+On RHEL 7.2, following the steps in [Documentation/gdb-kernel-debugging.txt](https://github.com/torvalds/linux/blob/master/Documentation/dev-tools/gdb-kernel-debugging.rst)
 to rebuild the target kernel with proper Kconfig. Adding following lines in `~/.gdbinit`, all new gdb commands should be able to work,
 
 	$ cat ~/.gdbinit
