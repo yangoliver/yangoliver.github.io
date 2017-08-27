@@ -44,20 +44,47 @@ tags: [perf, memory, kernel, linux, hardware]
 
 ### 2.1 Throughput ###
 
-内存访问吞吐量。
+内存访问吞吐量。通常计量方式为 BPS，即每秒的字节数。
 
 例如，Intel Broadwell 某个系统的硬件内存带宽上限为 130GB/s。那么我们可以利用 `perf -e intel_cqm` 命令观查当前的应用的内存使用的吞吐量，看是否达到了系统硬件的带宽瓶颈。
 详情请参考关联文档中的 [Introduction to Cache Quality of service in Linux Kernel](http://events.linuxfoundation.org/sites/events/files/slides/presentlinuxcon.pdf) 这篇文档。
 
+TBD.
+
 ### 2.2 IOPS ###
 
-内存访问的 IOPS。
+内存访问每秒操作次数。通常计量方式为 IOPS。对内存来说，IO 操作分为 Load 和 Store，IOPS 即每秒的 Load/Store 次数。
+
+由于现代处理器存在非常复杂的 Memory Cache Hierarchy 的设计，因此，软件发起的一条引起内存 Read 访存指令，可能引起 Cache Evition 操作，进而触发内存的 Store 操作。
+而一条引起内存 Write 访存指令，可能也会引起 Cache Miss 操作，进而引发内存的 Load 操作。
+因此，要观察系统的内存 IOPS 指标，只能借助 CPU 的 PMU 机制。
+
+例如，Intel 的 PMU 支持 PEBS 机制，可以利用 `perf mem` 命令来观察当前应用的内存访问的 IOPS。
+
+TBD.
 
 ### 2.3 Latency ###
 
-内存访问的延迟。
+内存访问的延迟。通常计量单位为时间。
 
-## 3. 影响内存性能的因素 ##
+内存访问延迟的时间单位，从纳秒 (ns), 微妙 (us), 毫秒 (ms)，甚至秒 (s) 不等，这取决于硬件和软件上的很多因素：
+- 当内存访问命中 cache 时，访存延迟通常是 ns 级别的。
+- 若内存访问引起操作系统的 page fault，访存延迟对应用来说就推迟到了 us ，甚至百 us 级别。
+- 若内存访问时的 page fault 遭遇了物理内存紧张，引发了操作系统的页回收，访存延迟可以推迟到 ms 级，一些极端情况可以是百 ms 级，直至 s 级。
+
+因此，观察内存访问延迟并没有通用的，很方便的工具。软件层面的访存延迟，可以利用 OS 的动态跟踪工具。例如 page fult 的延迟，可以利用 ftrace 和 perf 之类的工具观测。
+
+## 3. 影响内存访问性能的因素 ##
+
+很多因素可以影响到系统内存的性能，
+
+- 资源总数量的竞争
+
+- 软件并发访问竞争
+
+- 总线并发访问竞争
+
+- 内存的局部性问题
 
 TBD。
 
