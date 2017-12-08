@@ -8,12 +8,13 @@ comments: yes
 
 Oliver Yang, a Linux kernel and performance engineer in Alicloud.
 
-Have rich working experiences in system software, server and storage industry. Before joining Alicloud, worked for EMC, Oracle, Sun Microsystem as a kernel developer.
+He has rich working experiences in system software, server and storage industry. Before joining Alicloud, he worked for EMC, Oracle, Sun Microsystem as a kernel developer.
+Currently, his major focus is on efficiency and performance in Cloud and data center.
 
-My techincal areas,
+His techincal areas include,
 
-- Linux/Unix kernel, Device drivers
 - System perfromance
+- Linux/Unix kernel, Device drivers
 - Storage, network, cloud computing solutions
 - x86, PCIe, storage & network appliance architecture
 
