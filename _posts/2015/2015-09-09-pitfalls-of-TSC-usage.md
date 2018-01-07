@@ -365,6 +365,9 @@ See the description in Intel 64 Architecture SDM Vol. 2B,
 Linux kernel has an example to have the
 [rdtsc_ordered implementation](https://github.com/torvalds/linux/commit/03b9730b769fc4d87e40f6104f4c5b2e43889f19)
 
+For a correct out of order implementaton, see Intel White Paper:
+[How to Benchmark Code Execution Times on Intel® IA-32 and IA-64 Instruction Set Architectures](https://www.intel.com/content/dam/www/public/us/en/documents/white-papers/ia-32-ia-64-benchmark-code-execution-paper.pdf)
+
 ### 3.3 TSC emulation on different hypervisors
 
 Virtualization technology caused the lots of challenges for guest OS time keeping. This section just cover the cases
