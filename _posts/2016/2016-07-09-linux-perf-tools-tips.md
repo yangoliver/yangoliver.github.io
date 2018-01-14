@@ -46,6 +46,8 @@ Below mindmap could give you a big picture regarding to the classification of th
       - [Uprobe](https://github.com/torvalds/linux/blob/master/Documentation/trace/uprobetracer.txt)
   - Hardware Events
     - [Perf Events (PMU)](https://perf.wiki.kernel.org/index.php/Main_Page)
+      - Core
+      - Uncore
 
 </pre>
 
