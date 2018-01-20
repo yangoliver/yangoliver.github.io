@@ -52,9 +52,20 @@ SMP和AMP的深入介绍很多经典文章书籍可参考，此处不再赘述�
 
 x86多处理器发展历史上，早期的多核和多处理器系统都是UMA架构的。这种架构下，
 多个CPU通过同一个北桥(North Bridge)芯片与内存链接。北桥芯片里集成了内存控制器(Memory Controller)，
-因此，这些CPU和内存控制器之间的前端总线(FSB)在系统CPU数量不断增加的前提下，
-成为了系统性能的瓶颈。因此，AMD在引入64位x86架构时，实现了NUMA架构。之后，
-Intel也推出了x64的Nehalem架构，x86终于全面进入到NUMA时代。x86 NUMA目前的实现属于ccNUMA。
+
+下图是一个典型的早期 x86 UMA 系统，四路处理器通过 FSB (前端系统总线) 和主板上的内存控制器芯片 (MCH) 相连，DRAM 是以 UMA 方式组织的，延迟并无访问差异，
+
+![x86 UMA](http://oliveryang.net/media/images/2018/numa-fsb-3.png)
+
+在 UMA 架构下，CPU 和内存控制器之间的前端总线 (FSB) 在系统 CPU 数量不断增加的前提下，
+成为了系统性能的瓶颈。因此，AMD 在引入 64 位 x86 架构时，实现了 NUMA 架构。之后，
+Intel 也推出了 x64 的 Nehalem 架构，x86 终于全面进入到 NUMA 时代。x86 NUMA 目前的实现属于 ccNUMA。
+
+从 Nehalem 架构开始，x86 开始转向 NUMA 架构，内存控制器芯片被集成到处理器内部，多个处理器通过 QPI 链路相连，从此 DRAM 有了远近之分。
+而 Sandybridge 架构则更近一步，将片外的 IOH 芯片也集成到了处理器内部，至此，内存控制器和 PCIe Root Complex 全部在处理器内部了。
+下图就是一个典型的 x86 的 NUMA 架构：
+
+<img src="/media/images/2018/numa-imc-iio-smb-4.png" width="100%" height="100%" />
 
 ## 2 NUMA Hierarchy
 
@@ -100,6 +111,11 @@ ACPI规范就是这么抽象一个NUMA Node的。
   这样在最小的硬件投入下提高了CPU在多线程软件工作负载下的性能，提高了硬件使用效率。
   x86的超线程技术出现早于NUMA架构。
 
+以下图为例，1 个 x86 CPU Socket 有 4 个物理 Core，每个 Core 有两个 HT (Hyper Thread)，L1 L2 Cache 被两个 HT 共享，
+而 L3 Cache 则在 Socket 内，被所有 4 个 Core 共享，
+
+<img src="/media/images/2018/cache-ht-hierarchy-2.jpg" width="100%" height="100%" />
+
 #### 2.1.2 本地内存
 
 在Intel x86平台上，所谓本地内存，就是CPU可以经过Uncore部件里的iMC访问到的内存。而那些非本地的，
@@ -131,12 +147,16 @@ ACPI规范就是这么抽象一个NUMA Node的。
 [QPI((QuickPath Interconnect) Link](https://en.wikipedia.org/wiki/Intel_QuickPath_Interconnect)的。
 CPU的Uncore部分有QPI的控制器来控制CPU到QPI的数据访问。 
 
-不借助第三方的Node Controller，2/4/8个NUMA Node(取决于具体架构)可以通过QPI(QuickPath Interconnect)总线互联起来，
+不借助第三方的 Node Controller，2 或 4 个 NUMA Node (取决于具体架构)可以通过 QPI(QuickPath Interconnect) 总线互联起来，
 构成一个NUMA系统。例如，[SGI UV计算机系统](http://www.sgi.com/products/servers/uv/index.html)，
-它就是借助自家的SGI NUMAlink®互联技术来达到4到256个CPU socket扩展的能力的。这是一个SMP系统，
-所以支持运行一个Linux操作系统实例去管理系统。在我的另一篇文章
+它就是借助自家的 SGI NUMAlink® 互联技术来达到 4 到 256 个 CPU socket 扩展的能力的。这是一个 SMP 系统，
+所以支持运行一个 Linux 操作系统实例去管理系统。在我的另一篇文章
 [Pitfalls Of TSC Usage](http://oliveryang.net/2015/09/pitfalls-of-TSC-usage)
-曾经提到过SGI UV平台上遇到的TSC同步的问题(见3.1.2小节)。
+曾经提到过 SGI UV 平台上遇到的TSC同步的问题(见3.1.2小节)。
+
+下图就是一个利用 QPI Switch 互联的 8 NUMA Node 的 x86 系统，
+
+<img src="/media/images/2018/numa-imc-iio-qpi-switch-3.png" width="100%" height="100%" />
 
 ## 3. NUMA Affinity
 
