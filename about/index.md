@@ -6,17 +6,16 @@ comments: yes
 
 ### Biography
 
-Oliver Yang, a Linux kernel and performance engineer in Alibaba Cloud.
+Oliver Yang is a Linux kernel and performance engineer at Alibaba Cloud. 
 
-He has rich working experiences in system software, server and storage industry. Before joining Alibaba Cloud, he worked for EMC, Oracle, Sun Microsystem as a kernel developer.
-Currently, his major focus is on system performance and QoS in Cloud and data center.
+He has extensive experience in system software, server, and storage industries. Prior to joining Alibaba Cloud, he worked as a kernel developer at EMC, Oracle, and Sun Microsystems.
+Currently, his main focus is on system performance and QoS in cloud and data centers.
 
-His techincal areas include,
-
-- System perfromance, QoS
-- Operating systems: Linux kernel, Device drivers
-- Storage, network, cloud computing solutions
-- Server hardware: x86, PCIe, storage appliance
+His technical areas of expertise include:
+- System performance and QoS
+- Operating systems: Linux kernel, device drivers
+- Storage, network, and cloud computing solutions
+- Server hardware: x86, PCIe, storage appliances
 
 ### Social Network
 <script src="//platform.linkedin.com/in.js" type="text/javascript"></script>

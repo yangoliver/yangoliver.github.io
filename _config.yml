@@ -4,5 +4,5 @@ url: http://oliveryang.net
 author: Oliver Yang
 description: This article may cover Linux, Kernel, Storage, Network, Hardware, Virtualization and Cloud Computing.
 highlighter: rouge
-gems: [jekyll-paginate]
+plugins: [jekyll-paginate]
 paginate: 18
