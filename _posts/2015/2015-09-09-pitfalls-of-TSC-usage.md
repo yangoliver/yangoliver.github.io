@@ -14,13 +14,14 @@ tags:
 
 ## 1. Latency measurement in user space
 
-While user application developers are working on performance sensitive code, one common requirement is do latency/time
-measurement in their code. This kind of code could be temporary code for debug, test or profiling purpose, or permanent
-code that could provide performance tracing data in software production mode.
+While user application developers are working on performance-sensitive code, a common requirement is to measure the latency
+or time in their code. This type of code can be used temporarily for debugging, testing, or profiling purposes, or permanently
+to provide performance tracing data in software production mode.
 
-Linux kernel provides gettimeofday() and clock_gettime() system calls for user application high resolution time measurement.
-The gettimeofday() is us level, and clock_gettime is ns level. However, the major concerns of these system calls usage are
-the additional performance cost caused by calling themselves.
+The Linux kernel provides the gettimeofday() and clock_gettime() system calls for high-resolution time measurement in user
+applications. The gettimeofday() provides microsecond-level resolution, while clock_gettime() provides nanosecond-level
+resolution. However, one major concern when using these system calls is the additional performance cost caused by the overhead
+of the function call itself.
 
 In order to minimize the perf cost of gettimeofday() and clock_gettime() system calls, Linux kernel uses the
 vsyscalls(virtual system calls) and VDSOs (Virtual Dynamically linked Shared Objects) mechanisms to avoid the cost
