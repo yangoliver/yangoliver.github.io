@@ -7,12 +7,12 @@ tags:
 - [perf, kernel, linux, virtualization, hardware]
 ---
 
->The content reuse need include the original link: <http://oliveryang.net>
+>The content reuse needs to include the original link: <http://oliveryang.net>
 
 * content
 {:toc}
 
-## 1. Latency measurement in user space
+## 1. Latency Measurement In User Space
 
 While user application developers are working on performance-sensitive code, a common requirement is to measure the latency
 or time in their code. This type of code can be used temporarily for debugging, testing, or profiling purposes, or permanently
@@ -23,20 +23,20 @@ applications. The gettimeofday() provides microsecond-level resolution, while cl
 resolution. However, one major concern when using these system calls is the additional performance cost caused by the overhead
 of the function call itself.
 
-In order to minimize the perf cost of gettimeofday() and clock_gettime() system calls, Linux kernel uses the
-vsyscalls(virtual system calls) and VDSOs (Virtual Dynamically linked Shared Objects) mechanisms to avoid the cost
-of switching from user to kernel. On x86, gettimeofday() and clock_gettime() could get better performance
-due to vsyscalls [kernel patch](https://github.com/torvalds/linux/commit/2aae950b21e4bc789d1fc6668faf67e8748300b7),
-by avoiding context switch from user to kernel space. But some other arch still need follow the regular
-system call code path. This is really hardware dependent optimization.
+In order to minimize the performance cost of the gettimeofday() and clock_gettime() system calls, the Linux kernel uses the
+vsyscalls (virtual system calls) and VDSOs (Virtual Dynamically linked Shared Objects) mechanisms to avoid the overhead of
+switching from user to kernel space. On x86 architectures, gettimeofday() and clock_gettime() can achieve better performance
+due to the vsyscalls [kernel patch](https://github.com/torvalds/linux/commit/2aae950b21e4bc789d1fc6668faf67e8748300b7),
+which avoids the context switch from user to kernel space. However, on some other architectures, the regular system call code
+path still needs to be followed. This optimization is really hardware-dependent.
 
-For most use cases of TSC, vsyscalls for gettimeofday() and clock_gettime() could reduce major performance overheads,
-because it avoids to user/kernel context switch and tries to use rdtsc instructions to get the TSC register value directly.
-Especially, the system calls provide better porting and error handling capabilities. For example, on some platforms
-an undetectable TSC sync problem found among multiple CPUs, the
-[gettimeofday() and clock_gettime() vsyscalls try to work around the problem](https://github.com/torvalds/linux/commit/d8bb6f4c1670c8324e4135c61ef07486f7f17379).
+For most use cases of TSC, vsyscalls for gettimeofday() and clock_gettime() can reduce major performance overheads by avoiding
+the context switch between user and kernel space and attempting to use the rdtsc instruction to get the TSC register value directly.
+Additionally, these system calls provide better portability and error handling capabilities. For example, a TSC synchronization
+problem that may occur among multiple CPUs without detection can be
+[worked around by the gettimeofday() and clock_gettime() vsyscalls](https://github.com/torvalds/linux/commit/d8bb6f4c1670c8324e4135c61ef07486f7f17379).
 
-## 2. Why using TSC?
+## 2. Why Should We Use TSC?
 
 Although vsyscalls implementation of gettimeofday() and clock_gettime() is faster than regular system calls, the perf cost
 of them is still too high to meet the latency measurement requirements for some perf sensitive application.
@@ -111,9 +111,9 @@ strange TSC behaviors due to some known pitfalls.
 	
 ## 3. Known TSC pitfalls
 
-### 3.1 TSC unstable hardware
+### 3.1 Unstable TSC Hardware
 
-#### 3.1.1 CPU TSC capabilities
+#### 3.1.1 CPU TSC Capabilities
 
 Intel CPUs have 3 sort of TSC behaviors,
 
@@ -188,7 +188,7 @@ testing. Below command could be used to check this new synthetic CPU feature,
 If we could get the feature bit set on CPU, we should be able to trust the TSC source on this platform. But keep in
 mind, software bugs in TSC handling still could cause the problems.
 
-#### 3.1.2 TSC sync behaviors on SMP system
+#### 3.1.2 TSC Sync Behaviors on SMP Systems
 
 On a UP system, CPU TSC sync behavior among multiple cores is determined by CPU TSC capability. Whereas on a SMP system,
 the TSC sync problem cross multiple CPU sockets could be a big problem. There are 3 type of SMP systems,
@@ -229,13 +229,13 @@ If TSC sync test passed during Linux kernel boot, following sysfs file would exp
 	tsc
 
 
-#### 3.1.3 Non-Intel platform
+#### 3.1.3 Non-Intel Platforms
 
 Non-Intel x86 platform has different stories. Current Linux kernel treats all non-Intel SMP system as non-sync TSC system.
 See unsynchronized_tsc code in [tsc.c](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/tsc.c).
 LKML also has the [AMD documents](https://lkml.org/lkml/2005/11/4/173).
 
-#### 3.1.4 CPU hotplug
+#### 3.1.4 CPU Hotplug
 
 CPU hotplug will introduce a new CPU which may not have synchronized TSC values than existing CPUs. 
 In theory, either system software, BIOS, or SMM code could do TSC sync for CPU hotplug.
@@ -248,7 +248,7 @@ instructions to multiple CPUs at exactly same time.
 For this reason, per my understandings, Linux TSC sync on CPU hotplug scenario depends on hardware/firmware behaviors.
 
 
-#### 3.1.5 Misc firmware problems
+#### 3.1.5 Miscellaneous Firmware Problems
 
 As TSC value is writeable, firmware code could change TSC value that caused TSC sync issue in OS.
 
@@ -262,7 +262,7 @@ Linux kernel has to create
 [a patch to handle ACPI suspend/resume](https://github.com/yangoliver/linux/commit/cd7240c0b900eb6d690ccee088a6c9b46dae815a)
 to make sure TSC sync still works in OS.
 
-#### 3.1.6 Misc hardware erratas
+#### 3.1.6 Miscellaneous Hardware Erratas
 
 TSC sync functionality was highly depends on board manufacturer design. For example, clock source reliability issues.
 I used to encountered a hardware errata caused by unreliable clock source. Due to the errata, Linux kernel TSC sync
@@ -292,9 +292,9 @@ per the root causes of TSC problems, kernel may not able to test out all of unre
 possible that TSC clock had the problem during runtime. In this case, Linux may switch clock source from tsc to others
 on the fly.
 
-### 3.2 Software TSC usage bugs
+### 3.2 Software Bugs on TSC Usage
 
-#### 3.2.1 Overflow issues in TSC calculation
+#### 3.2.1 TSC Calculation Overflow Issues
 
 The direct return value of rdtsc is CPU cycle, but latency or time requires a regular time unit: ns or us.
 
@@ -342,14 +342,14 @@ Unlike Linux kernel, some user applications uses below formula, which can cause 
 
 Anyway, be careful for overflow issue when you use rdtsc value for a calculation.
 
-#### 3.2.2 Wrong CPU frequency usage
+#### 3.2.2 Incorrect CPU Frequency Usage
 
 You may already notice that, Linux kernel use CPU KHZ instead of GHZ/MHZ in its implementation. Please read
 previous section about cycle_2_ns implementation.
 The major reason of using KHZ here is: better precision. Old kernel code used MHZ before, and
 [this patch](https://github.com/torvalds/linux/commit/dacb16b1a034fa7a0b868ee30758119fbfd90bc1) fixed the issue.
 
-#### 3.2.3 Out of order execution
+#### 3.2.3 Out-of-Order Execution Issues
 
 If the code you want to measure is a **very small** piece of code, our rdtsc function above might need to be
 re-implement by LFENCE or RDTSCP. Otherwise, this will introduce the precision issues caused by CPU out of order execution.
@@ -369,7 +369,7 @@ Linux kernel has an example to have the
 For a correct out of order implementaton, see Intel White Paper:
 [How to Benchmark Code Execution Times on Intel® IA-32 and IA-64 Instruction Set Architectures](https://www.intel.com/content/dam/www/public/us/en/documents/white-papers/ia-32-ia-64-benchmark-code-execution-paper.pdf)
 
-### 3.3 TSC emulation on different hypervisors
+### 3.3 TSC Emulation Across Different Hypervisors
 
 Virtualization technology caused the lots of challenges for guest OS time keeping. This section just cover the cases
 that host could detect the TSC clock source, and guest software might be TSC sensitive and try to issue rdtsc instruction
@@ -385,7 +385,7 @@ For example, VM live migration may cause TSC sync problems if source and target 
 
 So the behaviors of TSC sync on different hypervisors could cause the TSC sync problems.
 
-#### 3.3.1 Basic approaches
+#### 3.3.1 Fundamental Approaches
 
 Per hypervisors differences, the rdtsc instruction and TSC sync could be addressed with following approaches,
 
@@ -422,7 +422,7 @@ Per hypervisors differences, the rdtsc instruction and TSC sync could be address
 	When native run could get both good performance and correctness, it will be run natively without emulation.
 	If hypervisor could not use native way, it will use full or para virtualization technology to make sure the correctness.
 
-#### 3.3.2 Implementations on various hypervisors
+#### 3.3.2 Implementation on Different Hypervisors
 
 Below is detailed information about the TSC support on various hypervisors,
 
