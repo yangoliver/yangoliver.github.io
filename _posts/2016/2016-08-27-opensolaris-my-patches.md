@@ -12,11 +12,11 @@ tags: [kernel, solaris]
 {:toc}
 
 This page is for tracking my patches for [OpenSolaris](https://en.wikipedia.org/wiki/OpenSolaris). As you may already know,
-Oracle had closed OpenSolaris project after it accquired Sun Microsystem in 2009.
-For this reason, all my patches below was found and referred from [Illumos Github Repository](https://github.com/illumos/illumos-gate).
-The [Illumos](https://en.wikipedia.org/wiki/Illumos) is a fork of OpenSolaris, and the code changes after Oracle & SUN merge had never been available in Illumos.
+Oracle had closed OpenSolaris project after it acquired Sun Microsystem in 2009.
+For this reason, all my patches below have been found and referred from [Illumos Github Repository](https://github.com/illumos/illumos-gate).
+The [Illumos](https://en.wikipedia.org/wiki/Illumos) is a fork of OpenSolaris, and the code changes after Oracle & SUN merge have never been available in Illumos.
 
-For above reasons, it was quite difficult to find all my footprints in Illumos code base. While reviewing the source code of Solaris, it always makes me recall the days I worked for Solaris.
+For above reasons, it was quite difficult to find all my footprints in Illumos code base. While reviewing the source code of Solaris, it always made me recall the days I worked for Solaris.
 
 ## 1. Solaris IO Subsystem
 
